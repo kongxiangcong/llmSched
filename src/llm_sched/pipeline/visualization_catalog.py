@@ -100,6 +100,7 @@ def _build_catalog_entry(catalog_root: Path, run_root: Path) -> VisualizationCat
         target_profile_name=bundle.metadata.target_profile_name,
         primary_metric_name=primary_metric_name,
         primary_metric_value=primary_metric_value,
+        metric_values=_collect_metric_values(bundle),
         workbench_entry_path=relative_entry_path,
     )
 
@@ -114,6 +115,13 @@ def _select_primary_metric(bundle: VisualizationBundle) -> tuple[str, float]:
         return ("unknown", 0.0)
     first_key = next(iter(metrics))
     return (first_key, float(metrics[first_key]))
+
+
+def _collect_metric_values(bundle: VisualizationBundle) -> dict[str, float]:
+    return {
+        key: float(value)
+        for key, value in bundle.report_summary.primary_metrics.items()
+    }
 
 
 def _resolve_run_roots(

@@ -1,5 +1,12 @@
 # Phase E Visualization Workbench Handoff
 
+## 2026-03-11 Catalog Multi-Metric Compare Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-19-catalog-multi-metric-compare.md`
+- static catalog compare now carries `metric_values` copied from packaged bundle summary metrics instead of collapsing each run to one scalar primary metric
+- the compare tray and baseline-pinned workspace now render `Shared Metric Deltas` directly from that structured metric map
+- focused catalog contract, builder, and workflow regressions remain green with the stronger compare surface
+
 ## 2026-03-11 VMEM Backing-Store Visibility Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-19-workbench-vmem-backing-store-visibility.md`
@@ -90,7 +97,7 @@ Current hardening already includes:
 - a saved-view action that copies the current panel/filter state as a shareable link
 - an export action that downloads the active panel plus current filtered state as JSON
 - an exportable image action that downloads the active panel as an SVG snapshot
-- a catalog compare tray that lets users select up to two runs and inspect primary-metric delta without leaving the catalog
+- a catalog compare tray that lets users select up to two runs and inspect shared summary-metric deltas without leaving the catalog
 - a baseline-pinned compare workspace that compares visible runs in the same scenario as the first selected run
 - compare workspace controls for baseline/candidate role swap and same-scenario versus all-visible compare scope switching
 
@@ -135,7 +142,7 @@ The current `SPEC-19` foundation still lacks:
 - a served application shell
 - richer workspace discovery policies beyond the current packaged-run scan boundary
 - richer rendered screenshot workflows beyond the current SVG snapshot export
-- richer compare modes beyond the current baseline-pinned scope toggle and role-swap workspace
+- richer compare drill-down beyond the current shared summary-metric compare
 
 These are follow-on hardening items, not reasons to reopen the current static workbench contract.
 
@@ -143,6 +150,6 @@ These are follow-on hardening items, not reasons to reopen the current static wo
 
 Next work should harden `SPEC-19`, not reopen `SPEC-18`:
 1. Extend the catalog from current packaged-run discovery to richer workspace navigation and grouping.
-2. Extend the current baseline-pinned compare workspace into richer compare navigation and multi-metric compare modes.
+2. Extend the current baseline-pinned compare workspace into richer compare navigation and deeper drill-down beyond the current shared summary-metric compare.
 3. Keep `visualization_bundle.json` as the UI source of truth.
 4. Delay live-service or framework decisions until static workbench and catalog gaps are concrete.

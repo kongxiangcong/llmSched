@@ -187,6 +187,87 @@ function panelLink(entry, panel) {
 
 const COMPARE_SELECTION = [];
 
+function formatMetricValue(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return String(value);
+  }
+  if (Number.isInteger(numeric) || Math.abs(numeric) >= 1000) {
+    return `${numeric}`;
+  }
+  return numeric.toFixed(4).replace(/\\.?0+$/, "");
+}
+
+function formatMetricDelta(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return "n/a";
+  }
+  if (numeric === 0) {
+    return "0";
+  }
+  return `${numeric > 0 ? "+" : "-"}${formatMetricValue(Math.abs(numeric))}`;
+}
+
+function orderedMetricEntries(entry) {
+  return Object.entries(entry.metric_values || {}).sort(([left], [right]) => {
+    if (left === entry.primary_metric_name && right !== entry.primary_metric_name) {
+      return -1;
+    }
+    if (right === entry.primary_metric_name && left !== entry.primary_metric_name) {
+      return 1;
+    }
+    return left.localeCompare(right);
+  });
+}
+
+function renderMetricValueList(entry, emptyMessage = "No summary metrics.") {
+  const rows = orderedMetricEntries(entry);
+  if (!rows.length) {
+    return `<p class="empty">${emptyMessage}</p>`;
+  }
+  return `<ul class="metric-detail-list">${rows.map(([name, value]) => `
+    <li>
+      <span>${name}</span>
+      <strong>${formatMetricValue(value)}</strong>
+    </li>
+  `).join("")}</ul>`;
+}
+
+function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
+  const baselineMetrics = baselineEntry.metric_values || {};
+  const candidateMetrics = candidateEntry.metric_values || {};
+  const sharedMetricNames = Object.keys(baselineMetrics)
+    .filter((name) => Object.prototype.hasOwnProperty.call(candidateMetrics, name))
+    .sort((left, right) => {
+      if (left === baselineEntry.primary_metric_name && right !== baselineEntry.primary_metric_name) {
+        return -1;
+      }
+      if (right === baselineEntry.primary_metric_name && left !== baselineEntry.primary_metric_name) {
+        return 1;
+      }
+      return left.localeCompare(right);
+    });
+  if (!sharedMetricNames.length) {
+    return '<p class="empty">No shared summary metrics.</p>';
+  }
+  return `<ul class="metric-detail-list">${sharedMetricNames.map((name) => {
+    const baselineValue = Number(baselineMetrics[name]);
+    const candidateValue = Number(candidateMetrics[name]);
+    const delta = candidateValue - baselineValue;
+    const ratio = baselineValue !== 0 ? candidateValue / baselineValue : null;
+    return `
+      <li>
+        <span>${name}</span>
+        <div class="metric-detail-values">
+          <strong>${formatMetricDelta(delta)}</strong>
+          <em>${ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</em>
+        </div>
+      </li>
+    `;
+  }).join("")}</ul>`;
+}
+
 function groupCatalogEntries(entries) {
   const groups = new Map();
   entries.forEach((entry) => {
@@ -251,6 +332,8 @@ function buildCompareSummary(selectedEntries) {
         <h3>${entry.run_id}</h3>
         <p>${entry.scenario_name} · ${entry.schedule_kind}</p>
         <p>${entry.primary_metric_name}: <strong>${entry.primary_metric_value}</strong></p>
+        <h4>Available Metrics</h4>
+        ${renderMetricValueList(entry)}
         <a class="panel-link" href="${panelLink(entry, "summary")}">Open Summary</a>
       </article>
     `;
@@ -266,18 +349,21 @@ function buildCompareSummary(selectedEntries) {
         <h3>Baseline</h3>
         <p>${baseline.run_id}</p>
         <p>${baseline.primary_metric_name}: <strong>${baseline.primary_metric_value}</strong></p>
+        ${renderMetricValueList(baseline)}
         <a class="panel-link" href="${panelLink(baseline, "summary")}">Open Summary</a>
       </div>
       <div>
         <h3>Candidate</h3>
         <p>${candidate.run_id}</p>
         <p>${candidate.primary_metric_name}: <strong>${candidate.primary_metric_value}</strong></p>
+        ${renderMetricValueList(candidate)}
         <a class="panel-link" href="${panelLink(candidate, "summary")}">Open Summary</a>
       </div>
       <div>
-        <h3>Delta</h3>
-        <p>${sameMetric ? `${candidate.primary_metric_name} delta: ${delta}` : "Metric mismatch"}</p>
+        <h3>Shared Metric Deltas</h3>
+        <p>${sameMetric ? `${candidate.primary_metric_name} delta: ${formatMetricDelta(delta)}` : "Metric mismatch"}</p>
         <p>${sameMetric && ratio !== null ? `ratio: ${ratio.toFixed(3)}x` : "ratio unavailable"}</p>
+        ${buildSharedMetricDeltaRows(baseline, candidate)}
       </div>
     </article>
   `;
@@ -325,8 +411,9 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           <th>Schedule</th>
           <th>Target</th>
           <th>Metric</th>
-          <th>Delta</th>
-          <th>Ratio</th>
+          <th>Primary Delta</th>
+          <th>Primary Ratio</th>
+          <th>Shared Metric Deltas</th>
           <th>Link</th>
         </tr>
       </thead>
@@ -341,8 +428,9 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${entry.schedule_kind}</td>
               <td>${entry.target_profile_name}</td>
               <td>${entry.primary_metric_name}</td>
-              <td>${sameMetric ? delta : "metric mismatch"}</td>
+              <td>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</td>
               <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
+              <td>${buildSharedMetricDeltaRows(baselineEntry, entry)}</td>
               <td><a href="${panelLink(entry, "summary")}">Open Summary</a></td>
             </tr>
           `;
@@ -591,6 +679,36 @@ def _build_styles_css() -> str:
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.metric-detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.metric-detail-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(16, 32, 51, 0.08);
+}
+
+.metric-detail-list li:last-child {
+  border-bottom: 0;
+}
+
+.metric-detail-values {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.metric-detail-values em {
+  color: #5b6980;
+  font-style: normal;
 }
 
 .group-chip {

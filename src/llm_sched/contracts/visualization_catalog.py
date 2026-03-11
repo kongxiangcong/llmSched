@@ -27,6 +27,7 @@ class VisualizationCatalogEntry(BaseModel):
     target_profile_name: str
     primary_metric_name: str
     primary_metric_value: float
+    metric_values: dict[str, float] = Field(default_factory=dict)
     workbench_entry_path: str
 
 

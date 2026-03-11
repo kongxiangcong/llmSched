@@ -15,7 +15,7 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
         mode="prefill",
         schedule_kind="single-core",
         target_profile_name="riscv_npu_single_core_v1",
-        primary_metrics={"estimated_cycles": 4096.0},
+        primary_metrics={"estimated_cycles": 4096.0, "tokens_per_cycle": 0.03125},
     )
     _write_packaged_run(
         run_root_b,
@@ -24,7 +24,7 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
         mode="decode",
         schedule_kind="dual-core",
         target_profile_name="riscv_npu_dual_core_v1",
-        primary_metrics={"token_latency_cycles": 512.0},
+        primary_metrics={"token_latency_cycles": 512.0, "tokens_per_second": 1953.125},
     )
     catalog_root = tmp_path / "catalog-root"
 
@@ -39,7 +39,15 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     )
     assert artifact.metadata.entry_count == 2
     assert artifact.entries[0].workbench_entry_path.endswith("workbench/index.html")
+    assert artifact.entries[0].metric_values["estimated_cycles"] == 4096.0
+    assert artifact.entries[0].metric_values["tokens_per_cycle"] == 0.03125
+    assert artifact.entries[1].metric_values["token_latency_cycles"] == 512.0
+    assert artifact.entries[1].metric_values["tokens_per_second"] == 1953.125
     assert (catalog_root / "catalog" / "index.html").is_file()
+    app_js = (catalog_root / "catalog" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "function buildSharedMetricDeltaRows" in app_js
+    assert "Shared Metric Deltas" in app_js
+    assert "metric_values" in app_js
 
 
 def test_run_visualization_catalog_rejects_missing_workbench_manifest(tmp_path: Path) -> None:

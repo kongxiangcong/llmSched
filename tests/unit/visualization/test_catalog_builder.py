@@ -18,6 +18,10 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                 target_profile_name="riscv_npu_single_core_v1",
                 primary_metric_name="estimated_cycles",
                 primary_metric_value=4096.0,
+                metric_values={
+                    "estimated_cycles": 4096.0,
+                    "tokens_per_cycle": 0.03125,
+                },
                 workbench_entry_path="../run-prefill-single/workbench/index.html",
             ),
             VisualizationCatalogEntry(
@@ -29,6 +33,10 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                 target_profile_name="riscv_npu_dual_core_v1",
                 primary_metric_name="token_latency_cycles",
                 primary_metric_value=512.0,
+                metric_values={
+                    "token_latency_cycles": 512.0,
+                    "tokens_per_second": 1953.125,
+                },
                 workbench_entry_path="../run-decode-dual/workbench/index.html",
             ),
         ],
@@ -67,6 +75,9 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "function buildWorkspaceCandidateSet" in files["catalog/assets/app.js"]
     assert "function buildWorkspaceCompareRows" in files["catalog/assets/app.js"]
     assert "function renderCompareWorkspace" in files["catalog/assets/app.js"]
+    assert "function buildSharedMetricDeltaRows" in files["catalog/assets/app.js"]
+    assert "Shared Metric Deltas" in files["catalog/assets/app.js"]
+    assert "metric_values" in files["catalog/assets/app.js"]
     assert "Workspace Compare" in files["catalog/index.html"]
     assert "function filterCatalogEntries" in files["catalog/assets/app.js"]
     assert "function groupCatalogEntries" in files["catalog/assets/app.js"]
