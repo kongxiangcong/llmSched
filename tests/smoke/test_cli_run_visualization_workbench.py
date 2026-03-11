@@ -52,6 +52,12 @@ def test_run_visualization_workbench_writes_static_assets(
     assert manifest["artifact_index"]["visualization_workbench_entry"] == "workbench/index.html"
     assert manifest["artifact_index"]["visualization_workbench_manifest"] == "workbench/workbench_manifest.json"
     assert workbench["default_panel"] == "summary"
+    index_html = (run_root / "workbench" / "index.html").read_text(encoding="utf-8")
+    app_js = (run_root / "workbench" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "back-to-catalog-link" in index_html
+    assert "function updateCatalogReturnLink" in app_js
+    assert "catalog_return" in app_js
+    assert "Back to Catalog Compare" in app_js
 
 
 def test_run_visualization_workbench_rejects_missing_bundle_without_traceback(tmp_path: Path) -> None:

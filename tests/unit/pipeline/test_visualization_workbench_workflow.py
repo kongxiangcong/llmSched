@@ -46,6 +46,11 @@ def test_run_visualization_workbench_writes_assets_and_updates_manifest(tmp_path
     assert "packed_record_count" in app_js
     assert "packed_layout_template_counts" in app_js
     assert "packed_field_name_counts" in app_js
+    index_html = (run_root / "workbench" / "index.html").read_text(encoding="utf-8")
+    assert "back-to-catalog-link" in index_html
+    assert "function updateCatalogReturnLink" in app_js
+    assert "catalog_return" in app_js
+    assert "Back to Catalog Compare" in app_js
 
 
 def test_run_visualization_workbench_rejects_missing_bundle(tmp_path: Path) -> None:

@@ -50,6 +50,10 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "metric_values" in app_js
     assert "function currentWorkbenchPanel" in app_js
     assert "function buildComparePanelLinks" in app_js
+    assert "function serializeCatalogState" in app_js
+    assert "function hydrateCatalogStateFromUrl" in app_js
+    assert "catalog_return" in app_js
+    assert "compare_ids" in app_js
     assert "Open Selected Panel" in app_js
     index_html = (catalog_root / "catalog" / "index.html").read_text(encoding="utf-8")
     assert "catalog-workbench-panel-filter" in index_html

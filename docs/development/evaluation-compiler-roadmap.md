@@ -19,7 +19,7 @@
 | Phase B | SPEC-03, SPEC-04, SPEC-07 | `done` | import/decomposition/bound-NIG/report/smoke gate 已收口。 |
 | Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `in_progress` | `SPEC-08` 已进入 planner-closure 阶段，`SPEC-09` 当前 scope 已接受，`SPEC-10/11` helper-store 审计已收敛到 acceptance list，`SPEC-12` 的 `M2` stop-line 已冻结。 |
 | Phase D | SPEC-13, SPEC-14, SPEC-15, SPEC-16 | `in_progress` | `SPEC-13` 已有 descriptor-driven estimator/workflow/CLI/smoke foundation，`SPEC-14` 已有 prefill top-level foundation，`SPEC-15` 已有 decode top-level foundation，`SPEC-16` 已有 sweep/delta workflow、CLI 和 smoke foundation。 |
-| Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare 和 selected-panel deep-link navigation。 |
+| Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation。 |
 
 结论：
 
@@ -49,7 +49,7 @@
 | SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation。 | 仍缺 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
 
 ## 4. 当前主路径
 
@@ -165,7 +165,7 @@ graph TD
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
 | M2 能映射到硬件 | SPEC-08,09,10,11,12 | `in_progress` | `SPEC-09` scope 与 `SPEC-12` stop-line 已明确，`SPEC-10/11` helper-store 审计已完成，`SPEC-08` 也已有 tile/descriptor/perf 三条真实 downstream reuse；剩余主问题已收敛到 planner closure 与最终 acceptance evidence。 |
 | M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，`SPEC-16` 已有 sweep/delta foundation；同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、layer-level compare 和更完整的 top-level report 闭环。 |
-| M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare 和 selected-panel deep-link navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
+| M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
 
@@ -1335,6 +1335,23 @@ graph TD
 - what still remains:
   - deeper workspace drill-down and richer compare modes beyond the current selected-panel summary-grade navigation
   - richer screenshot/export workflow
+
+## 2026-03-11 SPEC-19 Catalog Workbench Return Navigation Checkpoint
+
+- plan doc: `../plans/2026-03-11-spec-19-catalog-workbench-return-navigation.md`
+- `SPEC-19` drill-down now round-trips from catalog compare into workbench and back to the same compare/filter context without introducing any live service path.
+- new closure evidence:
+  - catalog JS now serializes current search/mode/schedule/compare-scope/workbench-panel/compare-selection into a `catalog_return` URL
+  - compare-driven workbench links now carry that encoded `catalog_return` target
+  - workbench JS now hydrates and preserves `catalog_return` across internal panel links and copied current-view URLs
+  - workbench HTML now exposes `Back to Catalog Compare` whenever that return target is present
+  - focused catalog/workbench builder, workflow, and CLI smoke regressions now prove the round-trip navigation surface is packaged end-to-end
+- what this closes:
+  - one concrete `SPEC-19` drill-down gap where users could deep-link from compare into workbench but had no direct path back to the same catalog context
+  - one place where static catalog/workbench navigation still behaved like one-way pages instead of one inspection loop
+- what still remains:
+  - deeper workspace drill-down beyond the current round-trip return path
+  - richer compare modes and screenshot/export workflow
 
 ## 2026-03-09 SPEC-13 Schedule Occupancy Breakdown Checkpoint
 

@@ -49,6 +49,9 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     app_js = (catalog_root / "catalog" / "assets" / "app.js").read_text(encoding="utf-8")
     assert "catalog-workbench-panel-filter" in index_html
     assert "function currentWorkbenchPanel" in app_js
+    assert "function serializeCatalogState" in app_js
+    assert "function hydrateCatalogStateFromUrl" in app_js
+    assert "catalog_return" in app_js
     assert "Open Selected Panel" in app_js
 
     manifest = json.loads((catalog_root / "catalog" / "catalog_manifest.json").read_text(encoding="utf-8"))

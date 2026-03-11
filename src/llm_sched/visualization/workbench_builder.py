@@ -108,6 +108,7 @@ def _build_index_html(artifact: VisualizationWorkbenchArtifact) -> str:
         </p>
       </header>
       <section class="workbench-actions">
+        <a id="back-to-catalog-link" class="action-link" href="#" hidden>Back to Catalog Compare</a>
         <button id="copy-view-link-button" type="button">Copy current view link</button>
         <button id="download-view-json-button" type="button">Export current panel JSON</button>
         <button id="download-panel-svg-button" type="button">Export current panel SVG</button>
@@ -135,6 +136,7 @@ const UI_STATE = {
   timelineCore: "all",
   coverageQuery: "",
   activeDetailBlockId: null,
+  catalogReturnUrl: "",
   requestedPanel: "summary",
 };
 
@@ -155,7 +157,14 @@ function normalizeText(value) {
 function buildPanelLink(panelId, extraParams = {}) {
   const params = new URLSearchParams();
   params.set("panel", panelId);
+  const catalogReturn = extraParams.catalog_return || UI_STATE.catalogReturnUrl;
+  if (catalogReturn) {
+    params.set("catalog_return", String(catalogReturn));
+  }
   Object.entries(extraParams).forEach(([key, value]) => {
+    if (key === "catalog_return") {
+      return;
+    }
     if (value !== null && value !== undefined && String(value) !== "") {
       params.set(key, String(value));
     }
@@ -177,6 +186,7 @@ function serializeUiState() {
     timeline_core: UI_STATE.timelineCore,
     coverage_query: UI_STATE.coverageQuery,
     detail_block: UI_STATE.activeDetailBlockId,
+    catalog_return: UI_STATE.catalogReturnUrl,
   };
 }
 
@@ -196,6 +206,22 @@ function hydrateStateFromUrl() {
   UI_STATE.timelineCore = params.get("timeline_core") || "all";
   UI_STATE.coverageQuery = params.get("coverage_query") || "";
   UI_STATE.activeDetailBlockId = params.get("detail_block");
+  UI_STATE.catalogReturnUrl = params.get("catalog_return") || "";
+}
+
+function updateCatalogReturnLink() {
+  const link = document.querySelector("#back-to-catalog-link");
+  if (!link) {
+    return;
+  }
+  if (UI_STATE.catalogReturnUrl) {
+    link.hidden = false;
+    link.href = UI_STATE.catalogReturnUrl;
+    link.textContent = "Back to Catalog Compare";
+    return;
+  }
+  link.hidden = true;
+  link.removeAttribute("href");
 }
 
 function syncControlsFromState() {
@@ -223,6 +249,7 @@ function syncControlsFromState() {
   if (coverageSearchInput) {
     coverageSearchInput.value = UI_STATE.coverageQuery;
   }
+  updateCatalogReturnLink();
 }
 
 function resolveInitialPanel(panelMap) {
@@ -1034,6 +1061,16 @@ def _build_styles_css() -> str:
   background: rgba(255, 251, 244, 0.92);
   color: #102033;
   cursor: pointer;
+  font-weight: 700;
+}
+
+.action-link {
+  text-decoration: none;
+  border: 1px solid rgba(16, 32, 51, 0.12);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 251, 244, 0.92);
+  color: #102033;
   font-weight: 700;
 }
 

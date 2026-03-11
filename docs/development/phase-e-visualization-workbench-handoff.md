@@ -1,5 +1,12 @@
 # Phase E Visualization Workbench Handoff
 
+## 2026-03-11 Catalog Workbench Return Navigation Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-19-catalog-workbench-return-navigation.md`
+- compare-driven workbench links now carry encoded catalog filter/selection state through `catalog_return`
+- the workbench now surfaces `Back to Catalog Compare` when opened from catalog compare, and preserves that return target across internal panel deep links and copied current-view URLs
+- focused catalog/workbench builder, workflow, and CLI smoke regressions remain green with the stronger round-trip navigation loop
+
 ## 2026-03-11 Compare Workspace Panel Navigation Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-19-compare-workspace-panel-navigation.md`
@@ -107,6 +114,7 @@ Current hardening already includes:
 - a catalog compare tray that lets users select up to two runs and inspect shared summary-metric deltas without leaving the catalog
 - a baseline-pinned compare workspace that compares visible runs in the same scenario as the first selected run
 - a selected-panel navigation control that retargets compare links into `summary`, `timeline`, `memory`, or `coverage`
+- a round-trip catalog/workbench navigation loop so compare-driven drill-down can return to the same catalog context
 - compare workspace controls for baseline/candidate role swap and same-scenario versus all-visible compare scope switching
 
 This keeps the UI side decoupled from lower-level artifact churn.
@@ -152,13 +160,14 @@ The current `SPEC-19` foundation still lacks:
 - richer rendered screenshot workflows beyond the current SVG snapshot export
 - richer compare drill-down beyond the current shared summary-metric compare
 - deeper workspace drill-down beyond the current selected-panel deep links
+- richer round-trip navigation beyond the current catalog-return loop
 
 These are follow-on hardening items, not reasons to reopen the current static workbench contract.
 
 ## 7. Recommended Next Step
 
 Next work should harden `SPEC-19`, not reopen `SPEC-18`:
-1. Extend the catalog from current packaged-run discovery and selected-panel deep links to deeper workspace drill-down and grouping.
+1. Extend the catalog from current packaged-run discovery, selected-panel deep links, and catalog-return loop to deeper workspace drill-down and grouping.
 2. Extend the current baseline-pinned compare workspace into richer compare navigation and deeper drill-down beyond the current shared summary-metric compare.
 3. Keep `visualization_bundle.json` as the UI source of truth.
 4. Delay live-service or framework decisions until static workbench and catalog gaps are concrete.

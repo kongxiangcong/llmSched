@@ -200,6 +200,89 @@ function panelLink(entry, panel) {
 
 const COMPARE_SELECTION = [];
 
+function serializeCatalogState() {
+  const searchInput = document.querySelector("#catalog-search-input");
+  const modeFilter = document.querySelector("#catalog-mode-filter");
+  const scheduleFilter = document.querySelector("#catalog-schedule-filter");
+  const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  return {
+    search: searchInput ? searchInput.value : "",
+    mode: modeFilter ? modeFilter.value : "all",
+    schedule: scheduleFilter ? scheduleFilter.value : "all",
+    compare_scope: compareScopeFilter ? compareScopeFilter.value : "same-scenario",
+    workbench_panel: workbenchPanelFilter ? workbenchPanelFilter.value : "summary",
+    compare_ids: COMPARE_SELECTION.join(","),
+  };
+}
+
+function buildCatalogReturnUrl() {
+  const state = serializeCatalogState();
+  const params = new URLSearchParams();
+  Object.entries(state).forEach(([key, value]) => {
+    if (value === null || value === undefined || String(value) === "") {
+      return;
+    }
+    if (key === "mode" && value === "all") {
+      return;
+    }
+    if (key === "schedule" && value === "all") {
+      return;
+    }
+    if (key === "compare_scope" && value === "same-scenario") {
+      return;
+    }
+    if (key === "workbench_panel" && value === "summary") {
+      return;
+    }
+    params.set(key, String(value));
+  });
+  const url = new URL(window.location.href);
+  url.search = params.toString();
+  url.hash = "";
+  return url.toString();
+}
+
+function hydrateCatalogStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const searchInput = document.querySelector("#catalog-search-input");
+  const modeFilter = document.querySelector("#catalog-mode-filter");
+  const scheduleFilter = document.querySelector("#catalog-schedule-filter");
+  const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  if (searchInput) {
+    searchInput.value = params.get("search") || "";
+  }
+  if (modeFilter) {
+    modeFilter.value = params.get("mode") || "all";
+  }
+  if (scheduleFilter) {
+    scheduleFilter.value = params.get("schedule") || "all";
+  }
+  if (compareScopeFilter) {
+    compareScopeFilter.value = params.get("compare_scope") || "same-scenario";
+  }
+  if (workbenchPanelFilter) {
+    workbenchPanelFilter.value = params.get("workbench_panel") || "summary";
+  }
+  COMPARE_SELECTION.splice(0, COMPARE_SELECTION.length);
+  (params.get("compare_ids") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .forEach((entryId) => {
+      COMPARE_SELECTION.push(entryId);
+    });
+}
+
+function buildWorkbenchLink(entry, panel) {
+  const params = new URLSearchParams();
+  params.set("panel", panel);
+  params.set("catalog_return", buildCatalogReturnUrl());
+  return `${entry.workbench_entry_path}?${params.toString()}`;
+}
+
 function currentWorkbenchPanel() {
   const panelFilter = document.querySelector("#catalog-workbench-panel-filter");
   return panelFilter ? panelFilter.value : "summary";
@@ -218,10 +301,10 @@ function workbenchPanelLabel(panel) {
 function buildComparePanelLinks(entry) {
   const panel = currentWorkbenchPanel();
   const links = [
-    `<a class="panel-link" href="${panelLink(entry, panel)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
+    `<a class="panel-link" href="${buildWorkbenchLink(entry, panel)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
   ];
   if (panel !== "summary") {
-    links.push(`<a class="panel-link" href="${panelLink(entry, "summary")}">Open Summary</a>`);
+    links.push(`<a class="panel-link" href="${buildWorkbenchLink(entry, "summary")}">Open Summary</a>`);
   }
   return `<div class="compare-link-row">${links.join("")}</div>`;
 }
@@ -327,7 +410,7 @@ function renderCatalogRows(entries) {
   table.innerHTML = entries.map((entry) => `
     <tr data-mode="${entry.mode}" data-schedule="${entry.schedule_kind}">
       <td><button class="compare-toggle" data-entry-id="${entry.entry_id}" type="button">Compare</button></td>
-      <td><a href="${entry.workbench_entry_path}">${entry.run_id}</a></td>
+      <td><a href="${buildWorkbenchLink(entry, "summary")}">${entry.run_id}</a></td>
       <td>${entry.scenario_name}</td>
       <td>${entry.mode}</td>
       <td>${entry.schedule_kind}</td>
@@ -534,17 +617,17 @@ function renderCatalogGroups(entries) {
         ${groupEntries.map((entry) => `
           <li>
             <div class="group-run-meta">
-              <a href="${entry.workbench_entry_path}">${entry.run_id}</a>
+              <a href="${buildWorkbenchLink(entry, "summary")}">${entry.run_id}</a>
               <span>${entry.mode}</span>
               <span>${entry.schedule_kind}</span>
               <span>${entry.primary_metric_name}: ${entry.primary_metric_value}</span>
             </div>
             <div class="group-link-row">
               <button class="compare-toggle" data-entry-id="${entry.entry_id}" type="button">Compare</button>
-              <a class="panel-link" href="${panelLink(entry, "summary")}">Summary</a>
-              <a class="panel-link" href="${panelLink(entry, "timeline")}">Timeline</a>
-              <a class="panel-link" href="${panelLink(entry, "memory")}">Memory</a>
-              <a class="panel-link" href="${panelLink(entry, "coverage")}">Coverage</a>
+              <a class="panel-link" href="${buildWorkbenchLink(entry, "summary")}">Summary</a>
+              <a class="panel-link" href="${buildWorkbenchLink(entry, "timeline")}">Timeline</a>
+              <a class="panel-link" href="${buildWorkbenchLink(entry, "memory")}">Memory</a>
+              <a class="panel-link" href="${buildWorkbenchLink(entry, "coverage")}">Coverage</a>
             </div>
           </li>
         `).join("")}
@@ -567,6 +650,7 @@ function bindCatalogFilters() {
   if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !workbenchPanelFilter || !swapCompareOrderButton) {
     return;
   }
+  hydrateCatalogStateFromUrl();
   const refresh = () => {
     const filtered = filterCatalogEntries(
       CATALOG_ENTRIES,
