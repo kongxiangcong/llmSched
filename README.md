@@ -123,6 +123,7 @@ python -m pytest tests/smoke -m milestone_matrix -q
 - `SPEC-08 -> SPEC-18` 现也已有一条真实 downstream reuse：`VisualizationBundle.vmem_view.regions` 直接带 `peak_bytes_by_backing_store`
 - `SPEC-18 -> SPEC-19` 现也已有一条真实 visible consumer：workbench memory panel 直接显示 per-region `peak_bytes_by_backing_store`
 - `SPEC-19` catalog compare 现也已有 shared summary-metric compare：静态 catalog 直接携带 `metric_values`，不再只看单一 primary metric
+- `SPEC-19` catalog compare 现也已有 selected-panel deep-link navigation：compare tray / workspace 可直接跳到 `summary/timeline/memory/coverage`
 - `SPEC-10/11` 的 helper-store audit batch 已完成；后续以 acceptance list 维持稳定，不再默认继续宽泛铺开
 - `SPEC-09` 现接受当前 GEMM-like / attention tiling + untiled-helper scheduling 作为 `M2` 收口范围
 - 把更强的调度时序信号继续喂给 `SPEC-13`

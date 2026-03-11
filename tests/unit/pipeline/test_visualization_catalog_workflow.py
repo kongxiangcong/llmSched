@@ -48,6 +48,11 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "function buildSharedMetricDeltaRows" in app_js
     assert "Shared Metric Deltas" in app_js
     assert "metric_values" in app_js
+    assert "function currentWorkbenchPanel" in app_js
+    assert "function buildComparePanelLinks" in app_js
+    assert "Open Selected Panel" in app_js
+    index_html = (catalog_root / "catalog" / "index.html").read_text(encoding="utf-8")
+    assert "catalog-workbench-panel-filter" in index_html
 
 
 def test_run_visualization_catalog_rejects_missing_workbench_manifest(tmp_path: Path) -> None:

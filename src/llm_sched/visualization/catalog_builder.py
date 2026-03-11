@@ -99,8 +99,21 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
       </section>
       <section class="compare-tray" id="catalog-compare-tray">
         <div class="compare-tray-header">
-          <h2>Compare Selected Runs</h2>
-          <p class="muted">Pick up to two runs from the table or grouped cards.</p>
+          <div>
+            <h2>Compare Selected Runs</h2>
+            <p class="muted">Pick up to two runs from the table or grouped cards.</p>
+          </div>
+          <div class="compare-workspace-controls">
+            <label class="control control-compact" for="catalog-workbench-panel-filter">
+              <span>Workbench Panel</span>
+              <select id="catalog-workbench-panel-filter">
+                <option value="summary">summary</option>
+                <option value="timeline">timeline</option>
+                <option value="memory">memory</option>
+                <option value="coverage">coverage</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div id="catalog-compare-content">
           <p class="empty">Select one or two runs to compare primary metrics.</p>
@@ -186,6 +199,32 @@ function panelLink(entry, panel) {
 }
 
 const COMPARE_SELECTION = [];
+
+function currentWorkbenchPanel() {
+  const panelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  return panelFilter ? panelFilter.value : "summary";
+}
+
+function workbenchPanelLabel(panel) {
+  const labels = {
+    summary: "Summary",
+    timeline: "Timeline",
+    memory: "Memory",
+    coverage: "Coverage",
+  };
+  return labels[panel] || "Summary";
+}
+
+function buildComparePanelLinks(entry) {
+  const panel = currentWorkbenchPanel();
+  const links = [
+    `<a class="panel-link" href="${panelLink(entry, panel)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
+  ];
+  if (panel !== "summary") {
+    links.push(`<a class="panel-link" href="${panelLink(entry, "summary")}">Open Summary</a>`);
+  }
+  return `<div class="compare-link-row">${links.join("")}</div>`;
+}
 
 function formatMetricValue(value) {
   const numeric = Number(value);
@@ -334,7 +373,7 @@ function buildCompareSummary(selectedEntries) {
         <p>${entry.primary_metric_name}: <strong>${entry.primary_metric_value}</strong></p>
         <h4>Available Metrics</h4>
         ${renderMetricValueList(entry)}
-        <a class="panel-link" href="${panelLink(entry, "summary")}">Open Summary</a>
+        ${buildComparePanelLinks(entry)}
       </article>
     `;
   }
@@ -350,14 +389,14 @@ function buildCompareSummary(selectedEntries) {
         <p>${baseline.run_id}</p>
         <p>${baseline.primary_metric_name}: <strong>${baseline.primary_metric_value}</strong></p>
         ${renderMetricValueList(baseline)}
-        <a class="panel-link" href="${panelLink(baseline, "summary")}">Open Summary</a>
+        ${buildComparePanelLinks(baseline)}
       </div>
       <div>
         <h3>Candidate</h3>
         <p>${candidate.run_id}</p>
         <p>${candidate.primary_metric_name}: <strong>${candidate.primary_metric_value}</strong></p>
         ${renderMetricValueList(candidate)}
-        <a class="panel-link" href="${panelLink(candidate, "summary")}">Open Summary</a>
+        ${buildComparePanelLinks(candidate)}
       </div>
       <div>
         <h3>Shared Metric Deltas</h3>
@@ -431,7 +470,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</td>
               <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
               <td>${buildSharedMetricDeltaRows(baselineEntry, entry)}</td>
-              <td><a href="${panelLink(entry, "summary")}">Open Summary</a></td>
+              <td>${buildComparePanelLinks(entry)}</td>
             </tr>
           `;
         }).join("")}
@@ -457,6 +496,7 @@ function renderCompareWorkspace(entries) {
       <h3>Baseline: ${baselineEntry.run_id}</h3>
       <p>${baselineEntry.scenario_name} · ${baselineEntry.primary_metric_name}: <strong>${baselineEntry.primary_metric_value}</strong></p>
       <p class="muted">${scope === "all-visible" ? "Comparing against all visible runs." : "Comparing against visible runs in the same scenario."}</p>
+      ${buildComparePanelLinks(baselineEntry)}
       ${buildWorkspaceCompareRows(baselineEntry, entries, scope)}
     </article>
   `;
@@ -522,8 +562,9 @@ function bindCatalogFilters() {
   const modeFilter = document.querySelector("#catalog-mode-filter");
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
   const swapCompareOrderButton = document.querySelector("#swap-compare-order-button");
-  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !swapCompareOrderButton) {
+  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !workbenchPanelFilter || !swapCompareOrderButton) {
     return;
   }
   const refresh = () => {
@@ -543,6 +584,7 @@ function bindCatalogFilters() {
   modeFilter.addEventListener("change", refresh);
   scheduleFilter.addEventListener("change", refresh);
   compareScopeFilter.addEventListener("change", refresh);
+  workbenchPanelFilter.addEventListener("change", refresh);
   swapCompareOrderButton.addEventListener("click", () => {
     swapCompareSelectionOrder();
     refresh();
@@ -709,6 +751,13 @@ def _build_styles_css() -> str:
 .metric-detail-values em {
   color: #5b6980;
   font-style: normal;
+}
+
+.compare-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .group-chip {
