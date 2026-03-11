@@ -1,0 +1,33 @@
+"""Frontend entrypoints for model import and graph canonicalization."""
+
+from llm_sched.frontend.binding import bind_nig_ir
+from llm_sched.frontend.canonicalize import canonicalize_graph_ir
+from llm_sched.frontend.legality import (
+    FrontendLegalityError,
+    FrontendLegalityIssue,
+    collect_frontend_legality_issues,
+    validate_frontend_legality,
+)
+from llm_sched.frontend.model_metadata import GemmaModelMetadata, load_gemma_model_metadata
+from llm_sched.frontend.nig_lowering import GraphToNIGLoweringError, lower_graph_ir_to_nig
+from llm_sched.frontend.nig_lowering import build_workload_decomposition_report
+from llm_sched.frontend.onnx_importer import build_frontend_import_report, import_onnx_to_graph_ir
+from llm_sched.frontend.shape_binding import FrontendShapeBinding, build_gemma3_shape_bindings
+
+__all__ = [
+    "FrontendLegalityError",
+    "FrontendLegalityIssue",
+    "FrontendShapeBinding",
+    "GemmaModelMetadata",
+    "GraphToNIGLoweringError",
+    "bind_nig_ir",
+    "build_frontend_import_report",
+    "build_gemma3_shape_bindings",
+    "build_workload_decomposition_report",
+    "canonicalize_graph_ir",
+    "collect_frontend_legality_issues",
+    "import_onnx_to_graph_ir",
+    "load_gemma_model_metadata",
+    "lower_graph_ir_to_nig",
+    "validate_frontend_legality",
+]

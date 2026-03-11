@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-workbench-cli/
+.hypothesis/
+.worktrees/
+.models/
+models/
+*.onnx
+*.bin
+*.pt
+*.safetensors
+docs\架构规格说明文档.md
+docs\编译器设计文档.md

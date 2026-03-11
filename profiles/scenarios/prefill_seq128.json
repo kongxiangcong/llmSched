@@ -1,0 +1,15 @@
+{
+  "scenario_name": "prefill_seq128",
+  "version": "1.0",
+  "mode": "prefill",
+  "batch": 1,
+  "seq_len": 128,
+  "kv_len": 0,
+  "layer_scope": {
+    "kind": "all"
+  },
+  "reporting": {
+    "include_layer_breakdown": true,
+    "include_bandwidth": true
+  }
+}

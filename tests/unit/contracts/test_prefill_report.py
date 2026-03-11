@@ -1,0 +1,57 @@
+from llm_sched.contracts.prefill_report import PrefillEvaluationReport
+
+
+def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> None:
+    report = PrefillEvaluationReport.model_validate(
+        {
+            "run_id": "run-prefill-001",
+            "graph_id": "gemma3-prefill",
+            "scenario_name": "prefill_seq128",
+            "schedule_kind": "single-core",
+            "batch": 1,
+            "seq_len": 128,
+            "mxu_dominant": True,
+            "throughput": {
+                "total_tokens": 128,
+                "estimated_cycles": 4096.0,
+                "tokens_per_cycle": 0.03125,
+                "cycles_per_token": 32.0,
+                "bytes_per_cycle": 64.0,
+            },
+            "memory_summary": {
+                "max_region_utilization": 0.75,
+                "overflow_region_count": 0,
+                "unresolved_address_count": 0,
+                "kv_formula_count": 26,
+            },
+            "memory_hotspot": {
+                "dominant_address_space": "DDR",
+                "read_bytes_by_address_space": {"DDR": 131072.0, "VMEM": 65536.0},
+                "write_bytes_by_address_space": {"VMEM": 32768.0},
+                "hottest_region": "ping",
+                "hottest_region_peak_bytes": 49152,
+                "hottest_region_capacity_bytes": 65536,
+                "hottest_region_utilization": 0.75,
+            },
+            "isa_summary": {
+                "unmapped_block_count": 2,
+                "gap_counts": {"opcode_not_supported": 2},
+            },
+            "macro_hotspots": [
+                {
+                    "macro_op": "WDQ_GEMM",
+                    "estimated_cycles": 3072.0,
+                    "cycle_share": 0.75,
+                    "total_bytes": 131072.0,
+                }
+            ],
+        }
+    )
+
+    assert report.mxu_dominant is True
+    assert report.throughput.total_tokens == 128
+    assert report.memory_summary.max_region_utilization == 0.75
+    assert report.memory_hotspot.dominant_address_space == "DDR"
+    assert report.memory_hotspot.hottest_region == "ping"
+    assert report.isa_summary.gap_counts["opcode_not_supported"] == 2
+    assert report.macro_hotspots[0].macro_op == "WDQ_GEMM"

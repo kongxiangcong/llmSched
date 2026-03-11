@@ -1,0 +1,223 @@
+from pathlib import Path
+
+
+def test_build_visualization_workbench_generates_static_assets_with_sweep_panel() -> None:
+    from llm_sched.visualization import build_visualization_workbench
+
+    artifact, files = build_visualization_workbench(
+        _bundle(include_sweep=True),
+        bundle_relative_path="../reports/visualization_bundle.json",
+        workbench_root=Path("workbench"),
+    )
+
+    assert artifact.entry_html_path == "workbench/index.html"
+    assert artifact.bundle_path == "../reports/visualization_bundle.json"
+    assert artifact.default_panel == "summary"
+    assert "sweep" in artifact.available_panels
+    assert set(files) == {
+        "workbench/index.html",
+        "workbench/assets/app.js",
+        "workbench/assets/styles.css",
+        "workbench/workbench_manifest.json",
+    }
+    assert "Gemma3 Prefill / Single Core" in files["workbench/index.html"]
+    assert "data-panel=\"graph\"" in files["workbench/index.html"]
+    assert "data-panel=\"sweep\"" in files["workbench/index.html"]
+    assert "graph-search-input" in files["workbench/index.html"]
+    assert "timeline-stage-filter" in files["workbench/index.html"]
+    assert "timeline-core-filter" in files["workbench/index.html"]
+    assert "timeline-detail-panel" in files["workbench/index.html"]
+    assert "coverage-search-input" in files["workbench/index.html"]
+    assert "copy-view-link-button" in files["workbench/index.html"]
+    assert "download-view-json-button" in files["workbench/index.html"]
+    assert "download-panel-svg-button" in files["workbench/index.html"]
+    assert "workbench-action-status" in files["workbench/index.html"]
+    assert "../reports/visualization_bundle.json" in files["workbench/assets/app.js"]
+    assert "function serializeUiState" in files["workbench/assets/app.js"]
+    assert "function buildCurrentViewUrl" in files["workbench/assets/app.js"]
+    assert "function copyCurrentViewLink" in files["workbench/assets/app.js"]
+    assert "function downloadCurrentViewJson" in files["workbench/assets/app.js"]
+    assert "function buildPanelExportData" in files["workbench/assets/app.js"]
+    assert "function buildPanelSnapshotLines" in files["workbench/assets/app.js"]
+    assert "function escapeSvgText" in files["workbench/assets/app.js"]
+    assert "function buildPanelSnapshotSvg" in files["workbench/assets/app.js"]
+    assert "function downloadCurrentPanelSvg" in files["workbench/assets/app.js"]
+    assert "function buildPanelLink" in files["workbench/assets/app.js"]
+    assert "function filterCoverageIssues" in files["workbench/assets/app.js"]
+    assert "function filterGraphNodes" in files["workbench/assets/app.js"]
+    assert "function filterTimelineBlocks" in files["workbench/assets/app.js"]
+    assert "function renderTimelineDetail" in files["workbench/assets/app.js"]
+    assert "URLSearchParams(window.location.search)" in files["workbench/assets/app.js"]
+    assert "function hydrateStateFromUrl" in files["workbench/assets/app.js"]
+    assert "coverage_query" in files["workbench/assets/app.js"]
+    assert "detail_block" in files["workbench/assets/app.js"]
+    assert "timeline_stage" in files["workbench/assets/app.js"]
+    assert "timeline_core" in files["workbench/assets/app.js"]
+    assert "Open Coverage" in files["workbench/assets/app.js"]
+    assert "Open Timeline" in files["workbench/assets/app.js"]
+    assert "Saved view link copied." in files["workbench/assets/app.js"]
+    assert "Export current panel JSON" in files["workbench/index.html"]
+    assert "Export current panel SVG" in files["workbench/index.html"]
+    assert "const initialPanel = resolveInitialPanel" in files["workbench/assets/app.js"]
+    assert "graph-search-input" in files["workbench/assets/app.js"]
+    assert "timeline-detail-panel" in files["workbench/assets/app.js"]
+    assert "Packed Descriptor Summary" in files["workbench/assets/app.js"]
+    assert "Packed Layout Templates" in files["workbench/assets/app.js"]
+    assert "Packed Field Placements" in files["workbench/assets/app.js"]
+    assert "packed_record_count" in files["workbench/assets/app.js"]
+    assert "packed_stream_total_bytes" in files["workbench/assets/app.js"]
+    assert "packed_layout_template_counts" in files["workbench/assets/app.js"]
+    assert "packed_field_name_counts" in files["workbench/assets/app.js"]
+
+
+def test_build_visualization_workbench_omits_sweep_panel_when_bundle_has_no_sweep() -> None:
+    from llm_sched.visualization import build_visualization_workbench
+
+    artifact, files = build_visualization_workbench(
+        _bundle(include_sweep=False),
+        bundle_relative_path="../reports/visualization_bundle.json",
+        workbench_root=Path("workbench"),
+    )
+
+    assert "sweep" not in artifact.available_panels
+    assert "data-panel=\"sweep\"" not in files["workbench/index.html"]
+
+
+def _bundle(*, include_sweep: bool) -> object:
+    from llm_sched.contracts.visualization_bundle import VisualizationBundle
+
+    return VisualizationBundle.model_validate(
+        {
+            "bundle_id": "viz.run-prefill-001",
+            "metadata": {
+                "run_id": "run-prefill-001",
+                "graph_id": "gemma3-prefill",
+                "scenario_name": "prefill_seq128",
+                "mode": "prefill",
+                "schedule_kind": "single-core",
+                "target_profile_name": "riscv_npu_single_core_v1",
+                "target_profile_path": "profiles/targets/riscv_npu_single_core_v1.json",
+                "scenario_profile_path": "profiles/scenarios/prefill_seq128.json",
+                "run_root": "tmp/run-prefill-001",
+                "sweep_root": "tmp/sweep-phase-d" if include_sweep else None,
+            },
+            "view_index": {
+                "available_views": ["graph", "timeline", "kv", "vmem", "coverage"] + (["sweep"] if include_sweep else []),
+                "section_ids": {
+                    "graph": "graph_view",
+                    "timeline": "timeline_view",
+                    "kv": "kv_view",
+                    "vmem": "vmem_view",
+                    "coverage": "coverage_view",
+                    **({"sweep": "sweep_view"} if include_sweep else {}),
+                },
+            },
+            "report_summary": {
+                "report_kind": "prefill",
+                "primary_metrics": {"estimated_cycles": 4096.0, "tokens_per_cycle": 0.03125},
+                "hotspot_macro_ops": ["WDQ_GEMM", "SDPA"],
+            },
+            "graph_view": {
+                "graph_id": "gemma3-prefill",
+                "node_count": 1,
+                "edge_count": 0,
+                "op_counts": {"Linear": 1},
+                "nodes": [
+                    {
+                        "node_id": "nig.linear.0",
+                        "label": "Linear",
+                        "op_kind": "Linear",
+                        "dtype": "float16",
+                        "shape": [1, 128, 2048],
+                    }
+                ],
+                "edges": [],
+            },
+            "timeline_view": {
+                "core_mode": "single-core",
+                "total_block_count": 1,
+                "core_block_counts": {"0": 1},
+                "blocks": [
+                    {
+                        "block_id": "sched.0",
+                        "core_id": 0,
+                        "node_id": "nig.linear.0",
+                        "macro_op": "WDQ_GEMM",
+                        "stage": "compute",
+                        "order_key": 0,
+                        "transfer_bytes": 0,
+                        "sync_cost_cycles": 0,
+                    }
+                ],
+            },
+            "kv_view": {
+                "kv_len": 0,
+                "kv_formula_count": 1,
+                "unresolved_address_count": 0,
+                "formulas": [
+                    {
+                        "node_id": "nig.kv.0",
+                        "tensor_kind": "key",
+                        "layout": "LBHSD",
+                        "formula": "KV_BASE + layer * 1024",
+                    }
+                ],
+            },
+            "vmem_view": {
+                "max_region_utilization": 0.75,
+                "overflow_region_count": 0,
+                "regions": [
+                    {
+                        "region_name": "ping",
+                        "capacity_bytes": 65536,
+                        "peak_bytes": 49152,
+                        "utilization_ratio": 0.75,
+                        "fits": True,
+                    }
+                ],
+                "diagnostics": [],
+            },
+            "coverage_view": {
+                "mapped_descriptor_count": 32,
+                "unmapped_block_count": 1,
+                "opcode_counts": {"WDQ_GEMM": 16},
+                "gap_counts": {"opcode_not_supported": 1},
+                "packed_record_count": 2,
+                "packed_stream_total_bytes": 192,
+                "packed_layout_template_counts": {
+                    "dma_load_v1": 1,
+                    "core_link_transfer_v1": 1,
+                },
+                "packed_field_name_counts": {
+                    "base_addr": 2,
+                    "transfer_kind": 1,
+                },
+                "issues": [
+                    {
+                        "schedule_block_id": "sched.0",
+                        "requested_opcode": "WDQ_GEMM",
+                        "code": "opcode_not_supported",
+                        "message": "Descriptor opcode is not available on the current ISA profile.",
+                    }
+                ],
+            },
+            "sweep_view": (
+                {
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "comparison_count": 1,
+                    "issue_count": 0,
+                    "comparisons": [
+                        {
+                            "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                            "scenario_name": "prefill_seq128",
+                            "mode": "prefill",
+                            "metric_deltas": {"estimated_cycles": -1024.0},
+                        }
+                    ],
+                }
+                if include_sweep
+                else None
+            ),
+            "issues": [],
+        }
+    )

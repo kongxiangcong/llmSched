@@ -1,0 +1,71 @@
+{
+  "profile_name": "riscv_npu_single_core_v1",
+  "version": "1.0",
+  "core_mode": "single-core",
+  "num_cores": 1,
+  "shared_dma": {
+    "channels": 8,
+    "effective_bandwidth_gbps": 20.0
+  },
+  "vmem": {
+    "per_core_kb": 128,
+    "regions": {
+      "ping": 30,
+      "pong": 30,
+      "weight": 32,
+      "accum": 24,
+      "misc": 4,
+      "wdq_reserved": 4,
+      "quant": 4
+    }
+  },
+  "quantization": {
+    "weight_dtype": "int4",
+    "activation_dtype": "bf16",
+    "group_sizes": [
+      128
+    ]
+  },
+  "opcodes": [
+    "GEMM",
+    "WDQ_GEMM",
+    "RMSNORM",
+    "RMSNORM_GEMM",
+    "ROPE",
+    "SDPA",
+    "GEGLU",
+    "ELEM_ADD",
+    "KVSTORE",
+    "KVLOAD",
+    "SDPA_DECODE"
+  ],
+  "vpu": {
+    "lanes": 128,
+    "sublanes": 8,
+    "controls_mxu": true
+  },
+  "mxu": {
+    "rows": 128,
+    "cols": 128,
+    "dataflow": "weight_stationary"
+  },
+  "wdq": {
+    "enabled": true,
+    "supported_group_sizes": [
+      128
+    ]
+  },
+  "kv_cache": {
+    "layout": "LBHSD",
+    "storage": "ddr",
+    "dtype": "bf16"
+  },
+  "sync": {
+    "barrier_cost_cycles": 12,
+    "cross_core_transfer_cost_cycles": 0
+  },
+  "core_link": {
+    "enabled": false,
+    "bandwidth_gbps": 0
+  }
+}

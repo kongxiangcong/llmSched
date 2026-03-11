@@ -1,0 +1,15 @@
+{
+  "scenario_name": "decode_token1_kv2048",
+  "version": "1.0",
+  "mode": "decode",
+  "batch": 1,
+  "seq_len": 1,
+  "kv_len": 2048,
+  "layer_scope": {
+    "kind": "all"
+  },
+  "reporting": {
+    "include_layer_breakdown": true,
+    "include_bandwidth": true
+  }
+}

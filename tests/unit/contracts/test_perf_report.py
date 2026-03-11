@@ -1,0 +1,51 @@
+from llm_sched.contracts.perf_report import PerfSummaryReport
+
+
+def test_perf_summary_report_tracks_totals_and_gaps() -> None:
+    report = PerfSummaryReport.model_validate(
+        {
+            "run_id": "run-spec13-001",
+            "graph_id": "spec13-graph",
+            "schedule_kind": "dual-core",
+            "schedule_makespan_slots": 128,
+            "per_core_makespan_slots": {"0": 96, "1": 128},
+            "per_core_busy_slots": {"0": 88, "1": 120},
+            "per_core_idle_slots": {"0": 40, "1": 8},
+            "schedule_transfer_slots": 24,
+            "schedule_stage_slot_totals": {"compute": 96, "transfer": 24, "dma_in": 16},
+            "data_movement_read_bytes_by_address_space": {"DDR": 32768.0, "VMEM": 16384.0},
+            "data_movement_write_bytes_by_address_space": {"DDR": 8192.0, "VMEM": 24576.0},
+            "vmem_region_peak_bytes": {"ping": 24576, "pong": 12288},
+            "vmem_region_capacity_bytes": {"ping": 30720, "pong": 30720},
+            "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
+            "totals": {"estimated_cycles": 1024.0, "total_bytes": 65536.0},
+            "per_macro_cycles": {"WDQ_GEMM": 768.0, "DMA_TRANSFER": 256.0},
+            "per_macro_bytes": {"WDQ_GEMM": 32768.0, "DMA_TRANSFER": 32768.0},
+            "bottleneck_counts": {"compute-bound": 3, "sync-bound": 1},
+            "isa_gap_counts": {"opcode_not_supported": 2},
+            "issues": [
+                {
+                    "subject_id": "sched.block.unmapped",
+                    "bottleneck": "isa-gap-bound",
+                    "message": "ATTENTION_MASK_PREP did not map to a supported opcode",
+                }
+            ],
+        }
+    )
+
+    assert report.schedule_kind == "dual-core"
+    assert report.schedule_makespan_slots == 128
+    assert report.per_core_makespan_slots["1"] == 128
+    assert report.per_core_busy_slots["0"] == 88
+    assert report.per_core_idle_slots["1"] == 8
+    assert report.schedule_transfer_slots == 24
+    assert report.schedule_stage_slot_totals["compute"] == 96
+    assert report.data_movement_read_bytes_by_address_space["DDR"] == 32768.0
+    assert report.data_movement_write_bytes_by_address_space["VMEM"] == 24576.0
+    assert report.vmem_region_peak_bytes["ping"] == 24576
+    assert report.vmem_region_capacity_bytes["pong"] == 30720
+    assert report.vmem_region_peak_utilization["ping"] == 0.8
+    assert report.totals["estimated_cycles"] == 1024.0
+    assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
+    assert report.isa_gap_counts["opcode_not_supported"] == 2
+    assert report.issues[0].bottleneck == "isa-gap-bound"
