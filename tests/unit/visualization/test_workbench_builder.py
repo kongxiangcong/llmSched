@@ -101,6 +101,20 @@ def test_build_visualization_workbench_renders_vmem_backing_store_mix_in_memory_
     assert "Top Region Backing Stores" in files["workbench/assets/app.js"]
 
 
+def test_build_visualization_workbench_renders_vmem_memory_class_mix_in_memory_panel() -> None:
+    from llm_sched.visualization import build_visualization_workbench
+
+    _artifact, files = build_visualization_workbench(
+        _bundle(include_sweep=False),
+        bundle_relative_path="../reports/visualization_bundle.json",
+        workbench_root=Path("workbench"),
+    )
+
+    assert "Region Memory Class Mix" in files["workbench/assets/app.js"]
+    assert "peak_bytes_by_memory_class" in files["workbench/assets/app.js"]
+    assert "Top Region Memory Classes" in files["workbench/assets/app.js"]
+
+
 def _bundle(*, include_sweep: bool) -> object:
     from llm_sched.contracts.visualization_bundle import VisualizationBundle
 
@@ -191,6 +205,10 @@ def _bundle(*, include_sweep: bool) -> object:
                         "peak_bytes": 49152,
                         "utilization_ratio": 0.75,
                         "fits": True,
+                        "peak_bytes_by_memory_class": {
+                            "ACTIVATION": 40960,
+                            "QUANT_PARAM": 8192,
+                        },
                         "peak_bytes_by_backing_store": {
                             "vmem-local": 40960,
                             "ddr-backed-staged": 8192,

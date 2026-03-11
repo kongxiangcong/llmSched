@@ -16,6 +16,10 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             "data_movement_read_bytes_by_address_space": {"DDR": 32768.0, "VMEM": 16384.0},
             "data_movement_write_bytes_by_address_space": {"DDR": 8192.0, "VMEM": 24576.0},
             "vmem_region_peak_bytes": {"ping": 24576, "pong": 12288},
+            "vmem_region_peak_bytes_by_memory_class": {
+                "ping": {"ACTIVATION": 24576},
+                "pong": {"ACTIVATION": 8192, "METADATA": 4096},
+            },
             "vmem_region_capacity_bytes": {"ping": 30720, "pong": 30720},
             "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
             "totals": {"estimated_cycles": 1024.0, "total_bytes": 65536.0},
@@ -43,6 +47,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.data_movement_read_bytes_by_address_space["DDR"] == 32768.0
     assert report.data_movement_write_bytes_by_address_space["VMEM"] == 24576.0
     assert report.vmem_region_peak_bytes["ping"] == 24576
+    assert report.vmem_region_peak_bytes_by_memory_class["pong"]["METADATA"] == 4096
     assert report.vmem_region_capacity_bytes["pong"] == 30720
     assert report.vmem_region_peak_utilization["ping"] == 0.8
     assert report.totals["estimated_cycles"] == 1024.0

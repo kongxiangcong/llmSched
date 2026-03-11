@@ -1,5 +1,12 @@
 # Phase E Visualization Foundation Handoff
 
+## 2026-03-12 VMEM Memory-Class Reuse Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`
+- `VisualizationBundle.vmem_view.regions[*]` now carry `peak_bytes_by_memory_class`.
+- `SPEC-18` now reuses `memory_plan.region_summaries[*].peak_bytes_by_memory_class` directly instead of collapsing VMEM regions to `peak_bytes`, utilization, and backing-store mix only.
+- focused visualization contract, builder, and packaging-workflow regressions remain green with the stronger bundle contract.
+
 ## 2026-03-11 VMEM Backing-Store Reuse Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-08-visualization-vmem-backing-store-reuse.md`
@@ -45,6 +52,8 @@ The current `VisualizationBundle` now carries:
 - `timeline_view`
 - `kv_view`
 - `vmem_view`
+- `vmem_view.regions[*].peak_bytes_by_memory_class`
+- `vmem_view.regions[*].peak_bytes_by_backing_store`
 - `coverage_view`
 - optional `sweep_view`
 - `issues`

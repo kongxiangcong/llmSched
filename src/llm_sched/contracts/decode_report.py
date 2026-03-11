@@ -37,6 +37,7 @@ class DecodeMemoryHotspotSummary(BaseModel):
     hottest_region_capacity_bytes: int = Field(ge=0, default=0)
     hottest_region_utilization: float = Field(ge=0.0, default=0.0)
     hottest_region_peak_bytes_by_backing_store: dict[str, int] = Field(default_factory=dict)
+    hottest_region_peak_bytes_by_memory_class: dict[str, int] = Field(default_factory=dict)
 
 
 class DecodeISASummary(BaseModel):

@@ -36,6 +36,10 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.memory_hotspot.hottest_region_peak_bytes == 49152
     assert report.memory_hotspot.hottest_region_capacity_bytes == 65536
     assert report.memory_hotspot.hottest_region_utilization == pytest.approx(0.75)
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {
+        "ACTIVATION": 40960,
+        "QUANT_PARAM": 8192,
+    }
     assert report.isa_summary.unmapped_block_count == 1
     assert [hotspot.macro_op for hotspot in report.macro_hotspots] == ["WDQ_GEMM", "SDPA", "DMA_LOAD"]
 
@@ -68,6 +72,23 @@ def test_build_prefill_evaluation_report_propagates_hottest_region_backing_store
         "ddr-backed-staged": 8192,
         "ddr-persistent": 0,
         "vmem-local": 40960,
+    }
+
+
+def test_build_prefill_evaluation_report_propagates_hottest_region_memory_class_breakdown() -> None:
+    from llm_sched.analysis import build_prefill_evaluation_report
+
+    report = build_prefill_evaluation_report(
+        "run-prefill-001",
+        _prefill_scenario(),
+        _perf_summary_report(),
+        _coverage_report(),
+        _memory_plan(),
+    )
+
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {
+        "ACTIVATION": 40960,
+        "QUANT_PARAM": 8192,
     }
 
 
@@ -163,6 +184,10 @@ def _memory_plan() -> MemoryPlanArtifact:
                         "ddr-backed-staged": 8192,
                         "ddr-persistent": 0,
                     },
+                    "peak_bytes_by_memory_class": {
+                        "ACTIVATION": 40960,
+                        "QUANT_PARAM": 8192,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },
@@ -174,6 +199,9 @@ def _memory_plan() -> MemoryPlanArtifact:
                         "vmem-local": 0,
                         "ddr-backed-staged": 32768,
                         "ddr-persistent": 0,
+                    },
+                    "peak_bytes_by_memory_class": {
+                        "WEIGHT": 32768,
                     },
                     "fits": True,
                     "allocation_ids": [],

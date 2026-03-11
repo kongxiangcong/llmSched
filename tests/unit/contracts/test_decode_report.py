@@ -41,6 +41,10 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     "ddr-backed-staged": 0,
                     "ddr-persistent": 12288,
                 },
+                "hottest_region_peak_bytes_by_memory_class": {
+                    "ACTIVATION": 28672,
+                    "KV_CACHE": 12288,
+                },
             },
             "isa_summary": {
                 "unmapped_block_count": 1,
@@ -63,5 +67,6 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store["ddr-persistent"] == 12288
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class["KV_CACHE"] == 12288
     assert report.isa_summary.gap_counts["opcode_not_supported"] == 1
     assert report.macro_hotspots[0].macro_op == "KVLOAD"

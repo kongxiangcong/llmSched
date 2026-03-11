@@ -19,7 +19,7 @@
 | Phase B | SPEC-03, SPEC-04, SPEC-07 | `done` | import/decomposition/bound-NIG/report/smoke gate 已收口。 |
 | Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `in_progress` | `SPEC-08` 已进入 planner-closure 阶段，`SPEC-09` 当前 scope 已接受，`SPEC-10/11` helper-store 审计已收敛到 acceptance list，`SPEC-12` 的 `M2` stop-line 已冻结。 |
 | Phase D | SPEC-13, SPEC-14, SPEC-15, SPEC-16 | `in_progress` | `SPEC-13` 已有 descriptor-driven estimator/workflow/CLI/smoke foundation，`SPEC-14` 已有 prefill top-level foundation，`SPEC-15` 已有 decode top-level foundation，`SPEC-16` 已有 sweep/delta workflow、CLI 和 smoke foundation。 |
-| Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation。 |
+| Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，且 `vmem_view.regions` 已带 per-region backing-store/memory-class attribution；`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation、catalog/workbench round-trip return navigation，以及 memory panel 的 per-region backing-store/memory-class visibility。 |
 
 结论：
 
@@ -38,18 +38,18 @@
 | SPEC-05 | 架构语义模型 | A | `done` | 已有 capability model、constraint checker、query API、单核/双核 baseline target。 | 保持 target contract 稳定。 |
 | SPEC-06 | IR 栈与 Lowering 契约 | A | `done` | 五层 IR schema、validator、traceability、JSON roundtrip 已完成。 | 保持 version/invariant 稳定。 |
 | SPEC-07 | 量化/形状/布局绑定 | B | `done` | 已有 bound-NIG contract、quant/layout/memory-class/attention binding、binding report、四象限 smoke matrix。 | 保持 contract 稳定；后续只允许增量扩展。 |
-| SPEC-08 | VMEM/KV/地址规划器 | C | `in_progress` | 已有 `MemoryPlanArtifact`、lifetime reuse、DDR/storage binding surface、fit-aware diagnostics、`SPEC-09` tile-planner 消费，以及 `SPEC-12` 对 `storage_binding_id/backing_store`、`SPEC-13` 对 `peak_bytes_by_backing_store`、`SPEC-14/15` 对 hottest-region `peak_bytes_by_backing_store`、`SPEC-18` 对 per-region `peak_bytes_by_backing_store` 的直接消费。 | 剩余是 planner closure、必要的剩余 capacity reasoning，以及只在有具体 consumer 证据时继续扩大 downstream reuse；不再缺 foundation。 |
+| SPEC-08 | VMEM/KV/地址规划器 | C | `in_progress` | 已有 `MemoryPlanArtifact`、lifetime reuse、DDR/storage binding surface、fit-aware diagnostics、`SPEC-09` tile-planner 消费，以及 `SPEC-12` 对 `storage_binding_id/backing_store`、`SPEC-13` 对 `peak_bytes_by_backing_store/peak_bytes_by_memory_class`、`SPEC-14/15` 对 hottest-region backing-store/memory-class attribution、`SPEC-18` 对 per-region backing-store/memory-class attribution 的直接消费；现在也已有 `memory_planner_closure_report.json` 统一枚举这些 downstream consumers，且 `phase_c_acceptance_report.json` 已能汇总 canonical `single-core/dual-core x prefill/decode` matrix。 | 剩余是 planner closure、必要的剩余 capacity reasoning，以及只在有具体 consumer 证据时继续扩大 downstream reuse；不再缺 foundation。 |
 | SPEC-09 | Tile 候选规划器 | C | `in_progress` | 已有 `TilingPlanArtifact`、storage-aware ranking、`run-tile-planning` workflow/CLI，以及被 `SPEC-10/11` 直接消费的稳定候选面。 | `M2` 现接受当前 GEMM-like / attention candidate surface + untiled-helper scheduling；只有出现具体 downstream failure 时才重新打开更广 coverage。 |
 | SPEC-10 | 单核映射与调度器 | C | `in_progress` | 已有扩展后的 `ScheduleIR`、interval reservations、duration policy、phased reservations，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | 剩余是冻结 acceptance list 并持续供 `SPEC-12/13` 消费；不再默认继续扩宽搜索或无证据 specialization。 |
 | SPEC-11 | 双核映射与调度器 | C | `in_progress` | 已有 dual-core `ScheduleIR` foundation、transfer/sync overlap、shared-resource contention，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | 剩余是冻结 acceptance list 并持续供 `SPEC-12/13` 消费；不再默认继续扩宽 repartition/search。 |
 | SPEC-12 | 描述符生成与 ISA 覆盖映射 | C | `in_progress` | 已有稳定 `DescriptorIR` / packed stream artifact、summary-grade packed consumer proof、workbench packed-summary visibility，以及 structured `address_fields` 对 `storage_binding_id/backing_store` 的直接复用。 | `M2` stop-line 已冻结为 packed summary consumer proof + workbench summary visibility；per-record drilldown 和更重 ABI hardening 只在具体 consumer 出现时再开。 |
-| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation。 | 仍缺更深 cycle model、bandwidth/VMEM breakdown，以及进入 `SPEC-14/15` 的 top-level eval report 收口。 |
-| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution。 | 仍缺 layer-level prefill 视图、单/双核对比输出和与 `SPEC-15/16` 的统一 top-level eval 收口。 |
-| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation 和与 `SPEC-16/18` 的统一 top-level eval 收口。 |
+| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺更深 cycle model、layer-level or token-phase attribution，以及进入 `SPEC-14/15` 的 top-level eval report 收口。 |
+| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution。 | 仍缺 layer-level prefill 视图、单/双核对比输出和与 `SPEC-15/16` 的统一 top-level eval 收口。 |
+| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation 和与 `SPEC-16/18` 的统一 top-level eval 收口。 |
 | SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation。 | 仍缺 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
-| SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
+| SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
 
 ## 4. 当前主路径
 
@@ -1230,6 +1230,59 @@ graph TD
   - `SPEC-08` planner closure and stronger downstream reuse
   - eventual status promotion from `in_progress` to `done` only after that remaining closure evidence exists
 
+## 2026-03-12 SPEC-08 Memory-Planner Closure Report Checkpoint
+
+- plan doc: `../plans/2026-03-12-memory-planner-closure-report.md`
+- `SPEC-08` now has a machine-readable `memory_planner_closure_report.json` artifact instead of relying only on prose checkpoint notes to describe downstream reuse.
+- new closure evidence:
+  - `run-memory-planner-closure` emits `reports/memory_planner_closure_report.json`
+  - the closure report now enumerates required consumers across tile / descriptor / perf / mode-specific top-level eval / visualization bundle
+  - the closure report also tracks optional visible evidence from the static workbench memory panel
+  - focused contract, builder, and workflow regressions now prove the acceptance surface can be regenerated from one prepared run root
+- what this closes:
+  - one gap where `SPEC-08` acceptance evidence existed only as scattered roadmap checkpoints
+  - one place where downstream consumer coverage had to be re-audited manually instead of read from a stable artifact
+- what still remains for `M2`:
+  - planner-side closure itself
+  - only additional downstream reuse that is backed by a concrete consumer gap
+
+## 2026-03-12 SPEC-08 Planner Closure Gate Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-08-planner-closure-gate.md`
+- `memory_planner_closure_report.json` now distinguishes planner-side closure from downstream-consumer closure instead of collapsing both into one generic acceptance bit.
+- new closure evidence:
+  - the report now carries `planner_closure`
+  - planner closure is `ready_for_acceptance` only when overflow regions are `0`, unresolved address diagnostics are `0`, and every active region preserves memory-class plus backing-store attribution
+  - top-level closure status now depends on both `planner_closure` and required downstream consumers
+  - focused contract, builder, and workflow regressions now prove planner-side gaps block `ready_for_acceptance`
+- what this closes:
+  - one gap where `SPEC-08` planner closure still existed only as prose and smoke conventions
+  - one gap where downstream reuse could appear green even when the planner artifact itself still carried unresolved closure issues
+- what still remains for `M2`:
+  - keep the canonical Phase C matrix green under the new planner gate
+  - only reopen planner hardening when this gate exposes a concrete failing case
+
+## 2026-03-12 Phase C Acceptance Matrix Report Checkpoint
+
+- plan doc: `../plans/2026-03-12-phase-c-acceptance-matrix-report.md`
+- plan doc: `../plans/2026-03-12-phase-c-gate-command.md`
+- `SPEC-08` now has a workspace-level `phase_c_acceptance_report.json` artifact above per-run closure reports.
+- new closure evidence:
+  - `run-phase-c-acceptance` emits `reports/phase_c_acceptance_report.json`
+  - the new report refreshes `memory_planner_closure_report.json` across the canonical `single-core/dual-core x prefill/decode` matrix
+  - each case record now exposes planner-side closure versus downstream-consumer closure separately
+  - matrix coverage now also reports planner-blocked versus downstream-blocked case counts as a top-level summary
+  - `run-phase-c-gate` now reuses the same report path as the formal `M2 / SPEC-08` gate and exits nonzero unless the matrix is `ready_for_acceptance`
+  - the report makes missing cases, duplicate cases, and per-case closure gaps machine-readable instead of leaving the final acceptance pass as prose bookkeeping
+  - focused contract, builder, and workflow regressions now prove the acceptance matrix can be regenerated from one workspace root
+- what this closes:
+  - one gap where `SPEC-08` acceptance evidence still had to be reassembled manually across multiple run roots
+  - one gap where Phase C matrix coverage existed in smoke naming but not in a stable JSON artifact
+  - one gap where teams could regenerate the matrix report but still had to inspect its status manually instead of depending on a real exit-code gate
+- what still remains for `M2`:
+  - keep `run-phase-c-gate` green as scheduler/descriptor/perf work continues to change downstream consumers
+  - only additional downstream reuse that is backed by a concrete consumer gap
+
 ## 2026-03-11 SPEC-08 -> SPEC-13 Backing-Store Summary Reuse Checkpoint
 
 - plan doc: `../plans/2026-03-11-spec-08-perf-backing-store-reuse.md`
@@ -1244,6 +1297,21 @@ graph TD
 - what still remains for `M2`:
   - more `SPEC-08` downstream reuse beyond the current tile-planner and perf-summary consumers
   - planner-side closure and final acceptance evidence
+
+## 2026-03-11 SPEC-08 -> SPEC-13 Memory-Class Summary Reuse Checkpoint
+
+- plan doc: `../plans/2026-03-11-spec-08-perf-memory-class-reuse.md`
+- `SPEC-13` now consumes one more structured `SPEC-08` field directly instead of leaving region pressure by memory class trapped inside planner-only data.
+- new closure evidence:
+  - `PerfSummaryReport` now carries `vmem_region_peak_bytes_by_memory_class`
+  - performance-estimation now reuses `memory_plan.region_summaries[*].peak_bytes_by_memory_class` directly
+  - focused contract, perf-summary, and workflow regressions now prove per-region memory-class attribution survives into serialized summary artifacts
+- what this closes:
+  - one more concrete downstream-reuse gap in the old `SPEC-08` planner-closure backlog
+  - one place where later analysis previously knew a VMEM region was tight but not whether the peak came from activation, weight, kv, quant, or metadata pressure
+- what still remains for `M2`:
+  - planner-side closure and final acceptance evidence on `SPEC-08`
+  - only additional downstream reuse that is backed by a concrete consumer gap
 
 ## 2026-03-11 SPEC-08 -> SPEC-12 Descriptor Address Storage Reuse Checkpoint
 
@@ -1275,6 +1343,21 @@ graph TD
   - planner-side closure and final acceptance evidence on `SPEC-08`
   - only additional downstream reuse that is backed by a concrete consumer gap
 
+## 2026-03-12 SPEC-08 -> SPEC-14/15 Hotspot Memory-Class Reuse Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-08-prefill-decode-memory-class-hotspot-reuse.md`
+- `SPEC-14/15` now consume one more structured `SPEC-08` field directly through top-level `memory_hotspot` summaries instead of leaving the hottest-region source-class mix trapped inside planner-only JSON.
+- new closure evidence:
+  - `PrefillMemoryHotspotSummary` and `DecodeMemoryHotspotSummary` now carry `hottest_region_peak_bytes_by_memory_class`
+  - prefill/decode report builders now reuse `memory_plan.region_summaries[hottest_region].peak_bytes_by_memory_class` directly
+  - focused contract, builder, and workflow regressions now prove hottest-region memory-class attribution survives into serialized top-level reports
+- what this closes:
+  - one more concrete downstream-reuse gap in the old `SPEC-08` planner-closure backlog
+  - one place where top-level evaluation consumers previously knew which region was hottest but not whether the peak came from activation, weight, kv, quant, or metadata pressure
+- what still remains for `M2`:
+  - planner-side closure and final acceptance evidence on `SPEC-08`
+  - only additional downstream reuse that is backed by a concrete consumer gap
+
 ## 2026-03-11 SPEC-08 -> SPEC-18 Visualization VMEM Backing-Store Reuse Checkpoint
 
 - plan doc: `../plans/2026-03-11-spec-08-visualization-vmem-backing-store-reuse.md`
@@ -1290,6 +1373,21 @@ graph TD
   - planner-side closure and final acceptance evidence on `SPEC-08`
   - only additional downstream reuse that is backed by a concrete consumer gap
 
+## 2026-03-12 SPEC-08 -> SPEC-18 Visualization VMEM Memory-Class Reuse Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`
+- `SPEC-18` now consumes one more structured `SPEC-08` field directly through `VisualizationBundle.vmem_view.regions` instead of leaving per-region source-class mix trapped inside planner-only JSON.
+- new closure evidence:
+  - `VisualizationVMEMRegionView` now carries `peak_bytes_by_memory_class`
+  - visualization bundle generation now reuses `memory_plan.region_summaries[*].peak_bytes_by_memory_class` directly
+  - focused visualization contract, builder, and packaging-workflow regressions now prove per-region memory-class attribution survives into serialized bundles
+- what this closes:
+  - one more concrete downstream-reuse gap in the old `SPEC-08` planner-closure backlog
+  - one place where visualization consumers previously knew which VMEM region was tight but not whether the peak came from activation, weight, kv, quant, or metadata pressure
+- what still remains for `M2`:
+  - planner-side closure and final acceptance evidence on `SPEC-08`
+  - only additional downstream reuse that is backed by a concrete consumer gap
+
 ## 2026-03-11 SPEC-19 Workbench VMEM Backing-Store Visibility Checkpoint
 
 - plan doc: `../plans/2026-03-11-spec-19-workbench-vmem-backing-store-visibility.md`
@@ -1301,6 +1399,21 @@ graph TD
 - what this closes:
   - one concrete visibility gap between the landed `SPEC-18` bundle field and human-facing `SPEC-19` inspection
   - one case where workbench users previously needed to reopen raw bundle JSON to inspect VMEM backing-store attribution
+- what still remains:
+  - richer compare and workspace-navigation hardening on `SPEC-19`
+  - no need to reopen `SPEC-18` contract unless a new missing query pattern appears
+
+## 2026-03-12 SPEC-19 Workbench VMEM Memory-Class Visibility Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`
+- `SPEC-19` now makes the already-packaged per-region memory-class attribution visible in the workbench memory panel instead of leaving it latent in `visualization_bundle.json`.
+- new closure evidence:
+  - the workbench memory panel now renders `Region Memory Class Mix`
+  - memory-panel SVG snapshot lines now include top-region memory-class attribution
+  - focused workbench builder and workflow regressions now prove `peak_bytes_by_memory_class` is both consumed and visible in generated assets
+- what this closes:
+  - one concrete visibility gap between the landed `SPEC-18` bundle field and human-facing `SPEC-19` inspection
+  - one case where workbench users previously needed to reopen raw bundle JSON to inspect VMEM memory-class attribution
 - what still remains:
   - richer compare and workspace-navigation hardening on `SPEC-19`
   - no need to reopen `SPEC-18` contract unless a new missing query pattern appears

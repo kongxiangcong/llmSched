@@ -87,6 +87,26 @@ def test_run_visualization_workbench_surfaces_vmem_backing_store_mix_in_assets(t
     assert "Top Region Backing Stores" in app_js
 
 
+def test_run_visualization_workbench_surfaces_vmem_memory_class_mix_in_assets(tmp_path: Path) -> None:
+    from llm_sched.pipeline import run_visualization_workbench
+
+    run_root = tmp_path / "run-workbench-memory-class"
+    _write_initialized_run(run_root)
+    bundle_path = run_root / "reports" / "visualization_bundle.json"
+    bundle_path.write_text(
+        json.dumps(_bundle(include_sweep=False).model_dump(mode="json"), indent=2),
+        encoding="utf-8",
+    )
+
+    result = run_visualization_workbench(run_root)
+
+    assert result.status == "completed"
+    app_js = (run_root / "workbench" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "Region Memory Class Mix" in app_js
+    assert "peak_bytes_by_memory_class" in app_js
+    assert "Top Region Memory Classes" in app_js
+
+
 def _write_initialized_run(run_root: Path) -> None:
     run_root.mkdir(parents=True, exist_ok=True)
     for relative in ("artifacts", "reports", "logs", "dumps"):
@@ -218,6 +238,10 @@ def _bundle(*, include_sweep: bool) -> object:
                         "peak_bytes": 49152,
                         "utilization_ratio": 0.75,
                         "fits": True,
+                        "peak_bytes_by_memory_class": {
+                            "ACTIVATION": 40960,
+                            "QUANT_PARAM": 8192,
+                        },
                         "peak_bytes_by_backing_store": {
                             "vmem-local": 40960,
                             "ddr-backed-staged": 8192,

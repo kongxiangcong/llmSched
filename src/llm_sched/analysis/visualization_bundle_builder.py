@@ -239,6 +239,7 @@ def _build_vmem_view(memory_plan: MemoryPlanArtifact) -> VisualizationVMEMView:
             if region.capacity_bytes > 0
             else 0.0,
             fits=region.fits,
+            peak_bytes_by_memory_class=dict(sorted(region.peak_bytes_by_memory_class.items())),
             peak_bytes_by_backing_store=dict(sorted(region.peak_bytes_by_backing_store.items())),
         )
         for region in sorted(memory_plan.region_summaries.values(), key=lambda item: item.region_name)

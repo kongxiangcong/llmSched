@@ -1,5 +1,12 @@
 # Phase E Visualization Workbench Handoff
 
+## 2026-03-12 VMEM Memory-Class Visibility Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`
+- the memory panel now renders `Region Memory Class Mix` directly from `bundle.vmem_view.regions[*].peak_bytes_by_memory_class`
+- memory-panel SVG snapshot lines now also expose top-region memory-class attribution, so the new visibility is not screen-only
+- focused workbench builder and workflow regressions remain green with the stronger memory-panel contract
+
 ## 2026-03-11 Catalog Workbench Return Navigation Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-19-catalog-workbench-return-navigation.md`
@@ -108,6 +115,7 @@ Current hardening already includes:
 - coverage issue quick links into timeline block detail
 - KV formula quick links into timeline filtering
 - memory-panel visibility for per-region backing-store attribution
+- memory-panel visibility for per-region memory-class attribution
 - a saved-view action that copies the current panel/filter state as a shareable link
 - an export action that downloads the active panel plus current filtered state as JSON
 - an exportable image action that downloads the active panel as an SVG snapshot

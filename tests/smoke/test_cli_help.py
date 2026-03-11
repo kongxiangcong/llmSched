@@ -27,3 +27,4 @@ def test_cli_help_lists_phase_a_commands() -> None:
     assert "validate-profile" in result.stdout
     assert "init-run" in result.stdout
     assert "run-frontend-analysis" in result.stdout
+    assert "run-phase-c-gate" in result.stdout

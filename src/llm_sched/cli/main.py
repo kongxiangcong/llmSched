@@ -13,12 +13,15 @@ from llm_sched.config.loader import (
 )
 from llm_sched.contracts.artifact_layout import build_run_layout
 from llm_sched.contracts.manifest import RunManifest
+from llm_sched.contracts.phase_c_acceptance_report import PhaseCAcceptanceReport
 from llm_sched.contracts.run_summary import RunSummary
 from llm_sched.pipeline import run_descriptor_generation as execute_descriptor_generation
 from llm_sched.pipeline import run_decode_evaluation as execute_decode_evaluation
 from llm_sched.pipeline import run_frontend_analysis as execute_frontend_analysis
 from llm_sched.pipeline import run_dual_core_scheduling as execute_dual_core_scheduling
+from llm_sched.pipeline import run_memory_planner_closure as execute_memory_planner_closure
 from llm_sched.pipeline import run_memory_planning as execute_memory_planning
+from llm_sched.pipeline import run_phase_c_acceptance as execute_phase_c_acceptance
 from llm_sched.pipeline import run_performance_estimation as execute_performance_estimation
 from llm_sched.pipeline import run_prefill_evaluation as execute_prefill_evaluation
 from llm_sched.pipeline import run_single_core_scheduling as execute_single_core_scheduling
@@ -145,6 +148,61 @@ def run_memory_planning(
 
     typer.echo(f"Memory planning completed at {run_root}")
     typer.echo("Artifacts updated under artifacts/, including memory_plan.json.")
+
+
+@app.command("run-memory-planner-closure")
+def run_memory_planner_closure(
+    run_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+) -> None:
+    """Emit SPEC-08 downstream-consumer closure evidence for a prepared run root."""
+    result = execute_memory_planner_closure(run_root)
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "memory planner closure failed"
+        typer.echo(f"Memory planner closure: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"Memory planner closure completed at {run_root}")
+    typer.echo("Artifacts updated under reports/, including memory_planner_closure_report.json.")
+
+
+@app.command("run-phase-c-acceptance")
+def run_phase_c_acceptance(
+    report_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+    run_root: list[Path] = typer.Option([], dir_okay=True, file_okay=False),
+    workspace_root: Path | None = typer.Option(default=None, dir_okay=True, file_okay=False),
+) -> None:
+    """Aggregate canonical Phase C closure evidence across a workspace run matrix."""
+    _run_phase_c_acceptance_workflow(
+        report_root,
+        run_root,
+        workspace_root,
+        error_label="Phase C acceptance",
+        success_label="Phase C acceptance",
+    )
+
+
+@app.command("run-phase-c-gate")
+def run_phase_c_gate(
+    report_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+    run_root: list[Path] = typer.Option([], dir_okay=True, file_okay=False),
+    workspace_root: Path | None = typer.Option(default=None, dir_okay=True, file_okay=False),
+) -> None:
+    """Execute the canonical Phase C matrix gate and fail unless it is ready for acceptance."""
+    report = _run_phase_c_acceptance_workflow(
+        report_root,
+        run_root,
+        workspace_root,
+        error_label="Phase C gate",
+        success_label="Phase C gate",
+    )
+    if report.status != "ready_for_acceptance":
+        typer.echo(
+            "Phase C gate: BLOCKED "
+            f"(status={report.status} remaining_gaps={len(report.remaining_gaps)})"
+        )
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo("Phase C gate: PASS (status=ready_for_acceptance)")
 
 
 @app.command("run-tile-planning")
@@ -329,6 +387,52 @@ def run_visualization_catalog(
 def run() -> None:
     """Run the CLI application."""
     app()
+
+
+def _run_phase_c_acceptance_workflow(
+    report_root: Path,
+    run_roots: list[Path],
+    workspace_root: Path | None,
+    *,
+    error_label: str,
+    success_label: str,
+) -> PhaseCAcceptanceReport:
+    result = execute_phase_c_acceptance(
+        report_root,
+        run_roots,
+        workspace_root=workspace_root,
+    )
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "phase c acceptance failed"
+        typer.echo(f"{error_label}: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"{success_label} completed at {report_root}")
+    typer.echo("Artifacts updated under reports/, including phase_c_acceptance_report.json.")
+    if result.report_path is None or not result.report_path.is_file():
+        typer.echo(f"{error_label}: ERROR (phase_c_acceptance_report.json was not generated)")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    report = PhaseCAcceptanceReport.model_validate_json(
+        result.report_path.read_text(encoding="utf-8")
+    )
+    typer.echo(_format_phase_c_matrix_summary(report))
+    return report
+
+
+def _format_phase_c_matrix_summary(report: PhaseCAcceptanceReport) -> str:
+    coverage = report.matrix_coverage
+    return (
+        "Matrix summary: "
+        f"status={report.status} "
+        f"ready={coverage.ready_case_count} "
+        f"blocked={coverage.blocked_case_count} "
+        f"planner_blocked={coverage.planner_blocked_case_count} "
+        f"downstream_blocked={coverage.downstream_blocked_case_count} "
+        f"missing={len(coverage.missing_case_ids)} "
+        f"duplicate={len(coverage.duplicate_case_ids)}"
+    )
+
 
 def _validate_target_profile(path: Path) -> bool:
     try:

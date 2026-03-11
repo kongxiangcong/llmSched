@@ -1,5 +1,54 @@
 # Phase C Memory Planner Handoff
 
+## 2026-03-12 Planner Closure Gate Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-planner-closure-gate.md`
+- `memory_planner_closure_report.json` now carries a dedicated `planner_closure` section above downstream consumer evidence.
+- planner closure is now machine-readable instead of implicit:
+  - overflow regions must stay at `0`
+  - unresolved address diagnostics must stay at `0`
+  - every active region must preserve both memory-class and backing-store attribution
+- `ready_for_acceptance` now requires both planner-side closure and required downstream consumer verification, so `SPEC-08` no longer reads green only because later layers consume part of the artifact.
+
+## 2026-03-12 Phase C Acceptance Matrix Report Checkpoint
+
+- New plan: `../plans/2026-03-12-phase-c-acceptance-matrix-report.md`
+- `run-phase-c-acceptance` now emits `reports/phase_c_acceptance_report.json`.
+- the new report regenerates `memory_planner_closure_report.json` across the canonical `single-core/dual-core x prefill/decode` matrix and summarizes missing, duplicate, or blocked cases in one machine-readable artifact.
+- each case record now also distinguishes planner-side closure from downstream-consumer closure, so blocked matrix cells no longer require reopening per-run closure JSON just to see which side failed first.
+- the matrix coverage summary now also exposes planner-blocked and downstream-blocked case counts as a top-level scan surface; the two counts may overlap when one case is blocked on both sides.
+- `run-phase-c-acceptance` CLI output now prints the same matrix summary line, so the gate is visible directly from terminal runs instead of only inside `phase_c_acceptance_report.json`.
+- `run-phase-c-gate` now promotes that same summary to the formal `M2 / SPEC-08` terminal gate: it regenerates the matrix report and exits nonzero unless the canonical matrix is `ready_for_acceptance`.
+- `SPEC-08` acceptance evidence now exists at both per-run and cross-run levels, so the remaining `M2` question is planner-side closure rather than downstream evidence bookkeeping.
+
+## 2026-03-12 Memory Planner Closure Report Checkpoint
+
+- New plan: `../plans/2026-03-12-memory-planner-closure-report.md`
+- `run-memory-planner-closure` now emits `reports/memory_planner_closure_report.json`.
+- the closure report now enumerates required downstream consumers across tile planning, descriptor generation, perf estimation, mode-specific top-level eval, and visualization packaging.
+- the closure report also tracks optional visible evidence from the static workbench memory panel, so `SPEC-08` acceptance proof no longer lives only in prose checkpoints.
+
+## 2026-03-12 Visualization Memory-Class Visibility Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`
+- `VisualizationBundle.vmem_view.regions[*]` now carry `peak_bytes_by_memory_class`.
+- the static workbench memory panel now renders per-region `peak_bytes_by_memory_class` and exposes top-region memory-class attribution in SVG snapshot lines.
+- `SPEC-18/19` now make one more `SPEC-08` planner attribution visible to human-facing consumers without reopening planner contracts or visualization service scope.
+
+## 2026-03-12 Prefill/Decode Hotspot Memory-Class Reuse Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-prefill-decode-memory-class-hotspot-reuse.md`
+- `PrefillEvaluationReport.memory_hotspot` and `DecodeEvaluationReport.memory_hotspot` now carry `hottest_region_peak_bytes_by_memory_class`.
+- `SPEC-14/15` now reuse `memory_plan.region_summaries[hottest_region].peak_bytes_by_memory_class` directly instead of leaving the hottest-region source-class mix trapped inside planner-only JSON.
+- This closes one more concrete downstream-reuse gap without reopening planner contracts or introducing layer-level hotspot replay.
+
+## 2026-03-11 Perf Summary Memory-Class Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-perf-memory-class-reuse.md`
+- `PerfSummaryReport` now carries `vmem_region_peak_bytes_by_memory_class`.
+- `SPEC-13` now reuses `memory_plan.region_summaries[*].peak_bytes_by_memory_class` directly instead of leaving region pressure by memory class trapped inside planner-only JSON.
+- This closes one more concrete downstream-reuse gap without reopening planner contracts or introducing block-level lifetime replay.
+
 ## 2026-03-11 Workbench VMEM Backing-Store Visibility Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-19-workbench-vmem-backing-store-visibility.md`
@@ -212,7 +261,7 @@ tile planner 不需要再去处理“KV 地址是否能解析”或“region 名
 
 当前剩余 gap 已经收敛为：
 
-- planner closure 本身的最终 acceptance list
+- planner closure 本身的最终 status promotion
 - stronger downstream consumption beyond tile planner，尤其是 descriptor / perf 层不再重构 memory artifact 已有信息
 - 只在出现具体压力归因盲点时，再补窄范围 activation-heavy capacity reasoning
 
@@ -222,12 +271,12 @@ tile planner 不需要再去处理“KV 地址是否能解析”或“region 名
 - formal DDR / storage binding surface
 - 启动 `SPEC-09` 所需的稳定输入面
 
-这些是 `SPEC-08` 收口项或下游消费项，不应回灌成 frontend 需求，也不要求在 `SPEC-08` 内引入 runtime allocator 或 target-specific packing。当前 `SPEC-12` 已开始直接消费 `storage_binding_id/backing_store`，`SPEC-13` 已开始直接消费 `peak_bytes_by_backing_store`，`SPEC-14/15` 已开始直接消费 hottest-region backing-store attribution，`SPEC-18` 已开始直接消费 per-region backing-store attribution，`SPEC-19` 也已把这张表提升到 memory panel 可见层，所以 downstream reuse 不再只停留在 tile planner。
+这些是 `SPEC-08` 收口项或下游消费项，不应回灌成 frontend 需求，也不要求在 `SPEC-08` 内引入 runtime allocator 或 target-specific packing。当前 `SPEC-12` 已开始直接消费 `storage_binding_id/backing_store`，`SPEC-13` 已开始直接消费 `peak_bytes_by_backing_store` 和 `peak_bytes_by_memory_class`，`SPEC-14/15` 已开始直接消费 hottest-region backing-store attribution 和 hottest-region memory-class attribution，`SPEC-18` 已开始直接消费 per-region backing-store attribution，`SPEC-19` 也已把这张表提升到 memory panel 可见层，所以 downstream reuse 不再只停留在 tile planner。
 
 ## 7. Recommended Next Step
 
 `SPEC-08` 当前下一步不是再开新语义，而是完成 planner closure：
 
 1. 保持 `MemoryPlanArtifact` 稳定，作为 Phase C 后续模块的正式输入面。
-2. 优先强化 descriptor / perf 等后续层对现有 memory artifact 的直接消费。
-3. 只有在出现具体容量归因或消费失败证据时，才补窄范围 planner hardening。
+2. 用 `run-phase-c-gate` 持续验证 canonical `single-core/dual-core x prefill/decode` matrix，而不是继续用口头 acceptance list或手工读取 JSON。
+3. 只有在出现具体容量归因、overflow 或 unresolved-address 失败证据时，才补窄范围 planner hardening 或新增 downstream reuse。

@@ -34,6 +34,10 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.memory_hotspot.hottest_region_peak_bytes == 40960
     assert report.memory_hotspot.hottest_region_capacity_bytes == 65536
     assert report.memory_hotspot.hottest_region_utilization == pytest.approx(0.625)
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {
+        "ACTIVATION": 28672,
+        "KV_CACHE": 12288,
+    }
     assert report.isa_summary.unmapped_block_count == 1
     assert [hotspot.macro_op for hotspot in report.macro_hotspots][:3] == [
         "WDQ_GEMM",
@@ -70,6 +74,23 @@ def test_build_decode_evaluation_report_propagates_hottest_region_backing_store_
         "ddr-backed-staged": 0,
         "ddr-persistent": 12288,
         "vmem-local": 28672,
+    }
+
+
+def test_build_decode_evaluation_report_propagates_hottest_region_memory_class_breakdown() -> None:
+    from llm_sched.analysis import build_decode_evaluation_report
+
+    report = build_decode_evaluation_report(
+        "run-decode-001",
+        _decode_scenario(),
+        _perf_summary_report(),
+        _coverage_report(),
+        _memory_plan(),
+    )
+
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {
+        "ACTIVATION": 28672,
+        "KV_CACHE": 12288,
     }
 
 
@@ -169,6 +190,10 @@ def _memory_plan() -> MemoryPlanArtifact:
                         "ddr-backed-staged": 0,
                         "ddr-persistent": 12288,
                     },
+                    "peak_bytes_by_memory_class": {
+                        "ACTIVATION": 28672,
+                        "KV_CACHE": 12288,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },
@@ -180,6 +205,9 @@ def _memory_plan() -> MemoryPlanArtifact:
                         "vmem-local": 32768,
                         "ddr-backed-staged": 0,
                         "ddr-persistent": 0,
+                    },
+                    "peak_bytes_by_memory_class": {
+                        "ACTIVATION": 32768,
                     },
                     "fits": True,
                     "allocation_ids": [],

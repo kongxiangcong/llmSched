@@ -1,5 +1,12 @@
 # Phase D Decode Foundation Handoff
 
+## 2026-03-12 Hottest-Region Memory-Class Reuse Checkpoint
+
+- New plan: `../plans/2026-03-12-spec-08-prefill-decode-memory-class-hotspot-reuse.md`
+- `DecodeEvaluationReport.memory_hotspot` now carries `hottest_region_peak_bytes_by_memory_class`.
+- `SPEC-15` now reuses `memory_plan.region_summaries[hottest_region].peak_bytes_by_memory_class` directly instead of leaving the hottest-region source-class mix trapped inside planner-only JSON.
+- focused decode contract, builder, and workflow regressions remain green with the stronger report contract.
+
 ## 2026-03-11 Hottest-Region Backing-Store Reuse Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-08-prefill-decode-backing-store-hotspot-reuse.md`
@@ -14,10 +21,11 @@
 - New closure evidence:
   - `DecodeEvaluationReport` now carries `memory_hotspot`
   - `memory_hotspot` now exposes `dominant_address_space`
-  - `memory_hotspot` now exposes copied read/write bytes by address space
-  - `memory_hotspot` now exposes the hottest VMEM region and its peak utilization
-  - `memory_hotspot` now also exposes hottest-region backing-store attribution
-  - decode workflow and Phase D decode smoke remain green with the stronger report contract
+- `memory_hotspot` now exposes copied read/write bytes by address space
+- `memory_hotspot` now exposes the hottest VMEM region and its peak utilization
+- `memory_hotspot` now also exposes hottest-region backing-store attribution
+- `memory_hotspot` now also exposes hottest-region memory-class attribution
+- decode workflow and Phase D decode smoke remain green with the stronger report contract
 - This batch deliberately does not introduce:
   - layer-level hotspot views
   - per-token traffic replay

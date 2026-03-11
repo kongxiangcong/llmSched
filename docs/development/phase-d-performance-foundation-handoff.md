@@ -1,5 +1,17 @@
 # Phase D Performance Foundation Handoff
 
+## 2026-03-11 SPEC-08 Memory-Class Summary Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-perf-memory-class-reuse.md`
+- `SPEC-13` now consumes one more structured `SPEC-08` field directly instead of leaving region pressure by memory class trapped inside planner-only data.
+- New closure evidence:
+  - `PerfSummaryReport` now carries `vmem_region_peak_bytes_by_memory_class`
+  - performance-estimation now reuses `memory_plan.region_summaries[*].peak_bytes_by_memory_class` directly
+- This batch deliberately does not introduce:
+  - a deeper cycle model
+  - layer-level lifetime replay
+  - per-storage-binding traffic accounting
+
 ## 2026-03-11 SPEC-08 Backing-Store Summary Reuse Checkpoint
 
 - New plan: `../plans/2026-03-11-spec-08-perf-backing-store-reuse.md`
@@ -109,6 +121,7 @@ The current `PerfSummaryReport` now carries:
 - `data_movement_read_bytes_by_address_space`
 - `data_movement_write_bytes_by_address_space`
 - `vmem_region_peak_bytes`
+- `vmem_region_peak_bytes_by_memory_class`
 - `vmem_region_peak_bytes_by_backing_store`
 - `vmem_region_capacity_bytes`
 - `vmem_region_peak_utilization`
@@ -147,6 +160,7 @@ Current timing summary is also intentionally conservative:
 Current bandwidth / VMEM summary is also intentionally summary-grade:
 - data movement is grouped by address space (`DDR` / `VMEM`) instead of by exact bus transaction
 - VMEM pressure is grouped by planned region summary instead of replaying block-level lifetime overlap
+- VMEM region pressure can be attributed by memory class (`ACTIVATION` / `WEIGHT` / `KV_CACHE` / `QUANT_PARAM` / `METADATA`) without reopening raw planner artifacts
 - backing-store attribution is grouped by region-level peak summary instead of by exact block or storage-binding replay
 - staged weight-family compute may contribute conservative external read pressure even when descriptor address fields stay abstract
 
@@ -159,6 +173,7 @@ Prefill and decode evaluation flows may now assume:
 - per-macro cycle and byte totals are available for report aggregation
 - first-order bandwidth pressure can be read without reopening descriptor payloads
 - first-order VMEM region pressure can be read without reopening raw memory-plan diagnostics
+- first-order VMEM region pressure mix by memory class can be read without reopening raw memory-plan diagnostics
 
 `SPEC-14/15` should not need to rediscover:
 - which schedule kind produced the run

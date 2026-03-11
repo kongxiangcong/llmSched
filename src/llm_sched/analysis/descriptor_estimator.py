@@ -135,6 +135,7 @@ def build_perf_summary_report(
 
     (
         vmem_region_peak_bytes,
+        vmem_region_peak_bytes_by_memory_class,
         vmem_region_peak_bytes_by_backing_store,
         vmem_region_capacity_bytes,
         vmem_region_peak_utilization,
@@ -155,6 +156,7 @@ def build_perf_summary_report(
             sorted(data_movement_write_bytes_by_address_space.items())
         ),
         vmem_region_peak_bytes=vmem_region_peak_bytes,
+        vmem_region_peak_bytes_by_memory_class=vmem_region_peak_bytes_by_memory_class,
         vmem_region_peak_bytes_by_backing_store=vmem_region_peak_bytes_by_backing_store,
         vmem_region_capacity_bytes=vmem_region_capacity_bytes,
         vmem_region_peak_utilization=vmem_region_peak_utilization,
@@ -190,21 +192,35 @@ def _accumulate_data_movement_breakdown(
 
 def _summarize_vmem_regions(
     memory_plan: MemoryPlanArtifact | None,
-) -> tuple[dict[str, int], dict[str, dict[str, int]], dict[str, int], dict[str, float]]:
+) -> tuple[
+    dict[str, int],
+    dict[str, dict[str, int]],
+    dict[str, dict[str, int]],
+    dict[str, int],
+    dict[str, float],
+]:
     if memory_plan is None:
-        return {}, {}, {}, {}
+        return {}, {}, {}, {}, {}
     peak_bytes: dict[str, int] = {}
+    peak_bytes_by_memory_class: dict[str, dict[str, int]] = {}
     peak_bytes_by_backing_store: dict[str, dict[str, int]] = {}
     capacity_bytes: dict[str, int] = {}
     peak_utilization: dict[str, float] = {}
     for region_name in sorted(memory_plan.region_summaries):
         summary = memory_plan.region_summaries[region_name]
         peak_bytes[region_name] = summary.peak_bytes
+        peak_bytes_by_memory_class[region_name] = dict(sorted(summary.peak_bytes_by_memory_class.items()))
         peak_bytes_by_backing_store[region_name] = dict(sorted(summary.peak_bytes_by_backing_store.items()))
         capacity_bytes[region_name] = summary.capacity_bytes
         utilization = summary.peak_bytes / max(summary.capacity_bytes, 1)
         peak_utilization[region_name] = round(utilization, 4)
-    return peak_bytes, peak_bytes_by_backing_store, capacity_bytes, peak_utilization
+    return (
+        peak_bytes,
+        peak_bytes_by_memory_class,
+        peak_bytes_by_backing_store,
+        capacity_bytes,
+        peak_utilization,
+    )
 
 
 def _address_spaces_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> list[str]:

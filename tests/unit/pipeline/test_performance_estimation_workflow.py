@@ -64,8 +64,13 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert summary_report.data_movement_read_bytes_by_address_space
     assert summary_report.data_movement_write_bytes_by_address_space or schedule_kind == "single-core"
     assert summary_report.vmem_region_peak_bytes
+    assert summary_report.vmem_region_peak_bytes_by_memory_class
     assert summary_report.vmem_region_capacity_bytes
     assert summary_report.vmem_region_peak_utilization
+    if schedule_kind == "dual-core":
+        assert summary_report.vmem_region_peak_bytes_by_memory_class["ping"]["ACTIVATION"] > 0
+    else:
+        assert summary_report.vmem_region_peak_bytes_by_memory_class["weight"]["WEIGHT"] > 0
     assert summary_report.totals["estimated_cycles"] > 0.0
     assert sum(summary_report.per_core_busy_slots.values()) > 0
     if schedule_kind == "dual-core":

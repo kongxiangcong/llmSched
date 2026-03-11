@@ -220,6 +220,11 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.data_movement_read_bytes_by_address_space == {"DDR": 8192.0, "VMEM": 8192.0}
     assert report.data_movement_write_bytes_by_address_space == {"VMEM": 8192.0}
     assert report.vmem_region_peak_bytes == {"ping": 20480, "pong": 12288, "weight": 16384}
+    assert report.vmem_region_peak_bytes_by_memory_class == {
+        "ping": {"ACTIVATION": 20480},
+        "pong": {"ACTIVATION": 12288},
+        "weight": {"WEIGHT": 16384},
+    }
     assert report.vmem_region_capacity_bytes == {"ping": 30720, "pong": 30720, "weight": 32768}
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {
@@ -354,6 +359,11 @@ def test_build_perf_summary_report_propagates_peak_bytes_by_backing_store() -> N
         "pong": {"vmem-local": 12288, "ddr-backed-staged": 0, "ddr-persistent": 0},
         "weight": {"vmem-local": 0, "ddr-backed-staged": 16384, "ddr-persistent": 0},
     }
+    assert report.vmem_region_peak_bytes_by_memory_class == {
+        "ping": {"ACTIVATION": 20480},
+        "pong": {"ACTIVATION": 12288},
+        "weight": {"WEIGHT": 16384},
+    }
 
 
 def _memory_plan_fixture():
@@ -371,6 +381,7 @@ def _memory_plan_fixture():
                 capacity_bytes=30720,
                 peak_bytes=20480,
                 fits=True,
+                peak_bytes_by_memory_class={"ACTIVATION": 20480},
                 peak_bytes_by_backing_store={"vmem-local": 20480, "ddr-backed-staged": 0, "ddr-persistent": 0},
             ),
             "pong": RegionSummary(
@@ -378,6 +389,7 @@ def _memory_plan_fixture():
                 capacity_bytes=30720,
                 peak_bytes=12288,
                 fits=True,
+                peak_bytes_by_memory_class={"ACTIVATION": 12288},
                 peak_bytes_by_backing_store={"vmem-local": 12288, "ddr-backed-staged": 0, "ddr-persistent": 0},
             ),
             "weight": RegionSummary(
@@ -385,6 +397,7 @@ def _memory_plan_fixture():
                 capacity_bytes=32768,
                 peak_bytes=16384,
                 fits=True,
+                peak_bytes_by_memory_class={"WEIGHT": 16384},
                 peak_bytes_by_backing_store={"vmem-local": 0, "ddr-backed-staged": 16384, "ddr-persistent": 0},
             ),
         },

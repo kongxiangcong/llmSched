@@ -13,6 +13,14 @@ from llm_sched.pipeline.dual_core_scheduling import (
     run_dual_core_scheduling,
 )
 from llm_sched.pipeline.frontend_analysis import FrontendAnalysisResult, run_frontend_analysis
+from llm_sched.pipeline.memory_planner_closure import (
+    MemoryPlannerClosureResult,
+    run_memory_planner_closure,
+)
+from llm_sched.pipeline.phase_c_acceptance import (
+    PhaseCAcceptanceResult,
+    run_phase_c_acceptance,
+)
 from llm_sched.pipeline.memory_planning import MemoryPlanningResult, run_memory_planning
 from llm_sched.pipeline.performance_estimation import (
     PerformanceEstimationResult,
@@ -46,6 +54,8 @@ __all__ = [
     "DecodeEvaluationResult",
     "DualCoreSchedulingResult",
     "FrontendAnalysisResult",
+    "MemoryPlannerClosureResult",
+    "PhaseCAcceptanceResult",
     "MemoryPlanningResult",
     "PerformanceEstimationResult",
     "PrefillEvaluationResult",
@@ -59,6 +69,8 @@ __all__ = [
     "run_decode_evaluation",
     "run_dual_core_scheduling",
     "run_frontend_analysis",
+    "run_memory_planner_closure",
+    "run_phase_c_acceptance",
     "run_memory_planning",
     "run_performance_estimation",
     "run_prefill_evaluation",

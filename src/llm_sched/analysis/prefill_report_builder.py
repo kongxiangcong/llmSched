@@ -120,6 +120,7 @@ def _build_memory_hotspot(
         hottest_region_capacity_bytes,
         hottest_region_utilization,
         hottest_region_peak_bytes_by_backing_store,
+        hottest_region_peak_bytes_by_memory_class,
     ) = _hottest_region(memory_plan)
     return PrefillMemoryHotspotSummary(
         dominant_address_space=dominant_address_space,
@@ -130,6 +131,7 @@ def _build_memory_hotspot(
         hottest_region_capacity_bytes=hottest_region_capacity_bytes,
         hottest_region_utilization=hottest_region_utilization,
         hottest_region_peak_bytes_by_backing_store=hottest_region_peak_bytes_by_backing_store,
+        hottest_region_peak_bytes_by_memory_class=hottest_region_peak_bytes_by_memory_class,
     )
 
 
@@ -149,9 +151,9 @@ def _dominant_address_space(
 
 def _hottest_region(
     memory_plan: MemoryPlanArtifact,
-) -> tuple[str | None, int, int, float, dict[str, int]]:
+) -> tuple[str | None, int, int, float, dict[str, int], dict[str, int]]:
     if not memory_plan.region_summaries:
-        return None, 0, 0, 0.0, {}
+        return None, 0, 0, 0.0, {}, {}
     region_name, summary = max(
         memory_plan.region_summaries.items(),
         key=lambda item: (
@@ -167,4 +169,5 @@ def _hottest_region(
         summary.capacity_bytes,
         utilization,
         dict(sorted(summary.peak_bytes_by_backing_store.items())),
+        dict(sorted(summary.peak_bytes_by_memory_class.items())),
     )

@@ -132,6 +132,7 @@ class VisualizationVMEMRegionView(BaseModel):
     peak_bytes: int = Field(ge=0)
     utilization_ratio: float = Field(ge=0.0)
     fits: bool
+    peak_bytes_by_memory_class: dict[str, int] = Field(default_factory=dict)
     peak_bytes_by_backing_store: dict[str, int] = Field(default_factory=dict)
 
 
