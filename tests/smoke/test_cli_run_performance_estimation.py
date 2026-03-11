@@ -23,31 +23,20 @@ def run_cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_run_performance_estimation_writes_artifacts_for_single_core(tmp_path: Path) -> None:
+def test_run_performance_estimation_writes_artifacts_for_single_core(
+    tmp_path: Path,
+    prepared_smoke_run_root_factory,
+) -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    run_root = tmp_path / "run-perf-cli-single"
+    run_root = prepared_smoke_run_root_factory(
+        target_run_root=tmp_path / "run-perf-cli-single",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+        final_stage="descriptor",
+    )
 
-    for args in [
-        (
-            "init-run",
-            "--run-root",
-            str(run_root),
-            "--model-path",
-            "models/gemma3_1b/model_q4f16.onnx",
-            "--target-profile",
-            "profiles/targets/riscv_npu_single_core_v1.json",
-            "--scenario-profile",
-            "profiles/scenarios/prefill_seq128.json",
-        ),
-        ("run-frontend-analysis", "--run-root", str(run_root)),
-        ("run-memory-planning", "--run-root", str(run_root)),
-        ("run-tile-planning", "--run-root", str(run_root)),
-        ("run-single-core-scheduling", "--run-root", str(run_root)),
-        ("run-descriptor-generation", "--run-root", str(run_root)),
-        ("run-performance-estimation", "--run-root", str(run_root)),
-    ]:
-        result = run_cli(*args, cwd=repo_root)
-        assert result.returncode == 0
+    result = run_cli("run-performance-estimation", "--run-root", str(run_root), cwd=repo_root)
+    assert result.returncode == 0
 
     manifest = json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))
     analysis_ir = json.loads((run_root / "artifacts" / "perf_analysis_ir.json").read_text(encoding="utf-8"))
@@ -59,29 +48,17 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(tmp_path: P
     assert perf_report["totals"]["estimated_cycles"] > 0.0
 
 
-def test_run_performance_estimation_rejects_missing_descriptor_without_traceback(tmp_path: Path) -> None:
+def test_run_performance_estimation_rejects_missing_descriptor_without_traceback(
+    tmp_path: Path,
+    prepared_smoke_run_root_factory,
+) -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    run_root = tmp_path / "run-perf-missing-descriptor"
-
-    for args in [
-        (
-            "init-run",
-            "--run-root",
-            str(run_root),
-            "--model-path",
-            "models/gemma3_1b/model_q4f16.onnx",
-            "--target-profile",
-            "profiles/targets/riscv_npu_single_core_v1.json",
-            "--scenario-profile",
-            "profiles/scenarios/prefill_seq128.json",
-        ),
-        ("run-frontend-analysis", "--run-root", str(run_root)),
-        ("run-memory-planning", "--run-root", str(run_root)),
-        ("run-tile-planning", "--run-root", str(run_root)),
-        ("run-single-core-scheduling", "--run-root", str(run_root)),
-    ]:
-        result = run_cli(*args, cwd=repo_root)
-        assert result.returncode == 0
+    run_root = prepared_smoke_run_root_factory(
+        target_run_root=tmp_path / "run-perf-missing-descriptor",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+        final_stage="schedule",
+    )
 
     result = run_cli(
         "run-performance-estimation",

@@ -39,6 +39,7 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
 
     assert bundle.metadata.mode == "decode"
     assert bundle.sweep_view is not None
+    assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
     assert bundle.coverage_view.packed_record_count > 0
     assert bundle.coverage_view.packed_stream_total_bytes >= bundle.coverage_view.packed_record_count * 64
     assert "core_link_transfer_v1" in bundle.coverage_view.packed_layout_template_counts

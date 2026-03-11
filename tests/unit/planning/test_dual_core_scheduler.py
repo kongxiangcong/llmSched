@@ -934,6 +934,45 @@ def test_plan_dual_core_schedule_allows_dma_at_rmsnorm_store_issue_with_vpu_pref
     assert follower_issue == 0
 
 
+def test_plan_dual_core_schedule_allows_dma_at_elem_add_store_issue_with_vpu_prefix() -> None:
+    from llm_sched.arch.capabilities import ArchitectureCapabilities
+    from llm_sched.config.loader import load_target_profile
+    from llm_sched.planning.schedule_duration import estimate_stage_resource_reservations
+    from llm_sched.planning.schedule_reservations import (
+        build_reservation_timeline,
+        find_earliest_issue_slot,
+        reserve_resource_windows,
+    )
+
+    repo_root = Path(__file__).resolve().parents[3]
+    target = load_target_profile(repo_root / "profiles" / "targets" / "riscv_npu_dual_core_v1.json")
+    capabilities = ArchitectureCapabilities.from_target_profile(target)
+    elem_add_node = _make_passthrough_node("nig.node.elem.add", "ELEM_ADD", [1, 128, 1024])
+    reservations = estimate_stage_resource_reservations(
+        macro_op="ELEM_ADD",
+        stage="store",
+        resource_set=["DMA"],
+        duration_slots=4,
+        node=elem_add_node,
+        candidate=None,
+        capabilities=capabilities,
+    )
+    reservations_by_resource = build_reservation_timeline()
+    reserve_resource_windows(
+        reservations_by_resource=reservations_by_resource,
+        issue_slot=0,
+        requested_reservations=reservations,
+    )
+
+    follower_issue = find_earliest_issue_slot(
+        ready_slot=0,
+        reservations_by_resource=reservations_by_resource,
+        requested_reservations=[("DMA", 0, 1)],
+    )
+
+    assert follower_issue == 0
+
+
 def test_plan_dual_core_schedule_allows_dma_at_layout_store_issue_with_vpu_prefix() -> None:
     from llm_sched.arch.capabilities import ArchitectureCapabilities
     from llm_sched.config.loader import load_target_profile

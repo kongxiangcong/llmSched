@@ -55,6 +55,24 @@ def test_build_decode_evaluation_report_rejects_prefill_scenarios() -> None:
         )
 
 
+def test_build_decode_evaluation_report_propagates_hottest_region_backing_store_breakdown() -> None:
+    from llm_sched.analysis import build_decode_evaluation_report
+
+    report = build_decode_evaluation_report(
+        "run-decode-001",
+        _decode_scenario(),
+        _perf_summary_report(),
+        _coverage_report(),
+        _memory_plan(),
+    )
+
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {
+        "ddr-backed-staged": 0,
+        "ddr-persistent": 12288,
+        "vmem-local": 28672,
+    }
+
+
 def _decode_scenario() -> ScenarioProfile:
     return ScenarioProfile(
         scenario_name="decode_token1_kv2048",
@@ -146,6 +164,11 @@ def _memory_plan() -> MemoryPlanArtifact:
                     "region_name": "ping",
                     "capacity_bytes": 65536,
                     "peak_bytes": 40960,
+                    "peak_bytes_by_backing_store": {
+                        "vmem-local": 28672,
+                        "ddr-backed-staged": 0,
+                        "ddr-persistent": 12288,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },
@@ -153,6 +176,11 @@ def _memory_plan() -> MemoryPlanArtifact:
                     "region_name": "pong",
                     "capacity_bytes": 65536,
                     "peak_bytes": 32768,
+                    "peak_bytes_by_backing_store": {
+                        "vmem-local": 32768,
+                        "ddr-backed-staged": 0,
+                        "ddr-persistent": 0,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },

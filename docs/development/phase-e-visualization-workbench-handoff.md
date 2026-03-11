@@ -1,5 +1,12 @@
 # Phase E Visualization Workbench Handoff
 
+## 2026-03-11 VMEM Backing-Store Visibility Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-19-workbench-vmem-backing-store-visibility.md`
+- the memory panel now renders `Region Backing Store Mix` directly from `bundle.vmem_view.regions[*].peak_bytes_by_backing_store`
+- memory-panel SVG snapshot lines now also expose top-region backing-store attribution, so the new visibility is not screen-only
+- focused workbench builder and workflow regressions remain green with the stronger memory-panel contract
+
 ## 2026-03-07 Checkpoint
 
 - `SPEC-19` now has a stable static workbench foundation.
@@ -79,6 +86,7 @@ Current hardening already includes:
 - timeline block detail quick links into graph search and coverage filtering
 - coverage issue quick links into timeline block detail
 - KV formula quick links into timeline filtering
+- memory-panel visibility for per-region backing-store attribution
 - a saved-view action that copies the current panel/filter state as a shareable link
 - an export action that downloads the active panel plus current filtered state as JSON
 - an exportable image action that downloads the active panel as an SVG snapshot

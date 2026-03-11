@@ -463,6 +463,8 @@ def _address_fields(
             address_space=parsed["address_space"],
             region_name=region_name,
             offset_bytes=offset_bytes,
+            storage_binding_id=allocation.storage_binding_id if allocation is not None else None,
+            backing_store=allocation.backing_store if allocation is not None else None,
             symbol=symbol,
             descriptor_field=descriptor_field,
             encoded_width_bits=encoded_width_bits,

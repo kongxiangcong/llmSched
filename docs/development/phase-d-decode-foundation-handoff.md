@@ -1,5 +1,12 @@
 # Phase D Decode Foundation Handoff
 
+## 2026-03-11 Hottest-Region Backing-Store Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-prefill-decode-backing-store-hotspot-reuse.md`
+- `DecodeEvaluationReport.memory_hotspot` now carries `hottest_region_peak_bytes_by_backing_store`.
+- `SPEC-15` now reuses `memory_plan.region_summaries[hottest_region].peak_bytes_by_backing_store` directly instead of reducing the hottest region to one scalar peak.
+- focused decode contract, builder, and workflow regressions remain green with the stronger report contract.
+
 ## 2026-03-09 Memory Hotspot Summary Checkpoint
 
 - New plan: `../plans/2026-03-09-spec-14-15-memory-hotspot-summary.md`
@@ -9,6 +16,7 @@
   - `memory_hotspot` now exposes `dominant_address_space`
   - `memory_hotspot` now exposes copied read/write bytes by address space
   - `memory_hotspot` now exposes the hottest VMEM region and its peak utilization
+  - `memory_hotspot` now also exposes hottest-region backing-store attribution
   - decode workflow and Phase D decode smoke remain green with the stronger report contract
 - This batch deliberately does not introduce:
   - layer-level hotspot views

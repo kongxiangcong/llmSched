@@ -207,21 +207,21 @@ Descriptor generation should not need to rediscover:
 
 ## 5. What Is Still Missing
 
-The current scheduler still lacks:
-- overlap search and resource pipelining
-- broader macro coverage beyond the current stable untiled helper set
-- descriptor-facing field packing decisions
+The remaining gap is now an acceptance boundary, not a broad missing-foundation list:
+- global cost-based overlap search and calibrated pipelining remain out of the current `M2` scope
+- descriptor-facing field packing belongs to `SPEC-12`, not to the scheduler
+- current `M2` closure hinges on keeping the conservative phased-reservation / occupancy contract stable for downstream consumers
 
-What is now present is not global overlap search. It is a conservative overlap foundation with explicit occupancy metadata.
+What is now present is intentionally not global overlap search. It is a conservative overlap foundation with explicit occupancy metadata and a completed helper-store audit batch.
 
-These are `SPEC-10` closure items or `SPEC-12` work, not reasons to reopen the tile or memory contracts.
+These are `SPEC-10` acceptance items or `SPEC-12` work, not reasons to reopen the tile or memory contracts.
 
 ## 6. Recommended Next Step
 
-Next work should keep moving forward into Phase C:
-1. Keep the single-core `ScheduleIR` contract stable while dual-core scheduling foundation lands.
-2. Reuse the current stage and tile-selection contract as the reference surface for `SPEC-11`.
-3. Begin `SPEC-12` descriptor and ISA coverage mapping only after both single-core and dual-core schedule artifacts are stable.
+Next work should keep the single-core scheduler in closure mode:
+1. Freeze the current single-core `ScheduleIR` contract as the accepted Phase C scheduler surface.
+2. Let descriptor / perf layers consume the current occupancy and reservation signal without reopening scheduler policy by default.
+3. Reopen scheduler specialization only if a concrete downstream consumer exposes a real mismatch.
 
 ## 2026-03-09 Overhead-Aligned Reservation Checkpoint
 

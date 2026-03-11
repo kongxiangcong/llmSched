@@ -26,6 +26,7 @@ class PerfSummaryReport(BaseModel):
     data_movement_read_bytes_by_address_space: dict[str, float] = Field(default_factory=dict)
     data_movement_write_bytes_by_address_space: dict[str, float] = Field(default_factory=dict)
     vmem_region_peak_bytes: dict[str, int] = Field(default_factory=dict)
+    vmem_region_peak_bytes_by_backing_store: dict[str, dict[str, int]] = Field(default_factory=dict)
     vmem_region_capacity_bytes: dict[str, int] = Field(default_factory=dict)
     vmem_region_peak_utilization: dict[str, float] = Field(default_factory=dict)
     totals: dict[str, float] = Field(default_factory=dict)

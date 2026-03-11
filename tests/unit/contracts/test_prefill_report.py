@@ -32,6 +32,11 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                 "hottest_region_peak_bytes": 49152,
                 "hottest_region_capacity_bytes": 65536,
                 "hottest_region_utilization": 0.75,
+                "hottest_region_peak_bytes_by_backing_store": {
+                    "vmem-local": 40960,
+                    "ddr-backed-staged": 8192,
+                    "ddr-persistent": 0,
+                },
             },
             "isa_summary": {
                 "unmapped_block_count": 2,
@@ -53,5 +58,6 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.memory_summary.max_region_utilization == 0.75
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store["vmem-local"] == 40960
     assert report.isa_summary.gap_counts["opcode_not_supported"] == 2
     assert report.macro_hotspots[0].macro_op == "WDQ_GEMM"

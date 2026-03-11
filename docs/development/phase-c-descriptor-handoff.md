@@ -1,5 +1,12 @@
 # Phase C Descriptor Handoff
 
+## 2026-03-11 Address Storage Metadata Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-descriptor-address-storage-reuse.md`
+- structured `address_fields` now carry optional `storage_binding_id` and `backing_store`
+- descriptor generation now copies these fields directly from `memory_plan.allocations[*]` when the address role is allocation-backed
+- focused descriptor-builder regression now proves compute descriptors preserve staged-weight versus VMEM-local output provenance without reopening raw planner tables
+
 ## 2026-03-07 Checkpoint
 
 - `SPEC-12` has started with a stable first-pass `DescriptorIR`.
@@ -73,6 +80,7 @@ Current descriptor completeness guarantees:
 - compute and prepare descriptors carry non-empty `shape_pack`
 - DMA-family descriptors carry non-empty `addr_fields`
 - symbolic `addr_fields` and structured `address_fields` must agree on role coverage and symbols
+- allocation-backed `address_fields` preserve `storage_binding_id/backing_store` when that provenance exists in `MemoryPlanArtifact`
 - DMA-family descriptors carry positive `dma_fields.length`
 - transfer descriptors carry explicit `transfer_fields`
 
@@ -93,7 +101,7 @@ Current shape policy:
 Current address policy:
 - reuse `buffer_binding` as symbolic address fields
 - normalize VMEM names as `VMEM:<region>`
-- also emit structured `address_fields` with `role/address_space/region_name/offset_bytes/symbol`
+- also emit structured `address_fields` with `role/address_space/region_name/offset_bytes/symbol` plus `storage_binding_id/backing_store` when the field comes from a planned allocation
 - keep both symbolic and structured forms deterministic until later descriptor packing work freezes real field formats
 
 Current packing-profile policy:
@@ -153,11 +161,10 @@ Performance estimation may now assume:
 
 ## 5. What Is Still Missing
 
-The current descriptor foundation still lacks:
-- richer opcode specialization beyond the current deterministic opcode-family table
-- richer low-level field placement specialization per opcode family
-- final firmware-facing record/container policy above the current packed descriptor stream
-- integration into end-to-end perf reports
+The remaining gap is now an accepted stop-line, not a broad missing-foundation list:
+- richer opcode-family specialization and firmware-facing record/container policy are now post-`M2` unless a concrete downstream consumer requires them
+- per-record workbench drilldown is not required for the current `M2` stop-line
+- the accepted `M2` bar is stable packed-stream artifacts plus summary-grade packed consumer proof and workbench visibility
 
 What is no longer missing:
 - target-facing descriptor encoding defaults in `TargetProfile`
@@ -168,14 +175,14 @@ What is no longer missing:
 - target-facing stream serialization metadata and deterministic `stream_hex` emission
 - explicit field-order metadata that keeps builder and packer aligned
 
-These are `SPEC-12` closure items or `SPEC-13` work, not reasons to reopen the scheduler contracts.
+These are `SPEC-12` acceptance-boundary items or `SPEC-13` work, not reasons to reopen the scheduler contracts.
 
 ## 6. Recommended Next Step
 
-Next work should keep moving forward into Phase C and Phase D:
-1. Keep `DescriptorIR`, `packed_descriptor_bundle.json`, and `isa_coverage_report.json` stable while extending target-facing field placement fidelity.
-2. Harden opcode-family-specific packing and transport/container assumptions above the current descriptor stream.
-3. Continue feeding the packed artifact into later reporting and visualization only after the payload contract stays stable across the Phase C smoke matrix.
+Next work should keep `SPEC-12` in stop-line mode:
+1. Keep `DescriptorIR`, `packed_descriptor_bundle.json`, and `isa_coverage_report.json` stable as the accepted Phase C contract.
+2. Treat packed summary consumer proof plus workbench summary visibility as sufficient for `M2`.
+3. Only extend per-record drilldown, firmware-facing container policy, or heavier opcode specialization when a concrete downstream consumer requires it.
 
 ## 2026-03-08 Container ABI Checkpoint
 

@@ -52,36 +52,17 @@ def run_cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 )
 def test_phase_c_descriptor_matrix(
     tmp_path: Path,
+    prepared_smoke_run_root_factory,
     target_profile: str,
     scenario_profile: str,
     schedule_kind: str,
 ) -> None:
-    repo_root = Path(__file__).resolve().parents[2]
-    run_root = tmp_path / f"{Path(target_profile).stem}-{Path(scenario_profile).stem}-descriptor"
-    scheduling_command = (
-        "run-single-core-scheduling" if schedule_kind == "single-core" else "run-dual-core-scheduling"
+    run_root = prepared_smoke_run_root_factory(
+        target_run_root=tmp_path / f"{Path(target_profile).stem}-{Path(scenario_profile).stem}-descriptor",
+        target_relative_path=target_profile,
+        scenario_relative_path=scenario_profile,
+        final_stage="descriptor",
     )
-
-    for args in [
-        (
-            "init-run",
-            "--run-root",
-            str(run_root),
-            "--model-path",
-            "models/gemma3_1b/model_q4f16.onnx",
-            "--target-profile",
-            target_profile,
-            "--scenario-profile",
-            scenario_profile,
-        ),
-        ("run-frontend-analysis", "--run-root", str(run_root)),
-        ("run-memory-planning", "--run-root", str(run_root)),
-        ("run-tile-planning", "--run-root", str(run_root)),
-        (scheduling_command, "--run-root", str(run_root)),
-        ("run-descriptor-generation", "--run-root", str(run_root)),
-    ]:
-        result = run_cli(*args, cwd=repo_root)
-        assert result.returncode == 0
 
     descriptor_ir = json.loads((run_root / "artifacts" / "descriptor_ir.json").read_text(encoding="utf-8"))
     packed_bundle = json.loads((run_root / "artifacts" / "packed_descriptor_bundle.json").read_text(encoding="utf-8"))

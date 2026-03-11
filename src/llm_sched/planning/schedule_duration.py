@@ -241,6 +241,11 @@ def estimate_stage_resource_reservations(
                 max(0, duration_slots - 1),
                 _attention_mask_prep_store_prefix_slots(node, candidate, capabilities),
             )
+        elif stage == "store" and macro_op == "ELEM_ADD":
+            prefix_slots = min(
+                max(0, duration_slots - 1),
+                _elem_add_store_prefix_slots(node, candidate, capabilities),
+            )
         elif stage == "store" and macro_op == "LAYOUT_FALLBACK":
             prefix_slots = min(
                 max(0, duration_slots - 1),
@@ -308,6 +313,13 @@ def estimate_stage_resource_reservations(
                 reservations.append(("DMA", prefix_slots, transport_slots))
             return reservations
         if stage == "store" and macro_op == "ATTENTION_MASK_PREP" and "DMA" in resource_set:
+            reservations = []
+            if prefix_slots > 0:
+                reservations.append(("VPU", 0, prefix_slots))
+            if transport_slots > 0:
+                reservations.append(("DMA", prefix_slots, transport_slots))
+            return reservations
+        if stage == "store" and macro_op == "ELEM_ADD" and "DMA" in resource_set:
             reservations = []
             if prefix_slots > 0:
                 reservations.append(("VPU", 0, prefix_slots))
@@ -483,6 +495,8 @@ def _dma_stage_slot_breakdown(
         prefix_slots = _kvstore_store_prefix_slots(node, candidate, capabilities)
     elif stage == "store" and node.macro_op == "ATTENTION_MASK_PREP":
         prefix_slots = _attention_mask_prep_store_prefix_slots(node, candidate, capabilities)
+    elif stage == "store" and node.macro_op == "ELEM_ADD":
+        prefix_slots = _elem_add_store_prefix_slots(node, candidate, capabilities)
     elif stage == "store" and node.macro_op == "RMSNORM":
         prefix_slots = _rmsnorm_store_prefix_slots(node, candidate, capabilities)
     elif stage == "store" and node.macro_op == "EMBEDDING_LOOKUP":
@@ -576,6 +590,16 @@ def _rmsnorm_store_prefix_slots(
     # Approximate final normalization-vector packing before the later DMA writeback window.
     output_elements = _vector_element_count(node, candidate)
     return max(1, ceil(output_elements / max(capabilities.vpu.lanes * 256, 1)))
+
+
+def _elem_add_store_prefix_slots(
+    node: NIGNode,
+    candidate: TileCandidate | None,
+    capabilities: ArchitectureCapabilities,
+) -> int:
+    # Approximate final residual-write packing before the later DMA writeback window.
+    output_elements = _vector_element_count(node, candidate)
+    return max(1, ceil(output_elements / max(capabilities.vpu.lanes * 512, 1)))
 
 
 def _geglu_store_prefix_slots(

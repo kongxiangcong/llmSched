@@ -328,6 +328,34 @@ def test_build_perf_summary_report_uses_union_busy_slots_instead_of_sum() -> Non
     assert report.vmem_region_peak_bytes["ping"] == 20480
 
 
+def test_build_perf_summary_report_propagates_peak_bytes_by_backing_store() -> None:
+    from llm_sched.analysis.descriptor_estimator import build_perf_summary_report
+    from llm_sched.contracts.isa_coverage_report import ISACoverageReport
+    from llm_sched.ir.descriptor_ir import DescriptorIR
+
+    report = build_perf_summary_report(
+        run_id="run-spec13-backing-store",
+        descriptor_ir=DescriptorIR(ir_version="phase-a.v1", graph_id="spec13-summary", descriptors=[]),
+        analysis_ir=AnalysisIR(ir_version="phase-a.v1", graph_id="spec13-summary", records=[]),
+        coverage_report=ISACoverageReport(
+            graph_id="spec13-summary",
+            schedule_kind="single-core",
+            mapped_descriptor_count=0,
+            unmapped_block_count=0,
+            opcode_counts={},
+            gap_counts={},
+            issues=[],
+        ),
+        memory_plan=_memory_plan_fixture(),
+    )
+
+    assert report.vmem_region_peak_bytes_by_backing_store == {
+        "ping": {"vmem-local": 20480, "ddr-backed-staged": 0, "ddr-persistent": 0},
+        "pong": {"vmem-local": 12288, "ddr-backed-staged": 0, "ddr-persistent": 0},
+        "weight": {"vmem-local": 0, "ddr-backed-staged": 16384, "ddr-persistent": 0},
+    }
+
+
 def _memory_plan_fixture():
     from llm_sched.contracts.memory_plan import MemoryPlanArtifact, RegionSummary
 
@@ -343,18 +371,21 @@ def _memory_plan_fixture():
                 capacity_bytes=30720,
                 peak_bytes=20480,
                 fits=True,
+                peak_bytes_by_backing_store={"vmem-local": 20480, "ddr-backed-staged": 0, "ddr-persistent": 0},
             ),
             "pong": RegionSummary(
                 region_name="pong",
                 capacity_bytes=30720,
                 peak_bytes=12288,
                 fits=True,
+                peak_bytes_by_backing_store={"vmem-local": 12288, "ddr-backed-staged": 0, "ddr-persistent": 0},
             ),
             "weight": RegionSummary(
                 region_name="weight",
                 capacity_bytes=32768,
                 peak_bytes=16384,
                 fits=True,
+                peak_bytes_by_backing_store={"vmem-local": 0, "ddr-backed-staged": 16384, "ddr-persistent": 0},
             ),
         },
         kv_formulas=[],

@@ -117,6 +117,11 @@ def test_visualization_bundle_accepts_all_views() -> None:
                         "peak_bytes": 49152,
                         "utilization_ratio": 0.75,
                         "fits": True,
+                        "peak_bytes_by_backing_store": {
+                            "vmem-local": 40960,
+                            "ddr-backed-staged": 8192,
+                            "ddr-persistent": 0,
+                        },
                     }
                 ],
                 "diagnostics": [],
@@ -155,6 +160,7 @@ def test_visualization_bundle_accepts_all_views() -> None:
     assert bundle.view_index.available_views == ["graph", "timeline", "kv", "vmem", "coverage", "sweep"]
     assert bundle.graph_view.node_count == 2
     assert bundle.timeline_view.blocks[0].macro_op == "WDQ_GEMM"
+    assert bundle.vmem_view.regions[0].peak_bytes_by_backing_store["ddr-backed-staged"] == 8192
     assert bundle.sweep_view is not None
     assert bundle.sweep_view.comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
 

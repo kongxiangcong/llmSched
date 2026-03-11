@@ -1,5 +1,40 @@
 # Phase C Memory Planner Handoff
 
+## 2026-03-11 Workbench VMEM Backing-Store Visibility Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-19-workbench-vmem-backing-store-visibility.md`
+- the static workbench memory panel now renders per-region `peak_bytes_by_backing_store` from the existing visualization bundle.
+- `SPEC-19` now makes `SPEC-08` per-region backing-store attribution visible to a human-facing consumer instead of leaving it latent in packaged JSON.
+- This closes one more concrete downstream-reuse visibility gap without reopening planner contracts or visualization bundle schema.
+
+## 2026-03-11 Visualization VMEM Backing-Store Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-visualization-vmem-backing-store-reuse.md`
+- `VisualizationBundle.vmem_view.regions[*]` now carry `peak_bytes_by_backing_store`.
+- `SPEC-18` now reuses `memory_plan.region_summaries[*].peak_bytes_by_backing_store` directly instead of collapsing each VMEM region to one scalar peak plus utilization.
+- This closes one more concrete downstream-reuse gap without reopening planner contracts or forcing the UI to read raw memory-plan artifacts.
+
+## 2026-03-11 Prefill/Decode Hotspot Backing-Store Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-prefill-decode-backing-store-hotspot-reuse.md`
+- `PrefillEvaluationReport.memory_hotspot` and `DecodeEvaluationReport.memory_hotspot` now carry `hottest_region_peak_bytes_by_backing_store`.
+- `SPEC-14/15` now reuse `memory_plan.region_summaries[hottest_region].peak_bytes_by_backing_store` directly instead of collapsing the hottest region to one scalar peak.
+- This closes one more concrete downstream-reuse gap without reopening planner contracts or inventing a new memory summary layer.
+
+## 2026-03-11 Descriptor Address Storage Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-descriptor-address-storage-reuse.md`
+- `DescriptorIR.address_fields[*]` now carry `storage_binding_id` and `backing_store` when the field is backed by a `PlannedAllocation`.
+- `SPEC-12` now reuses `memory_plan.allocations[*]` storage provenance directly instead of forcing later layers to reopen raw allocation tables.
+- This closes one more concrete downstream-reuse gap without reopening planner contracts or introducing target-specific packing.
+
+## 2026-03-11 Perf Summary Backing-Store Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-perf-backing-store-reuse.md`
+- `PerfSummaryReport` now carries `vmem_region_peak_bytes_by_backing_store`.
+- `SPEC-13` now reuses `memory_plan.region_summaries[*].peak_bytes_by_backing_store` directly instead of flattening all region pressure to one total.
+- This closes one concrete downstream-reuse gap without reopening planner contracts or introducing schedule-aware allocation.
+
 ## 2026-03-09 Storage Binding Surface Checkpoint
 
 - New plan: `../plans/2026-03-09-spec-08-storage-binding-surface.md`
@@ -175,20 +210,24 @@ tile planner 不需要再去处理“KV 地址是否能解析”或“region 名
 
 ## 6. What Is Still Missing
 
-当前还没有：
+当前剩余 gap 已经收敛为：
 
-- lifetime reuse / free-list 复用
-- broader capacity reasoning for remaining activation-heavy surfaces
-- dual-core 数据交换路径选择
-- quant / weight / output 的真实 DDR 地址绑定
-- `Schedule IR` 级 buffer binding
+- planner closure 本身的最终 acceptance list
+- stronger downstream consumption beyond tile planner，尤其是 descriptor / perf 层不再重构 memory artifact 已有信息
+- 只在出现具体压力归因盲点时，再补窄范围 activation-heavy capacity reasoning
 
-这些都是 `SPEC-08` 后续收口项或 `SPEC-09/10/11/12` 的工作，不应回灌成 frontend 需求。
+当前不再缺：
+
+- lifetime reuse / phase-bucket reuse
+- formal DDR / storage binding surface
+- 启动 `SPEC-09` 所需的稳定输入面
+
+这些是 `SPEC-08` 收口项或下游消费项，不应回灌成 frontend 需求，也不要求在 `SPEC-08` 内引入 runtime allocator 或 target-specific packing。当前 `SPEC-12` 已开始直接消费 `storage_binding_id/backing_store`，`SPEC-13` 已开始直接消费 `peak_bytes_by_backing_store`，`SPEC-14/15` 已开始直接消费 hottest-region backing-store attribution，`SPEC-18` 已开始直接消费 per-region backing-store attribution，`SPEC-19` 也已把这张表提升到 memory panel 可见层，所以 downstream reuse 不再只停留在 tile planner。
 
 ## 7. Recommended Next Step
 
-`SPEC-08` 当前已经不再阻塞 `SPEC-09`。下一步应该把 Phase C 主线切到 tile planner：
+`SPEC-08` 当前下一步不是再开新语义，而是完成 planner closure：
 
-1. 冻结 `TilingPlanArtifact` 和 `run-tile-planning` 的 artifact contract
-2. 让 prefill / decode 四象限稳定产出可比较的 GEMM / attention tile candidates
-3. 在 `bound-NIG + MemoryPlanArtifact + TilingPlanArtifact` 之上启动 `SPEC-10` single-core scheduling
+1. 保持 `MemoryPlanArtifact` 稳定，作为 Phase C 后续模块的正式输入面。
+2. 优先强化 descriptor / perf 等后续层对现有 memory artifact 的直接消费。
+3. 只有在出现具体容量归因或消费失败证据时，才补窄范围 planner hardening。

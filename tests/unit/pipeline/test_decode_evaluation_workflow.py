@@ -30,6 +30,7 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
     assert report.token_latency.estimated_cycles > 0.0
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}
     assert manifest.artifact_index["decode_evaluation_report"] == "reports/decode_evaluation_report.json"
     assert summary.status == "completed"
     assert summary.exit_code == 0

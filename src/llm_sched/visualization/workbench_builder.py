@@ -259,6 +259,18 @@ function renderMetricEntries(entries, emptyMessage = "No data.") {
   `).join("")}</ul>`;
 }
 
+function renderBackingStoreSummary(entries) {
+  const filteredEntries = Object.entries(entries || {})
+    .filter(([, value]) => Number(value) > 0)
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+  if (filteredEntries.length === 0) {
+    return "<span class=\\"muted\\">No backing-store attribution.</span>";
+  }
+  return filteredEntries
+    .map(([label, value]) => `${label}: ${formatNumber(value)}`)
+    .join(" • ");
+}
+
 function filterGraphNodes(nodes, query) {
   const normalized = normalizeText(query).trim();
   if (!normalized) {
@@ -417,6 +429,12 @@ function renderMemory(bundle) {
       <td>${formatNumber(region.utilization_ratio * 100)}%</td>
     </tr>
   `).join("");
+  const backingStoreRows = (bundle.vmem_view.regions || []).map((region) => `
+    <li>
+      <strong>${region.region_name}</strong>
+      <span class="muted">${renderBackingStoreSummary(region.peak_bytes_by_backing_store)}</span>
+    </li>
+  `).join("");
   const kvRows = (bundle.kv_view.formulas || []).map((entry) => `
     <li>
       <strong>${entry.tensor_kind}</strong> 路 ${entry.formula}
@@ -431,6 +449,10 @@ function renderMemory(bundle) {
           <thead><tr><th>Region</th><th>Capacity</th><th>Peak</th><th>Util</th></tr></thead>
           <tbody>${regionRows}</tbody>
         </table>
+      </article>
+      <article class="card">
+        <h2>Region Backing Store Mix</h2>
+        <ul class="table-list">${backingStoreRows || "<li>No region backing-store data.</li>"}</ul>
       </article>
       <article class="card">
         <h2>KV View</h2>
@@ -653,6 +675,16 @@ function buildPanelSnapshotLines(bundle, panelId) {
     case "memory":
       lines.push(`Regions: ${(payload.data.regions || []).length}`);
       lines.push(`KV Formulas: ${(payload.data.kv_formulas || []).length}`);
+      if ((payload.data.regions || []).length > 0) {
+        const topRegion = payload.data.regions[0];
+        lines.push(`Top Region: ${topRegion.region_name}`);
+        Object.entries(topRegion.peak_bytes_by_backing_store || {})
+          .filter(([, value]) => Number(value) > 0)
+          .slice(0, 3)
+          .forEach(([name, value]) => {
+            lines.push(`Top Region Backing Stores ${name}: ${formatNumber(value)}`);
+          });
+      }
       break;
     case "coverage":
       lines.push(`Matched Issues: ${(payload.data.matched_issues || []).length}`);

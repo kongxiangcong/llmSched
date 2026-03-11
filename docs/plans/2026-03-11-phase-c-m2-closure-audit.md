@@ -15,6 +15,18 @@
   - `SPEC-10/11`: remaining generic reservation surfaces
   - `SPEC-12`: deciding and freezing the actual Phase C stop-line for packed-descriptor fidelity
 
+## 2026-03-11 Execution Update
+
+- `ELEM_ADD.store` has now been audited directly instead of staying on the generic-risk list.
+- New executed evidence:
+  - focused single-core and dual-core red tests both failed first with `follower_issue == 4`, proving `ELEM_ADD.store` still behaved like one monolithic shared-`DMA` slab
+  - `schedule_duration.py` now gives `ELEM_ADD.store` a short internal `VPU` prefix before the later `DMA` writeback window while the public stage model stays unchanged
+  - focused `store_issue_with_vpu_prefix` regression now passes at `16 passed`
+  - full single-core plus dual-core scheduler unit slices now pass at `60 passed`
+- Explicit closure decisions now taken:
+  - `SPEC-09`: accept the current GEMM-like plus attention tiling surface for `M2`, with untiled-helper scheduling as the accepted policy unless a concrete failing consumer proves broader macro tiling is required
+  - `SPEC-12`: freeze the `M2` stop-line at packed summary consumer proof plus workbench summary visibility; do not add per-record drilldown unless a concrete consumer requires it
+
 ## Evidence Summary
 
 ### SPEC-08
@@ -107,3 +119,4 @@
 - The current `M2` backlog is now narrow and concrete.
 - The strongest next direction is back on `SPEC-10/11`, but only as an evidence-driven closure pass.
 - `SPEC-12` should remain a targeted hardening track, not the sole mainline.
+- The former `SPEC-09` and `SPEC-12` ambiguity has been reduced to an accepted scope boundary rather than an open design question.

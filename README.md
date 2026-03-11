@@ -33,6 +33,11 @@ python -m pytest -q
 
 它是全量回归面，适合主线稳定化或夜跑，不适合日常迭代。
 
+当前基线（2026-03-11）：
+- `python -m pytest tests/smoke -q --durations=30` -> `71 passed in 37m52s`
+- `python -m pytest -q --durations=30` -> `363 passed in 50m39s`
+- full gate 现在已经可以跑完，但仍然不适合默认开发循环
+
 ### 1. Fast Local Default
 
 改 contract、frontend、IR、planner 内部逻辑时，默认先跑：
@@ -94,6 +99,7 @@ python -m pytest tests/smoke -m milestone_matrix -q
 
 说明：
 - `local_smoke` 也不轻，当前会真实经过 cached run-root + CLI stage 链路
+- 当前 smoke gate 已改成 cache-backed CLI setup；重场景会复用 prepared run-root / prepared sweep-root，而不是每个测试都重跑全链路
 - 不要把 `tests/smoke` 当成每次提交前的默认循环
 
 ### 4. 推荐升级顺序
@@ -110,9 +116,18 @@ python -m pytest tests/smoke -m milestone_matrix -q
 
 当前最有价值的下一批工作：
 - 继续收口 `M2`
-- 优先做 `SPEC-10/11` 的 schedule-fidelity hardening
+- 优先做 `SPEC-08` 的 planner closure + downstream reuse
+- `SPEC-08 -> SPEC-13` 现已有一条真实 downstream reuse：`PerfSummaryReport` 直接带 `peak_bytes_by_backing_store`
+- `SPEC-08 -> SPEC-12` 现也已有一条真实 downstream reuse：`DescriptorIR.address_fields` 直接带 `storage_binding_id/backing_store`
+- `SPEC-08 -> SPEC-14/15` 现也已有一条真实 downstream reuse：prefill/decode `memory_hotspot` 直接带 hottest-region 的 `peak_bytes_by_backing_store`
+- `SPEC-08 -> SPEC-18` 现也已有一条真实 downstream reuse：`VisualizationBundle.vmem_view.regions` 直接带 `peak_bytes_by_backing_store`
+- `SPEC-18 -> SPEC-19` 现也已有一条真实 visible consumer：workbench memory panel 直接显示 per-region `peak_bytes_by_backing_store`
+- `SPEC-10/11` 的 helper-store audit batch 已完成；后续以 acceptance list 维持稳定，不再默认继续宽泛铺开
+- `SPEC-09` 现接受当前 GEMM-like / attention tiling + untiled-helper scheduling 作为 `M2` 收口范围
 - 把更强的调度时序信号继续喂给 `SPEC-13`
+- `SPEC-12` 的 `M2` stop-line 现冻结为 packed summary consumer + workbench summary visibility
 - `SPEC-12` 只做窄范围 hardening，不再作为唯一主线
+- 现实里的验证瓶颈已经从 “full pytest 跑不完” 收敛到 “sweep / visualization packaging 仍然偏重”
 
 参考文档：
 - `docs/development/evaluation-compiler-roadmap.md`

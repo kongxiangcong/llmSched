@@ -1,5 +1,17 @@
 # Phase D Performance Foundation Handoff
 
+## 2026-03-11 SPEC-08 Backing-Store Summary Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-perf-backing-store-reuse.md`
+- `SPEC-13` now consumes one more structured `SPEC-08` field directly instead of collapsing all region pressure to one total.
+- New closure evidence:
+  - `PerfSummaryReport` now carries `vmem_region_peak_bytes_by_backing_store`
+  - performance-estimation now reuses `memory_plan.region_summaries[*].peak_bytes_by_backing_store` directly
+- This batch deliberately does not introduce:
+  - a deeper cycle model
+  - block-level lifetime replay
+  - per-storage-binding traffic accounting
+
 ## 2026-03-09 Bandwidth / VMEM Breakdown Checkpoint
 
 - New plan: `../plans/2026-03-09-spec-13-bandwidth-vmem-breakdown.md`
@@ -97,6 +109,7 @@ The current `PerfSummaryReport` now carries:
 - `data_movement_read_bytes_by_address_space`
 - `data_movement_write_bytes_by_address_space`
 - `vmem_region_peak_bytes`
+- `vmem_region_peak_bytes_by_backing_store`
 - `vmem_region_capacity_bytes`
 - `vmem_region_peak_utilization`
 - `totals`
@@ -134,6 +147,7 @@ Current timing summary is also intentionally conservative:
 Current bandwidth / VMEM summary is also intentionally summary-grade:
 - data movement is grouped by address space (`DDR` / `VMEM`) instead of by exact bus transaction
 - VMEM pressure is grouped by planned region summary instead of replaying block-level lifetime overlap
+- backing-store attribution is grouped by region-level peak summary instead of by exact block or storage-binding replay
 - staged weight-family compute may contribute conservative external read pressure even when descriptor address fields stay abstract
 
 ## 4. What SPEC-14 And SPEC-15 Can Assume

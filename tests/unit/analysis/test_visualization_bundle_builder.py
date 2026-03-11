@@ -88,6 +88,32 @@ def test_build_visualization_bundle_for_decode_without_sweep() -> None:
     assert bundle.view_index.available_views == ["graph", "timeline", "kv", "vmem", "coverage"]
 
 
+def test_build_visualization_bundle_propagates_vmem_region_backing_store_breakdown() -> None:
+    from llm_sched.analysis import build_visualization_bundle
+
+    bundle = build_visualization_bundle(
+        run_root=Path("tmp/run-prefill-001"),
+        manifest=_manifest("run-prefill-001", "prefill_seq128"),
+        target_profile=_single_core_target(),
+        scenario_profile=_prefill_scenario(),
+        canonical_graph_ir=_graph_ir(),
+        schedule_ir=_single_core_schedule(),
+        memory_plan=_memory_plan("single-core"),
+        coverage_report=_coverage_report("single-core"),
+        packed_descriptor_bundle=_packed_bundle("single-core"),
+        prefill_report=_prefill_report(),
+        decode_report=None,
+        sweep_report=None,
+        sweep_root=None,
+    )
+
+    assert bundle.vmem_view.regions[0].peak_bytes_by_backing_store == {
+        "ddr-backed-staged": 8192,
+        "ddr-persistent": 0,
+        "vmem-local": 40960,
+    }
+
+
 def _manifest(run_id: str, scenario_name: str) -> RunManifest:
     return RunManifest(
         run_id=run_id,
@@ -283,6 +309,11 @@ def _memory_plan(core_mode: str) -> MemoryPlanArtifact:
                     "region_name": "ping",
                     "capacity_bytes": 65536,
                     "peak_bytes": 49152,
+                    "peak_bytes_by_backing_store": {
+                        "vmem-local": 40960,
+                        "ddr-backed-staged": 8192,
+                        "ddr-persistent": 0,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 }

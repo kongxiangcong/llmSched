@@ -53,6 +53,24 @@ def test_build_prefill_evaluation_report_rejects_decode_scenarios() -> None:
         )
 
 
+def test_build_prefill_evaluation_report_propagates_hottest_region_backing_store_breakdown() -> None:
+    from llm_sched.analysis import build_prefill_evaluation_report
+
+    report = build_prefill_evaluation_report(
+        "run-prefill-001",
+        _prefill_scenario(),
+        _perf_summary_report(),
+        _coverage_report(),
+        _memory_plan(),
+    )
+
+    assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {
+        "ddr-backed-staged": 8192,
+        "ddr-persistent": 0,
+        "vmem-local": 40960,
+    }
+
+
 def _prefill_scenario() -> ScenarioProfile:
     return ScenarioProfile(
         scenario_name="prefill_seq128",
@@ -140,6 +158,11 @@ def _memory_plan() -> MemoryPlanArtifact:
                     "region_name": "ping",
                     "capacity_bytes": 65536,
                     "peak_bytes": 49152,
+                    "peak_bytes_by_backing_store": {
+                        "vmem-local": 40960,
+                        "ddr-backed-staged": 8192,
+                        "ddr-persistent": 0,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },
@@ -147,6 +170,11 @@ def _memory_plan() -> MemoryPlanArtifact:
                     "region_name": "weight",
                     "capacity_bytes": 65536,
                     "peak_bytes": 32768,
+                    "peak_bytes_by_backing_store": {
+                        "vmem-local": 0,
+                        "ddr-backed-staged": 32768,
+                        "ddr-persistent": 0,
+                    },
                     "fits": True,
                     "allocation_ids": [],
                 },

@@ -100,17 +100,16 @@ The scheduler should not need to rediscover:
 
 ## 5. What Is Still Missing
 
-The current planner still lacks:
-- broader macro coverage outside GEMM-like and attention main paths
-- richer candidate search beyond the first descending `M_tile` set
-- explicit dual-core-aware tiling tradeoff modeling
-- scheduler-facing preference ranking beyond basic resource summaries
+For the accepted `M2` scope, the remaining gap is now narrow:
+- keep the current GEMM-like / attention candidate surface stable
+- keep deterministic ranking and explanation stable for scheduler consumption
+- reopen broader helper-macro tiling or richer dual-core tradeoff modeling only if a concrete downstream consumer proves the current untiled-helper policy is insufficient
 
-These are `SPEC-09` closure items, not reasons to reopen frontend or memory-plan contracts.
+These are `SPEC-09` scope-boundary decisions, not reasons to reopen frontend or memory-plan contracts.
 
 ## 6. Recommended Next Step
 
-`SPEC-10` has now started. The next tile-planner-facing work should be:
-1. Expand tile-candidate coverage to the remaining scheduling-relevant macro surfaces.
-2. Add stronger ranking and explanation fields where the scheduler needs deterministic tie-breaking.
-3. Keep `TilingPlanArtifact` stable as the input contract for `SPEC-10`, not as a place to hide scheduling policy.
+`SPEC-09` should now be treated as a stable input contract for the rest of Phase C:
+1. Keep `TilingPlanArtifact` stable as the scheduler input surface.
+2. Treat the current GEMM-like / attention candidate set plus untiled-helper scheduling as the accepted `M2` policy.
+3. Only reopen broader candidate generation if schedule / descriptor / perf evidence shows the accepted scope is no longer sufficient.

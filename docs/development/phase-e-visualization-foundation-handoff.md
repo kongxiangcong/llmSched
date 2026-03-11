@@ -1,5 +1,12 @@
 # Phase E Visualization Foundation Handoff
 
+## 2026-03-11 VMEM Backing-Store Reuse Checkpoint
+
+- New plan: `../plans/2026-03-11-spec-08-visualization-vmem-backing-store-reuse.md`
+- `VisualizationBundle.vmem_view.regions[*]` now carry `peak_bytes_by_backing_store`.
+- `SPEC-18` now reuses `memory_plan.region_summaries[*].peak_bytes_by_backing_store` directly instead of collapsing VMEM regions to `peak_bytes` and utilization only.
+- focused visualization contract, builder, and packaging-workflow regressions remain green with the stronger bundle contract.
+
 ## 2026-03-07 Checkpoint
 
 - `SPEC-18` now has a stable visualization-facing static bundle foundation.
@@ -57,7 +64,7 @@ The current bundle builder normalizes data as follows:
 - KV view
   - built from KV formulas and KV address diagnostics
 - VMEM view
-  - built from region summaries and VMEM fit diagnostics
+  - built from region summaries, per-region backing-store attribution, and VMEM fit diagnostics
 - coverage view
   - built from ISA coverage counts and per-issue summaries
 - sweep view

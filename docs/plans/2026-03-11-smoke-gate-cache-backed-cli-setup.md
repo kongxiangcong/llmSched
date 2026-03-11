@@ -117,3 +117,25 @@ Record:
 - whether sweep-root caching was added
 - before/after timing evidence for the heaviest smoke files
 - the updated recommendation for local verification versus full smoke
+
+## Outcome
+
+- Root cause confirmed:
+  - heavy smoke CLI tests were rebuilding full upstream stage chains inline instead of cloning cached prepared smoke run roots
+  - Phase B/C smoke matrices were still using hand-rolled stage loops, so `tests/smoke` could stall for many hours
+  - sweep-backed smoke paths also needed a cached sweep-root fixture plus shorter cache-root naming to avoid Windows path-length breakage
+- Implemented:
+  - added `prepared_smoke_sweep_root_factory` and sweep-report path rewriting in `tests/smoke/conftest.py`
+  - made `prepared_smoke_run_root_factory` hierarchical so later stages reuse cached earlier stages instead of rebuilding from `init-run`
+  - converted the heavy CLI smoke tests and Phase B/C closure matrices to clone the nearest prepared stage and keep only the final CLI command real
+- Timing evidence:
+  - Phase B/C closure matrix slice now completes in `20 passed in 8m22s`
+  - heavy CLI smoke bundle dropped from `16 passed in 36m31s` to `16 passed in 22m48s`
+  - full `tests/smoke` now completes in `71 passed in 37m52s` instead of timing out after more than ten hours
+  - full `python -m pytest -q --durations=30` now completes in `363 passed in 50m39s`
+- Remaining dominant cost:
+  - sweep-heavy smoke and workflow surfaces still dominate the wall clock, especially `test_phase_d_sweep_foundation_matrix.py`, `test_cli_run_visualization_packaging.py`, `test_cli_run_sweep_analysis.py`, and `test_sweep_analysis_workflow.py`
+- Updated verification recommendation:
+  - keep `tests/unit` and workflow-focused regression as the default local loop
+  - use `tests/smoke` as an escalation gate when CLI or phase-closure behavior changes
+  - reserve full `python -m pytest -q` for explicit closure checks or nightly validation, even though it is now practically completable again

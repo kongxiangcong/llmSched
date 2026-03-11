@@ -119,6 +119,7 @@ def _build_memory_hotspot(
         hottest_region_peak_bytes,
         hottest_region_capacity_bytes,
         hottest_region_utilization,
+        hottest_region_peak_bytes_by_backing_store,
     ) = _hottest_region(memory_plan)
     return DecodeMemoryHotspotSummary(
         dominant_address_space=dominant_address_space,
@@ -128,6 +129,7 @@ def _build_memory_hotspot(
         hottest_region_peak_bytes=hottest_region_peak_bytes,
         hottest_region_capacity_bytes=hottest_region_capacity_bytes,
         hottest_region_utilization=hottest_region_utilization,
+        hottest_region_peak_bytes_by_backing_store=hottest_region_peak_bytes_by_backing_store,
     )
 
 
@@ -147,9 +149,9 @@ def _dominant_address_space(
 
 def _hottest_region(
     memory_plan: MemoryPlanArtifact,
-) -> tuple[str | None, int, int, float]:
+) -> tuple[str | None, int, int, float, dict[str, int]]:
     if not memory_plan.region_summaries:
-        return None, 0, 0, 0.0
+        return None, 0, 0, 0.0, {}
     region_name, summary = max(
         memory_plan.region_summaries.items(),
         key=lambda item: (
@@ -159,4 +161,10 @@ def _hottest_region(
         ),
     )
     utilization = (summary.peak_bytes / summary.capacity_bytes) if summary.capacity_bytes > 0 else 0.0
-    return region_name, summary.peak_bytes, summary.capacity_bytes, utilization
+    return (
+        region_name,
+        summary.peak_bytes,
+        summary.capacity_bytes,
+        utilization,
+        dict(sorted(summary.peak_bytes_by_backing_store.items())),
+    )

@@ -28,6 +28,8 @@ class AddressField(BaseModel):
     address_space: AddressSpace
     region_name: str | None = None
     offset_bytes: int = Field(default=0, ge=0)
+    storage_binding_id: str | None = None
+    backing_store: str | None = None
     symbol: str = Field(min_length=1)
     descriptor_field: str = Field(min_length=1)
     encoded_width_bits: int = Field(gt=0)

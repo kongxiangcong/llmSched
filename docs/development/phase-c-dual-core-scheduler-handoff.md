@@ -225,21 +225,21 @@ Descriptor generation should not need to rediscover:
 
 ## 5. What Is Still Missing
 
-The current dual-core scheduler still lacks:
-- smarter partitioning than deterministic alternation
-- cost-aware overlap search and calibrated resource pipelining across cores
-- broader macro coverage beyond the current stable untiled helper set
-- descriptor-facing field packing decisions
-- cost-based tradeoffs between `DMA` and `Core Link`
+The remaining gap is now an acceptance boundary, not a broad missing-foundation list:
+- smarter repartition search and cost-aware `DMA` versus `Core Link` choice remain outside the current `M2` scope
+- descriptor-facing field packing belongs to `SPEC-12`, not to the scheduler
+- current `M2` closure hinges on keeping the present transfer/sync-aware overlap contract stable for downstream consumers
 
-These are `SPEC-11` closure items or `SPEC-12` work, not reasons to reopen the memory or tiling contracts.
+What is now present is intentionally not global repartition search. It is a deterministic dual-core scheduler with explicit overlap, transfer, sync, and helper-store audit coverage.
+
+These are `SPEC-11` acceptance items or `SPEC-12` work, not reasons to reopen the memory or tiling contracts.
 
 ## 6. Recommended Next Step
 
-Next work should keep moving forward into Phase C:
-1. Keep both single-core and dual-core `ScheduleIR` contracts stable together.
-2. Begin `SPEC-12` descriptor and ISA coverage mapping on top of the current schedule artifacts.
-3. Add wider macro coverage and cost-aware partitioning only after descriptor-facing assumptions are frozen.
+Next work should keep the dual-core scheduler in closure mode:
+1. Freeze the current dual-core `ScheduleIR` contract as the accepted Phase C dual-core surface.
+2. Let descriptor / perf layers consume the current overlap, transfer, and sync signal without reopening partition/search policy by default.
+3. Reopen dual-core scheduler specialization only if a concrete downstream consumer exposes a real mismatch.
 
 ## 2026-03-09 Overhead-Aligned Reservation Checkpoint
 

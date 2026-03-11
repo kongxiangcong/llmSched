@@ -83,6 +83,46 @@ def test_build_descriptor_artifacts_maps_single_core_compute_blocks() -> None:
     assert coverage.unmapped_block_count == 0
 
 
+def test_build_descriptor_artifacts_propagates_storage_binding_metadata_into_address_fields() -> None:
+    from llm_sched.config.loader import load_scenario_profile, load_target_profile
+    from llm_sched.planning.descriptor_builder import build_descriptor_artifacts
+    from llm_sched.planning.memory_planner import plan_memory_artifact
+    from llm_sched.planning.single_core_scheduler import plan_single_core_schedule
+    from llm_sched.planning.tile_planner import plan_tiling_artifact
+
+    repo_root = Path(__file__).resolve().parents[3]
+    target = load_target_profile(repo_root / "profiles" / "targets" / "riscv_npu_single_core_v1.json")
+    scenario = load_scenario_profile(repo_root / "profiles" / "scenarios" / "prefill_seq128.json")
+    bound_nig = _make_bound_nig_ir(
+        [_make_wdq_gemm_node(node_id="nig.node.linear", output_shape=[1, 128, 1024], group_size=128)]
+    )
+    memory_plan = plan_memory_artifact(bound_nig, target, scenario)
+    tiling_plan = plan_tiling_artifact(bound_nig, memory_plan, target, scenario)
+    schedule = plan_single_core_schedule(bound_nig, memory_plan, tiling_plan, target, scenario)
+
+    descriptor_ir, _coverage = build_descriptor_artifacts(
+        schedule,
+        bound_nig,
+        memory_plan,
+        target,
+        scenario,
+    )
+
+    compute_descriptor = next(
+        descriptor
+        for descriptor in descriptor_ir.descriptors
+        if descriptor.schedule_block_id.endswith(".compute")
+    )
+    weight_field = next(field for field in compute_descriptor.address_fields if field.role == "weight")
+    output_field = next(field for field in compute_descriptor.address_fields if field.role == "output")
+
+    assert weight_field.storage_binding_id is not None
+    assert weight_field.storage_binding_id.startswith("storage.weight.")
+    assert weight_field.backing_store == "ddr-backed-staged"
+    assert output_field.storage_binding_id is None
+    assert output_field.backing_store == "vmem-local"
+
+
 def test_build_descriptor_artifacts_maps_dual_core_transfer_blocks() -> None:
     from llm_sched.config.loader import load_scenario_profile, load_target_profile
     from llm_sched.planning.descriptor_builder import build_descriptor_artifacts

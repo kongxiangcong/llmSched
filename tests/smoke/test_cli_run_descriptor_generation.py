@@ -23,30 +23,20 @@ def run_cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_run_descriptor_generation_writes_artifacts_for_single_core(tmp_path: Path) -> None:
+def test_run_descriptor_generation_writes_artifacts_for_single_core(
+    tmp_path: Path,
+    prepared_smoke_run_root_factory,
+) -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    run_root = tmp_path / "run-descriptor-cli-single"
+    run_root = prepared_smoke_run_root_factory(
+        target_run_root=tmp_path / "run-descriptor-cli-single",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+        final_stage="schedule",
+    )
 
-    for args in [
-        (
-            "init-run",
-            "--run-root",
-            str(run_root),
-            "--model-path",
-            "models/gemma3_1b/model_q4f16.onnx",
-            "--target-profile",
-            "profiles/targets/riscv_npu_single_core_v1.json",
-            "--scenario-profile",
-            "profiles/scenarios/prefill_seq128.json",
-        ),
-        ("run-frontend-analysis", "--run-root", str(run_root)),
-        ("run-memory-planning", "--run-root", str(run_root)),
-        ("run-tile-planning", "--run-root", str(run_root)),
-        ("run-single-core-scheduling", "--run-root", str(run_root)),
-        ("run-descriptor-generation", "--run-root", str(run_root)),
-    ]:
-        result = run_cli(*args, cwd=repo_root)
-        assert result.returncode == 0
+    result = run_cli("run-descriptor-generation", "--run-root", str(run_root), cwd=repo_root)
+    assert result.returncode == 0
 
     manifest = json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))
     descriptor_ir = json.loads((run_root / "artifacts" / "descriptor_ir.json").read_text(encoding="utf-8"))
@@ -67,28 +57,17 @@ def test_run_descriptor_generation_writes_artifacts_for_single_core(tmp_path: Pa
     assert coverage_report["mapped_descriptor_count"] > 0
 
 
-def test_run_descriptor_generation_rejects_missing_schedule_without_traceback(tmp_path: Path) -> None:
+def test_run_descriptor_generation_rejects_missing_schedule_without_traceback(
+    tmp_path: Path,
+    prepared_smoke_run_root_factory,
+) -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    run_root = tmp_path / "run-descriptor-missing-schedule"
-
-    for args in [
-        (
-            "init-run",
-            "--run-root",
-            str(run_root),
-            "--model-path",
-            "models/gemma3_1b/model_q4f16.onnx",
-            "--target-profile",
-            "profiles/targets/riscv_npu_single_core_v1.json",
-            "--scenario-profile",
-            "profiles/scenarios/prefill_seq128.json",
-        ),
-        ("run-frontend-analysis", "--run-root", str(run_root)),
-        ("run-memory-planning", "--run-root", str(run_root)),
-        ("run-tile-planning", "--run-root", str(run_root)),
-    ]:
-        result = run_cli(*args, cwd=repo_root)
-        assert result.returncode == 0
+    run_root = prepared_smoke_run_root_factory(
+        target_run_root=tmp_path / "run-descriptor-missing-schedule",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+        final_stage="tile",
+    )
 
     result = run_cli(
         "run-descriptor-generation",

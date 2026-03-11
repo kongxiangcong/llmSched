@@ -62,6 +62,26 @@ def test_run_visualization_workbench_rejects_missing_bundle(tmp_path: Path) -> N
     assert "visualization_bundle" in result.diagnostics[0].message
 
 
+def test_run_visualization_workbench_surfaces_vmem_backing_store_mix_in_assets(tmp_path: Path) -> None:
+    from llm_sched.pipeline import run_visualization_workbench
+
+    run_root = tmp_path / "run-workbench-backing-store"
+    _write_initialized_run(run_root)
+    bundle_path = run_root / "reports" / "visualization_bundle.json"
+    bundle_path.write_text(
+        json.dumps(_bundle(include_sweep=False).model_dump(mode="json"), indent=2),
+        encoding="utf-8",
+    )
+
+    result = run_visualization_workbench(run_root)
+
+    assert result.status == "completed"
+    app_js = (run_root / "workbench" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "Region Backing Store Mix" in app_js
+    assert "peak_bytes_by_backing_store" in app_js
+    assert "Top Region Backing Stores" in app_js
+
+
 def _write_initialized_run(run_root: Path) -> None:
     run_root.mkdir(parents=True, exist_ok=True)
     for relative in ("artifacts", "reports", "logs", "dumps"):
@@ -193,6 +213,11 @@ def _bundle(*, include_sweep: bool) -> object:
                         "peak_bytes": 49152,
                         "utilization_ratio": 0.75,
                         "fits": True,
+                        "peak_bytes_by_backing_store": {
+                            "vmem-local": 40960,
+                            "ddr-backed-staged": 8192,
+                            "ddr-persistent": 0,
+                        },
                     }
                 ],
                 "diagnostics": [],
