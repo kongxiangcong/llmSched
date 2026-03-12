@@ -207,9 +207,17 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "estimated_cycles"),
             _metric_value(candidate_run, "estimated_cycles"),
         ),
+        critical_path_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "critical_path_cycles"),
+            _metric_value(candidate_run, "critical_path_cycles"),
+        ),
         tokens_per_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "tokens_per_cycle"),
             _metric_value(candidate_run, "tokens_per_cycle"),
+        ),
+        tokens_per_critical_path_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "tokens_per_critical_path_cycle"),
+            _metric_value(candidate_run, "tokens_per_critical_path_cycle"),
         ),
         cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "cycles_per_token"),
@@ -237,9 +245,17 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "estimated_cycles"),
             _metric_value(candidate_run, "estimated_cycles"),
         ),
+        critical_path_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "critical_path_cycles"),
+            _metric_value(candidate_run, "critical_path_cycles"),
+        ),
         cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "cycles_per_token"),
             _metric_value(candidate_run, "cycles_per_token"),
+        ),
+        critical_path_cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "critical_path_cycles_per_token"),
+            _metric_value(candidate_run, "critical_path_cycles_per_token"),
         ),
         kv_related_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "kv_related_cycle_share"),

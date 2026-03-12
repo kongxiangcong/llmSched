@@ -163,7 +163,9 @@ def _execute_run_root(
             report_path=str(report_path),
             metrics={
                 "estimated_cycles": report.throughput.estimated_cycles,
+                "critical_path_cycles": report.throughput.critical_path_cycles,
                 "tokens_per_cycle": report.throughput.tokens_per_cycle,
+                "tokens_per_critical_path_cycle": report.throughput.tokens_per_critical_path_cycle,
                 "cycles_per_token": report.throughput.cycles_per_token,
                 "bytes_per_cycle": report.throughput.bytes_per_cycle,
                 "max_region_utilization": report.memory_summary.max_region_utilization,
@@ -200,7 +202,9 @@ def _execute_run_root(
         report_path=str(report_path),
         metrics={
             "estimated_cycles": report.token_latency.estimated_cycles,
+            "critical_path_cycles": report.token_latency.critical_path_cycles,
             "cycles_per_token": report.token_latency.cycles_per_token,
+            "critical_path_cycles_per_token": report.token_latency.critical_path_cycles_per_token,
             "kv_related_cycle_share": report.kv_summary.kv_related_cycle_share,
             "kv_related_bytes": report.kv_summary.kv_related_bytes,
             "sync_cycles": report.token_latency.sync_cycles,

@@ -45,10 +45,12 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.comparisons[0].layer_deltas
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].decode_compare is None
+    assert "critical_path_cycles" in report.run_records[0].metrics
     metric_delta = next(
         delta for delta in report.comparisons[0].metric_deltas if delta.metric_name == "estimated_cycles"
     )
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == metric_delta.delta_value
+    assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value < 0.0
 
 
 def test_run_sweep_analysis_rejects_invalid_baseline_spec(tmp_path: Path) -> None:

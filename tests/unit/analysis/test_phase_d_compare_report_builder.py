@@ -15,8 +15,10 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.decode_compare_count == 1
     assert report.prefill_compares[0].scenario_name == "prefill_seq128"
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
+    assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].layer_delta_count == 2
     assert report.decode_compares[0].scenario_name == "decode_token1_kv2048"
+    assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
     assert report.decode_compares[0].kv_related_cycle_share.delta_value < 0.0
     assert report.decode_compares[0].layer_delta_count == 2
     assert report.issues[0].code == "run_failed"
@@ -68,11 +70,23 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -1024.0,
                             "delta_ratio": -0.25,
                         },
+                        "critical_path_cycles": {
+                            "baseline_value": 3584.0,
+                            "candidate_value": 2304.0,
+                            "delta_value": -1280.0,
+                            "delta_ratio": -0.3571428571,
+                        },
                         "tokens_per_cycle": {
                             "baseline_value": 0.03125,
                             "candidate_value": 0.0416666667,
                             "delta_value": 0.0104166667,
                             "delta_ratio": 0.3333333344,
+                        },
+                        "tokens_per_critical_path_cycle": {
+                            "baseline_value": 0.0357142857,
+                            "candidate_value": 0.0555555556,
+                            "delta_value": 0.0198412699,
+                            "delta_ratio": 0.5555555572,
                         },
                         "cycles_per_token": {
                             "baseline_value": 32.0,
@@ -133,11 +147,23 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -400.0,
                             "delta_ratio": -0.125,
                         },
+                        "critical_path_cycles": {
+                            "baseline_value": 2880.0,
+                            "candidate_value": 2240.0,
+                            "delta_value": -640.0,
+                            "delta_ratio": -0.2222222222,
+                        },
                         "cycles_per_token": {
                             "baseline_value": 3200.0,
                             "candidate_value": 2800.0,
                             "delta_value": -400.0,
                             "delta_ratio": -0.125,
+                        },
+                        "critical_path_cycles_per_token": {
+                            "baseline_value": 2880.0,
+                            "candidate_value": 2240.0,
+                            "delta_value": -640.0,
+                            "delta_ratio": -0.2222222222,
                         },
                         "kv_related_cycle_share": {
                             "baseline_value": 0.28125,

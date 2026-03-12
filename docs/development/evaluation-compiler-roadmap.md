@@ -1856,7 +1856,7 @@ graph TD
   - one closure gap between summary-grade phase attribution and a comparable top-line cycle metric that reflects core/stage overlap
 - what still remains for `M3`:
   - deeper cycle fitting below the current critical-path summary, especially inside macro- and phase-level work models
-  - richer `SPEC-16` compare surfaces once the project is ready to compare `critical_path_cycles` alongside the legacy `estimated_cycles`
+  - broader `SPEC-16` compare surfaces beyond the current parallel `estimated_cycles` / `critical_path_cycles` top-line rows
   - any later `SPEC-19` metric migration should consume this perf surface instead of redefining top-line cycle semantics downstream
 
 ## 2026-03-12 SPEC-18/19 Phase D Compare Consumption Checkpoint
@@ -1880,3 +1880,24 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current critical-path and token-phase summary surfaces
   - richer `SPEC-16` diff modes above the current scalar-plus-layer summary surface
   - any later `SPEC-19` deeper drill-down or export work should stay downstream of this compare-summary handoff instead of reopening new compare foundations
+
+## 2026-03-12 SPEC-16 Critical-Path Compare Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-16-critical-path-compare.md`
+- `SPEC-16` sweep comparisons now carry `critical_path_cycles` in parallel with legacy `estimated_cycles` instead of forcing downstream consumers to choose one top-line cycle meaning.
+- standalone `PhaseDCompareReport` and the existing visualization compare-summary handoff now preserve the same richer scalar surface end to end.
+- new closure evidence:
+  - sweep workflow now copies `critical_path_cycles` plus the mode-specific derivative metric (`tokens_per_critical_path_cycle` or `critical_path_cycles_per_token`) from prefill/decode reports into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` now surfaces `critical_path_cycles` and `tokens_per_critical_path_cycle`
+  - `SweepDecodeCompareSummary` now surfaces `critical_path_cycles` and `critical_path_cycles_per_token`
+  - `PhaseDPrefillCompareRow` and `PhaseDDecodeCompareRow` now forward the same critical-path deltas without redefining compare semantics downstream
+  - visualization bundle compare summaries now include the new critical-path scalar rows when they consume `PhaseDCompareReport`
+  - focused sweep / compare / visualization unit-workflow verification remains green, and CLI smoke for sweep, compare, and visualization packaging remains green
+- what this closes:
+  - one `SPEC-16` richer-diff gap where overlap-aware top-line cycles still disappeared once reports entered sweep compare
+  - one standalone compare gap where `PhaseDCompareReport` forwarded `estimated_cycles` but silently dropped the newer `critical_path_cycles` surface
+  - one consumer gap where structured visualization compare summaries could not surface the new cycle metric without reopening raw sweep data
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current critical-path summary
+  - richer `SPEC-16` diff modes above the current scalar-plus-layer compare surface, especially around layer-level diff shaping and broader multi-metric compare
+  - any later `SPEC-19` compare expansion should stay downstream of the existing sweep/Phase-D compare contracts

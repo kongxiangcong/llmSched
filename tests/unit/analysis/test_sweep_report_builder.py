@@ -75,8 +75,12 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare is not None
     assert prefill_comparison.decode_compare is None
     assert prefill_comparison.prefill_compare.estimated_cycles.delta_value == -1024.0
+    assert prefill_comparison.prefill_compare.critical_path_cycles.delta_value == -1280.0
     assert prefill_comparison.prefill_compare.tokens_per_cycle.delta_value == (
         (128.0 / 3072.0) - (128.0 / 4096.0)
+    )
+    assert prefill_comparison.prefill_compare.tokens_per_critical_path_cycle.delta_value == pytest.approx(
+        (128.0 / 2304.0) - (128.0 / 3584.0)
     )
     assert prefill_comparison.prefill_compare.max_region_utilization.delta_value == pytest.approx(-0.25)
 
@@ -86,6 +90,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.prefill_compare is None
     assert decode_comparison.decode_compare is not None
     assert decode_comparison.decode_compare.estimated_cycles.delta_value == -400.0
+    assert decode_comparison.decode_compare.critical_path_cycles.delta_value == -640.0
+    assert decode_comparison.decode_compare.critical_path_cycles_per_token.delta_value == -640.0
     assert decode_comparison.decode_compare.kv_related_cycle_share.delta_value == pytest.approx(
         (700.0 / 2800.0) - (900.0 / 3200.0)
     )
@@ -132,7 +138,10 @@ def _completed_prefill_run(
             "report_path": f"tmp/{target_profile_name}-prefill/reports/prefill_evaluation_report.json",
             "metrics": {
                 "estimated_cycles": estimated_cycles,
+                "critical_path_cycles": estimated_cycles - 512.0 if schedule_kind == "single-core" else estimated_cycles - 768.0,
                 "tokens_per_cycle": 128.0 / estimated_cycles,
+                "tokens_per_critical_path_cycle": 128.0
+                / (estimated_cycles - 512.0 if schedule_kind == "single-core" else estimated_cycles - 768.0),
                 "cycles_per_token": estimated_cycles / 128.0,
                 "bytes_per_cycle": 64.0,
                 "max_region_utilization": 0.75 if schedule_kind == "single-core" else 0.5,
@@ -167,7 +176,11 @@ def _completed_decode_run(
             "report_path": f"tmp/{target_profile_name}-decode/reports/decode_evaluation_report.json",
             "metrics": {
                 "estimated_cycles": estimated_cycles,
+                "critical_path_cycles": estimated_cycles - 320.0 if schedule_kind == "single-core" else estimated_cycles - 560.0,
                 "cycles_per_token": estimated_cycles,
+                "critical_path_cycles_per_token": estimated_cycles - 320.0
+                if schedule_kind == "single-core"
+                else estimated_cycles - 560.0,
                 "kv_related_cycle_share": kvload_cycles / estimated_cycles,
                 "kv_related_bytes": 96000.0,
                 "sync_cycles": 120.0 if schedule_kind == "single-core" else 80.0,

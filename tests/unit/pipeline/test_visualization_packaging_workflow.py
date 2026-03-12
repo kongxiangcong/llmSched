@@ -47,6 +47,13 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
     assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
         "estimated_cycles"
     )
+    assert {
+        scalar.metric_name for scalar in bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas
+    } >= {
+        "estimated_cycles",
+        "critical_path_cycles",
+        "critical_path_cycles_per_token",
+    }
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
@@ -146,11 +153,23 @@ def _phase_d_compare_report():
                         "delta_value": -256.0,
                         "delta_ratio": -0.3333333333,
                     },
+                    "critical_path_cycles": {
+                        "baseline_value": 704.0,
+                        "candidate_value": 448.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.3636363636,
+                    },
                     "cycles_per_token": {
                         "baseline_value": 768.0,
                         "candidate_value": 512.0,
                         "delta_value": -256.0,
                         "delta_ratio": -0.3333333333,
+                    },
+                    "critical_path_cycles_per_token": {
+                        "baseline_value": 704.0,
+                        "candidate_value": 448.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.3636363636,
                     },
                     "kv_related_cycle_share": {
                         "baseline_value": 0.5,

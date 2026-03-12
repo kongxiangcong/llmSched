@@ -469,7 +469,12 @@ def _build_compare_summary(
     if isinstance(compare_row, PhaseDPrefillCompareRow):
         scalar_deltas = [
             _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
+            _build_scalar_delta("critical_path_cycles", compare_row.critical_path_cycles),
             _build_scalar_delta("tokens_per_cycle", compare_row.tokens_per_cycle),
+            _build_scalar_delta(
+                "tokens_per_critical_path_cycle",
+                compare_row.tokens_per_critical_path_cycle,
+            ),
             _build_scalar_delta("cycles_per_token", compare_row.cycles_per_token),
             _build_scalar_delta("bytes_per_cycle", compare_row.bytes_per_cycle),
             _build_scalar_delta("max_region_utilization", compare_row.max_region_utilization),
@@ -477,7 +482,12 @@ def _build_compare_summary(
     else:
         scalar_deltas = [
             _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
+            _build_scalar_delta("critical_path_cycles", compare_row.critical_path_cycles),
             _build_scalar_delta("cycles_per_token", compare_row.cycles_per_token),
+            _build_scalar_delta(
+                "critical_path_cycles_per_token",
+                compare_row.critical_path_cycles_per_token,
+            ),
             _build_scalar_delta("kv_related_cycle_share", compare_row.kv_related_cycle_share),
             _build_scalar_delta("kv_related_bytes", compare_row.kv_related_bytes),
             _build_scalar_delta("sync_cycles", compare_row.sync_cycles),

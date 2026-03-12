@@ -107,11 +107,23 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "delta_value": -1024.0,
                             "delta_ratio": -0.25,
                         },
+                        "critical_path_cycles": {
+                            "baseline_value": 3584.0,
+                            "candidate_value": 2304.0,
+                            "delta_value": -1280.0,
+                            "delta_ratio": -0.3571428571,
+                        },
                         "tokens_per_cycle": {
                             "baseline_value": 0.03125,
                             "candidate_value": 0.0416666667,
                             "delta_value": 0.0104166667,
                             "delta_ratio": 0.3333333344,
+                        },
+                        "tokens_per_critical_path_cycle": {
+                            "baseline_value": 0.0357142857,
+                            "candidate_value": 0.0555555556,
+                            "delta_value": 0.0198412699,
+                            "delta_ratio": 0.5555555572,
                         },
                         "cycles_per_token": {
                             "baseline_value": 32.0,
@@ -152,6 +164,72 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.comparisons[0].layer_deltas[0].delta_bytes == -32768.0
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == -1024.0
+    assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value == -1280.0
     assert report.comparisons[0].prefill_compare.max_region_utilization.delta_value == -0.25
     assert report.comparisons[0].decode_compare is None
     assert report.issues[0].code == "run_failed"
+
+
+def test_sweep_delta_report_accepts_legacy_compare_summary_without_critical_path_fields() -> None:
+    report = SweepDeltaReport.model_validate(
+        {
+            "sweep_name": "legacy-phase-d",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "run_records": [],
+            "comparisons": [
+                {
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "profile_diff_fields": [],
+                    "metric_deltas": [],
+                    "macro_deltas": [],
+                    "layer_deltas": [],
+                    "prefill_compare": {
+                        "baseline_schedule_kind": "single-core",
+                        "candidate_schedule_kind": "dual-core",
+                        "estimated_cycles": {
+                            "baseline_value": 4096.0,
+                            "candidate_value": 3072.0,
+                            "delta_value": -1024.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "tokens_per_cycle": {
+                            "baseline_value": 0.03125,
+                            "candidate_value": 0.0416666667,
+                            "delta_value": 0.0104166667,
+                            "delta_ratio": 0.3333333344,
+                        },
+                        "cycles_per_token": {
+                            "baseline_value": 32.0,
+                            "candidate_value": 24.0,
+                            "delta_value": -8.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "bytes_per_cycle": {
+                            "baseline_value": 64.0,
+                            "candidate_value": 64.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "max_region_utilization": {
+                            "baseline_value": 0.75,
+                            "candidate_value": 0.5,
+                            "delta_value": -0.25,
+                            "delta_ratio": -0.3333333333,
+                        },
+                    },
+                    "decode_compare": None,
+                }
+            ],
+            "issues": [],
+        }
+    )
+
+    compare = report.comparisons[0].prefill_compare
+    assert compare is not None
+    assert compare.critical_path_cycles.delta_value == 0.0
+    assert compare.tokens_per_critical_path_cycle.delta_value == 0.0

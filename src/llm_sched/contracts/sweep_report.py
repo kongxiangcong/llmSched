@@ -5,6 +5,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+def _zero_scalar_delta() -> "SweepScalarDelta":
+    return SweepScalarDelta(
+        baseline_value=0.0,
+        candidate_value=0.0,
+        delta_value=0.0,
+        delta_ratio=0.0,
+    )
+
+
 class SweepSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -105,7 +114,9 @@ class SweepPrefillCompareSummary(BaseModel):
     baseline_schedule_kind: Literal["single-core", "dual-core"]
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     estimated_cycles: SweepScalarDelta
+    critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     tokens_per_cycle: SweepScalarDelta
+    tokens_per_critical_path_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     cycles_per_token: SweepScalarDelta
     bytes_per_cycle: SweepScalarDelta
     max_region_utilization: SweepScalarDelta
@@ -117,7 +128,9 @@ class SweepDecodeCompareSummary(BaseModel):
     baseline_schedule_kind: Literal["single-core", "dual-core"]
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     estimated_cycles: SweepScalarDelta
+    critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     cycles_per_token: SweepScalarDelta
+    critical_path_cycles_per_token: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_related_cycle_share: SweepScalarDelta
     kv_related_bytes: SweepScalarDelta
     sync_cycles: SweepScalarDelta

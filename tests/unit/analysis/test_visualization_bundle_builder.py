@@ -64,6 +64,13 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
         "estimated_cycles"
     )
+    assert {
+        scalar.metric_name for scalar in bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas
+    } >= {
+        "estimated_cycles",
+        "critical_path_cycles",
+        "tokens_per_critical_path_cycle",
+    }
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
 
@@ -678,11 +685,23 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_value": -1024.0,
                         "delta_ratio": -0.25,
                     },
+                    "critical_path_cycles": {
+                        "baseline_value": 3584.0,
+                        "candidate_value": 2304.0,
+                        "delta_value": -1280.0,
+                        "delta_ratio": -0.3571428571,
+                    },
                     "tokens_per_cycle": {
                         "baseline_value": 0.03125,
                         "candidate_value": 0.0416666667,
                         "delta_value": 0.0104166667,
                         "delta_ratio": 0.3333333344,
+                    },
+                    "tokens_per_critical_path_cycle": {
+                        "baseline_value": 0.0357142857,
+                        "candidate_value": 0.0555555556,
+                        "delta_value": 0.0198412699,
+                        "delta_ratio": 0.5555555572,
                     },
                     "cycles_per_token": {
                         "baseline_value": 32.0,
