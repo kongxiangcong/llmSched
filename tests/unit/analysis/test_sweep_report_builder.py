@@ -8,10 +8,46 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "phase-d-foundation",
         "riscv_npu_single_core_v1",
         [
-            _completed_prefill_run("riscv_npu_single_core_v1", "single-core", 4096.0, 3072.0),
-            _completed_prefill_run("riscv_npu_dual_core_v1", "dual-core", 3072.0, 2048.0),
-            _completed_decode_run("riscv_npu_single_core_v1", "single-core", 3200.0, 900.0),
-            _completed_decode_run("riscv_npu_dual_core_v1", "dual-core", 2800.0, 700.0),
+            _completed_prefill_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                4096.0,
+                3072.0,
+                layer_rows=[
+                    {"layer_id": 0, "estimated_cycles": 3072.0, "total_bytes": 131072.0},
+                    {"layer_id": 1, "estimated_cycles": 1024.0, "total_bytes": 65536.0},
+                ],
+            ),
+            _completed_prefill_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                3072.0,
+                2048.0,
+                layer_rows=[
+                    {"layer_id": 0, "estimated_cycles": 2048.0, "total_bytes": 98304.0},
+                    {"layer_id": 1, "estimated_cycles": 1024.0, "total_bytes": 65536.0},
+                ],
+            ),
+            _completed_decode_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                3200.0,
+                900.0,
+                layer_rows=[
+                    {"layer_id": 0, "estimated_cycles": 2000.0, "total_bytes": 114000.0},
+                    {"layer_id": 1, "estimated_cycles": 1200.0, "total_bytes": 66000.0},
+                ],
+            ),
+            _completed_decode_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                2800.0,
+                700.0,
+                layer_rows=[
+                    {"layer_id": 0, "estimated_cycles": 1600.0, "total_bytes": 96000.0},
+                    {"layer_id": 1, "estimated_cycles": 1200.0, "total_bytes": 62000.0},
+                ],
+            ),
         ],
         {
             "riscv_npu_dual_core_v1": ["core_mode", "num_cores", "core_link.enabled"],
@@ -31,6 +67,9 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert estimated_cycles_delta.delta_value == -1024.0
     wdq_delta = next(delta for delta in prefill_comparison.macro_deltas if delta.macro_op == "WDQ_GEMM")
     assert wdq_delta.delta_cycles == -1024.0
+    assert [delta.layer_id for delta in prefill_comparison.layer_deltas] == [0, 1]
+    assert prefill_comparison.layer_deltas[0].delta_cycles == -1024.0
+    assert prefill_comparison.layer_deltas[0].delta_bytes == -32768.0
 
 
 def test_build_sweep_delta_report_surfaces_failures_and_missing_baselines() -> None:
@@ -57,6 +96,8 @@ def _completed_prefill_run(
     schedule_kind: str,
     estimated_cycles: float,
     wdq_cycles: float,
+    *,
+    layer_rows: list[dict[str, float | int]] | None = None,
 ) -> SweepRunRecord:
     return SweepRunRecord.model_validate(
         {
@@ -79,6 +120,7 @@ def _completed_prefill_run(
                 {"macro_op": "WDQ_GEMM", "estimated_cycles": wdq_cycles, "total_bytes": 131072.0},
                 {"macro_op": "SDPA", "estimated_cycles": 768.0, "total_bytes": 98304.0},
             ],
+            "layer_breakdown": layer_rows or [],
         }
     )
 
@@ -88,6 +130,8 @@ def _completed_decode_run(
     schedule_kind: str,
     estimated_cycles: float,
     kvload_cycles: float,
+    *,
+    layer_rows: list[dict[str, float | int]] | None = None,
 ) -> SweepRunRecord:
     return SweepRunRecord.model_validate(
         {
@@ -110,6 +154,7 @@ def _completed_decode_run(
                 {"macro_op": "KVLOAD", "estimated_cycles": kvload_cycles, "total_bytes": 64000.0},
                 {"macro_op": "SDPA_DECODE", "estimated_cycles": 700.0, "total_bytes": 40000.0},
             ],
+            "layer_breakdown": layer_rows or [],
         }
     )
 

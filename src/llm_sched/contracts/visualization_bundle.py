@@ -177,6 +177,18 @@ class VisualizationCoverageView(BaseModel):
     issues: list[VisualizationCoverageIssueView] = Field(default_factory=list)
 
 
+class VisualizationSweepLayerDeltaView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    baseline_cycles: float
+    candidate_cycles: float
+    delta_cycles: float
+    baseline_bytes: float
+    candidate_bytes: float
+    delta_bytes: float
+
+
 class VisualizationSweepComparisonView(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -184,6 +196,7 @@ class VisualizationSweepComparisonView(BaseModel):
     scenario_name: str
     mode: Literal["prefill", "decode"]
     metric_deltas: dict[str, float] = Field(default_factory=dict)
+    layer_deltas: list[VisualizationSweepLayerDeltaView] = Field(default_factory=list)
 
 
 class VisualizationSweepView(BaseModel):

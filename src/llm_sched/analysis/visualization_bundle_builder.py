@@ -26,6 +26,7 @@ from llm_sched.contracts.visualization_bundle import (
     VisualizationKVView,
     VisualizationReportSummary,
     VisualizationSweepComparisonView,
+    VisualizationSweepLayerDeltaView,
     VisualizationSweepView,
     VisualizationTimelineBlockView,
     VisualizationTimelineView,
@@ -314,6 +315,18 @@ def _build_sweep_view(
             metric_deltas={
                 metric_delta.metric_name: metric_delta.delta_value for metric_delta in comparison.metric_deltas
             },
+            layer_deltas=[
+                VisualizationSweepLayerDeltaView(
+                    layer_id=layer_delta.layer_id,
+                    baseline_cycles=layer_delta.baseline_cycles,
+                    candidate_cycles=layer_delta.candidate_cycles,
+                    delta_cycles=layer_delta.delta_cycles,
+                    baseline_bytes=layer_delta.baseline_bytes,
+                    candidate_bytes=layer_delta.candidate_bytes,
+                    delta_bytes=layer_delta.delta_bytes,
+                )
+                for layer_delta in comparison.layer_deltas
+            ],
         )
         for comparison in sweep_report.comparisons
         if comparison.scenario_name == scenario_name

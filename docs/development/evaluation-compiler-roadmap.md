@@ -46,10 +46,10 @@
 | SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries。 | 仍缺更深 cycle model、token-phase attribution，以及高于当前 node/layer summary 的 compare-grade 聚合。 |
 | SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`。 | 仍缺更细的 layer-level prefill 视图、单/双核对比输出和更强的 top-level eval compare 闭环。 |
 | SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation 和更强的 top-level eval compare 闭环。 |
-| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation。 | 仍缺 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
+| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro，以及新的 layer deltas。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
-| SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
+| SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution；`sweep_view.comparisons` 现在也已直接带结构化 `layer_deltas`。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 metric-plus-layer summary compare 的更强 compare modes。 |
 
 ## 4. 当前主路径
 
@@ -164,7 +164,7 @@ graph TD
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
 | M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
-| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`；`SPEC-16` 已有 sweep/delta foundation。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、single-vs-dual compare 和更完整的 top-level report 闭环。 |
+| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`；`SPEC-16` 已有 sweep/delta foundation，并新增 compare-grade 的 `layer_deltas`。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、single-vs-dual compare 的更完整闭环和更强的 top-level report compare surface。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
@@ -1596,3 +1596,184 @@ graph TD
   - deeper cycle fitting above the current descriptor-driven estimator
   - stronger single-vs-dual compare built on top of the new layer summary surface
   - richer sweep-oriented and multi-metric compare outputs in `SPEC-16`
+
+## 2026-03-12 SPEC-16 Layer Delta Compare Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-16-layer-deltas.md`
+- `SPEC-16` sweep comparisons now consume the new `SPEC-14/15` `layer_breakdown` surface directly and emit stable `layer_deltas` for baseline/candidate runs.
+- new closure evidence:
+  - `SweepRunRecord` now carries `layer_breakdown`
+  - `SweepComparison` now carries `layer_deltas`
+  - sweep workflow now copies `layer_breakdown` from prefill/decode reports into each completed run record
+  - focused sweep contract/builder/workflow verification remains green with the stronger compare contract
+  - `tests/smoke/test_phase_d_sweep_foundation_matrix.py` remains green
+- what this closes:
+  - one concrete single-core versus dual-core compare gap where sweep output previously stopped at top-line metrics and macro deltas
+  - one place where later compare consumers had to reopen per-run reports just to see which layers moved
+  - the first compare-grade consumer built directly above the new `SPEC-13/14/15` layer summary surface
+- what still remains for `M3`:
+  - richer layer diff modes beyond raw cycle/byte deltas
+  - stronger per-run compare surfaces inside `SPEC-14/15`
+  - parallel execution, cache reuse, and broader multi-metric compare in `SPEC-16`
+
+## 2026-03-12 SPEC-18/19 Sweep Layer Compare Surface Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-18-19-sweep-layer-compare.md`
+- `SPEC-18` visualization bundles now map `SweepComparison.layer_deltas` into `sweep_view.comparisons[*].layer_deltas`.
+- `SPEC-19` workbench sweep panel now renders layer-level compare rows directly beside the existing metric deltas and preserves them in panel export payloads.
+- new closure evidence:
+  - `VisualizationSweepComparisonView` now carries structured `layer_deltas`
+  - visualization bundle builder now copies layer compare rows from `SweepDeltaReport`
+  - workbench `renderSweep(...)` now surfaces layer-level cycle/byte deltas in the user-visible compare table
+  - focused visualization contract/builder/workflow verification remains green with the stronger sweep compare surface
+  - CLI smoke for both `run-visualization-packaging` and `run-visualization-workbench` remains green
+- what this closes:
+  - one concrete gap where `SPEC-16` already knew which layers moved but `SPEC-18/19` still flattened sweep compare to top-line metrics
+  - one place where workbench users had to reopen raw sweep JSON to see layer-level single-core versus dual-core movement
+  - the first direct `SPEC-19` consumer of the new `SPEC-16` `layer_deltas` surface
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current metric-plus-layer summary table
+  - deeper workspace drill-down above the existing sweep panel
+  - richer screenshot/export workflows on top of the current panel JSON/SVG export path
+
+## 2026-03-12 SPEC-19 Catalog Sweep Layer Compare Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-catalog-sweep-layer-compare.md`
+- catalog entries now carry summary-grade sweep compare context via `sweep_baseline_target_profile_name` and `sweep_comparisons`.
+- catalog compare tray and baseline-pinned workspace compare now resolve matched sweep summaries locally and surface `layer_deltas` directly in cross-run compare views.
+- new closure evidence:
+  - `VisualizationCatalogEntry` now preserves sweep compare summaries copied from packaged bundles
+  - visualization catalog workflow now carries `layer_deltas` through to the static catalog manifest
+  - catalog app JS now resolves matched baseline/candidate sweep pairs instead of stopping at shared summary metrics
+  - focused catalog contract/builder/workflow verification remains green with the stronger compare surface
+  - `tests/smoke/test_cli_run_visualization_catalog.py` remains green
+- what this closes:
+  - one concrete gap where catalog compare tray/workspace still ignored sweep compare information already present in the packaged workbench data
+  - one place where users had to open individual workbenches just to see whether a selected baseline/candidate pair had layer-level sweep movement
+  - the first cross-run catalog consumer of the `SPEC-18` sweep compare payload above the existing workbench panel surface
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current matched-summary layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current catalog-to-workbench navigation
+
+## 2026-03-12 SPEC-19 Catalog Sweep Compare Hardening Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-catalog-sweep-compare-hardening.md`
+- catalog sweep compare now renders ordered top-N `layer_deltas` instead of dumping the raw row order from bundled data.
+- matched sweep compare rows now include an explicit drill-down link to the owning workbench `sweep` panel.
+- new closure evidence:
+  - visualization catalog workflow now normalizes `layer_deltas` ordering by absolute cycle delta before writing the static manifest
+  - catalog app JS now applies deterministic ordering and top-N truncation when rendering `Sweep Layer Deltas`
+  - compare tray/workspace now expose an explicit `Open Sweep Panel (...)` link for matched sweep compare pairs
+  - focused catalog builder/workflow verification remains green after the stronger compare presentation rules
+  - `tests/smoke/test_cli_run_visualization_catalog.py` remains green
+- what this closes:
+  - one concrete readability gap where large sweep compare rows could overwhelm the catalog compare cards with unstable raw order
+  - one navigation gap where users could see matched sweep layer movement but still lacked a direct jump into the owning sweep panel
+  - a small but necessary hardening step before deeper compare modes on top of the current catalog workspace
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current matched-summary top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current catalog-to-workbench navigation
+
+## 2026-03-12 SPEC-19 Catalog Layer Delta Focus Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-catalog-layer-delta-focus.md`
+- catalog compare tray and workspace compare now share a `Layer Delta Focus` control with URL-persisted state.
+- matched sweep `layer_deltas` can now be surfaced as `Top By Cycles`, `Candidate Regressions`, or `Top By Bytes` without leaving the catalog page.
+- new closure evidence:
+  - catalog HTML now exposes `catalog-layer-delta-focus-filter`
+  - catalog app JS now serializes and hydrates `layer_delta_focus`
+  - sweep-layer selection now switches between focus-aware filters instead of only showing the default top-cycle slice
+  - focused catalog builder/workflow verification remains green after the stronger compare-state surface
+  - `tests/smoke/test_cli_run_visualization_catalog.py` remains green
+- what this closes:
+  - one compare-UX gap where users had no way to pivot matched sweep layer rows toward regressions or byte-heavy movement
+  - one state gap where catalog compare links preserved selected runs and panels but not the active layer-focus mode
+  - one small prerequisite for deeper compare modes above the current summary-grade catalog workspace
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current focus-aware top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current catalog-to-workbench navigation
+
+## 2026-03-12 SPEC-19 Sweep Layer Deep-Link Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-sweep-layer-deeplink.md`
+- catalog compare rows can now deep-link a specific matched sweep layer into the owning workbench `sweep` panel.
+- workbench `sweep` panel now hydrates focused candidate/layer state from URL parameters and highlights the matched layer row.
+- new closure evidence:
+  - catalog app JS now builds per-layer drill-down links with `sweep_candidate` and `sweep_layer_focus`
+  - workbench app JS now serializes and hydrates `sweep_candidate` / `sweep_layer_focus`
+  - sweep panel rendering now narrows to the focused candidate and highlights the focused layer row when present
+  - focused catalog/workbench builder and workflow verification remains green after the stronger deep-link surface
+  - CLI smoke for both catalog and workbench remains green
+- what this closes:
+  - one navigation gap where catalog compare users could only jump to the generic sweep panel instead of the specific layer that triggered interest
+  - one state gap where workbench sweep links could not preserve which candidate/layer pair the user was investigating
+  - one concrete bridge from summary-grade catalog compare into a precise workbench sweep drill-down flow
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current focus-aware top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current catalog-to-workbench navigation
+
+## 2026-03-12 SPEC-19 Sweep Export Focus Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-sweep-export-focus.md`
+- workbench `sweep` panel JSON export and SVG snapshot lines now preserve explicit focused candidate/layer metadata instead of only dumping filtered comparison rows.
+- the focused export payload now also carries baseline target context plus focused comparison/layer-delta counts.
+- new closure evidence:
+  - workbench app JS now exposes `buildSweepExportData(...)` as the single focus-aware sweep export helper
+  - `buildPanelExportData("sweep")` now emits `focused_sweep_candidate`, `focused_sweep_layer`, `focused_comparison_count`, and `focused_layer_delta_count`
+  - `buildPanelSnapshotLines("sweep")` now reads the exported focus metadata and surfaces baseline/focused-count summary lines in SVG snapshots
+  - focused workbench builder/workflow verification remains green after the stronger export surface
+  - `tests/smoke/test_cli_run_visualization_workbench.py` remains green
+- what this closes:
+  - one export gap where sweep panel JSON carried filtered rows but not the focus state needed to interpret them outside the live page
+  - one snapshot gap where SVG export knew the current panel but not the baseline/focused sweep summary driving that panel
+  - one inconsistency where sweep snapshot/export logic bypassed the same focused payload already implied by deep-linked workbench state
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current focus-aware top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current focus-aware panel JSON/SVG export path
+
+## 2026-03-12 SPEC-19 Sweep Export Detail Summary Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-sweep-export-detail-summary.md`
+- workbench `sweep` export now carries one explicit `focused_layer_delta_summary` row when the current view is narrowed to a concrete layer.
+- workbench download filenames and SVG snapshot titles now preserve current sweep focus instead of staying on generic panel-only naming.
+- new closure evidence:
+  - `buildSweepExportData(...)` now emits `focused_layer_delta_summary` with candidate/layer/cycle/byte details
+  - sweep snapshot lines now surface `Focused Layer Summary` on top of the existing focused counts
+  - workbench app JS now exposes `buildPanelSnapshotTitle(...)`, `slugifyFileSegment(...)`, and `buildPanelExportFilename(...)`
+  - JSON/SVG download paths now reuse the same focus-aware filename helper instead of hard-coding generic `run-panel-*` names
+  - focused workbench builder/workflow verification remains green after the stronger export-detail surface
+  - `tests/smoke/test_cli_run_visualization_workbench.py` remains green
+- what this closes:
+  - one export gap where focused sweep payloads still lacked a single concrete layer row to summarize the current drill-down
+  - one naming gap where saved panel artifacts could not be distinguished by focused candidate/layer state after download
+  - one screenshot gap where SVG exports preserved line-by-line details but still kept a generic panel title
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current focus-aware top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current focus-aware panel JSON/SVG export path
+
+## 2026-03-12 SPEC-19 Sweep Snapshot Metadata Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-19-sweep-snapshot-metadata.md`
+- focused sweep export now carries a structured `snapshot_metadata` object instead of forcing the SVG path to reconstruct focused summary strings from scattered fields.
+- focused SVG snapshots now render a stable `Snapshot Focus` header block above the body rows.
+- new closure evidence:
+  - workbench app JS now exposes `buildSweepSnapshotMetadata(...)`
+  - sweep export payload now includes `snapshot_metadata.title`, `snapshot_metadata.header_label`, and `snapshot_metadata.header_rows`
+  - workbench app JS now exposes `renderPanelSnapshotHeader(...)` and uses it inside `buildPanelSnapshotSvg(...)`
+  - sweep snapshot body rows now avoid repeating focus lines already surfaced in the header block
+  - focused workbench builder/workflow verification remains green after the stronger screenshot-metadata surface
+  - `tests/smoke/test_cli_run_visualization_workbench.py` remains green
+- what this closes:
+  - one screenshot gap where focused sweep SVG export still rebuilt its header context from ad hoc line strings
+  - one export gap where downstream consumers had no structured snapshot header payload to reuse outside the live page
+  - one readability gap where focused sweep snapshots mixed stable focus context with volatile body rows instead of separating them
+- what still remains for `Phase E`:
+  - richer compare modes beyond the current focus-aware top-N layer delta view
+  - deeper workspace drill-down above the existing catalog compare/workspace cards
+  - richer screenshot/export workflows on top of the current focus-aware JSON/SVG metadata path

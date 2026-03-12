@@ -69,7 +69,31 @@ class VisualizationCatalogEntry(BaseModel):
     primary_metric_name: str
     primary_metric_value: float
     metric_values: dict[str, float] = Field(default_factory=dict)
+    sweep_baseline_target_profile_name: str | None = None
+    sweep_comparisons: list["VisualizationCatalogSweepComparison"] = Field(default_factory=list)
     workbench_entry_path: str
+
+
+class VisualizationCatalogSweepLayerDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    baseline_cycles: float
+    candidate_cycles: float
+    delta_cycles: float
+    baseline_bytes: float
+    candidate_bytes: float
+    delta_bytes: float
+
+
+class VisualizationCatalogSweepComparison(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_target_profile_name: str
+    scenario_name: str
+    mode: Literal["prefill", "decode"]
+    metric_deltas: dict[str, float] = Field(default_factory=dict)
+    layer_deltas: list[VisualizationCatalogSweepLayerDelta] = Field(default_factory=list)
 
 
 class VisualizationCatalogArtifact(BaseModel):

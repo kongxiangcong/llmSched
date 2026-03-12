@@ -46,6 +46,28 @@ def test_run_visualization_workbench_writes_assets_and_updates_manifest(tmp_path
     assert "packed_record_count" in app_js
     assert "packed_layout_template_counts" in app_js
     assert "packed_field_name_counts" in app_js
+    assert "Layer Deltas" in app_js
+    assert "layer_deltas" in app_js
+    assert "sweep_candidate" in app_js
+    assert "sweep_layer_focus" in app_js
+    assert "focused_sweep_candidate" in app_js
+    assert "focused_sweep_layer" in app_js
+    assert "focused_comparison_count" in app_js
+    assert "focused_layer_delta_count" in app_js
+    assert "focused_layer_delta_summary" in app_js
+    assert "Baseline Sweep Target" in app_js
+    assert "Focused Comparisons" in app_js
+    assert "Focused Layer Deltas" in app_js
+    assert "Focused Layer Summary" in app_js
+    assert "function buildPanelSnapshotTitle" in app_js
+    assert "function renderPanelSnapshotHeader" in app_js
+    assert "function buildPanelExportFilename" in app_js
+    assert "Focused Sweep Layer" in app_js
+    assert "focused-sweep-row" in app_js
+    assert "function buildSweepSnapshotMetadata" in app_js
+    assert "snapshot_metadata" in app_js
+    assert "header_rows" in app_js
+    assert "Snapshot Focus" in app_js
     index_html = (run_root / "workbench" / "index.html").read_text(encoding="utf-8")
     assert "back-to-catalog-link" in index_html
     assert "function updateCatalogReturnLink" in app_js
@@ -279,6 +301,17 @@ def _bundle(*, include_sweep: bool) -> object:
                             "scenario_name": "prefill_seq128",
                             "mode": "prefill",
                             "metric_deltas": {"estimated_cycles": -1024.0},
+                            "layer_deltas": [
+                                {
+                                    "layer_id": 0,
+                                    "baseline_cycles": 2048.0,
+                                    "candidate_cycles": 1536.0,
+                                    "delta_cycles": -512.0,
+                                    "baseline_bytes": 65536.0,
+                                    "candidate_bytes": 49152.0,
+                                    "delta_bytes": -16384.0,
+                                }
+                            ],
                         }
                     ],
                 }

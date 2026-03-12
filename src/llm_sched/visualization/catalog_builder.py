@@ -125,6 +125,14 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
                 <option value="coverage">coverage</option>
               </select>
             </label>
+            <label class="control control-compact" for="catalog-layer-delta-focus-filter">
+              <span>Layer Delta Focus</span>
+              <select id="catalog-layer-delta-focus-filter">
+                <option value="top-cycle">Top By Cycles</option>
+                <option value="regressions-only">Candidate Regressions</option>
+                <option value="top-by-bytes">Top By Bytes</option>
+              </select>
+            </label>
           </div>
         </div>
         <div id="catalog-compare-content">
@@ -218,12 +226,14 @@ function serializeCatalogState() {
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   return {
     search: searchInput ? searchInput.value : "",
     mode: modeFilter ? modeFilter.value : "all",
     schedule: scheduleFilter ? scheduleFilter.value : "all",
     compare_scope: compareScopeFilter ? compareScopeFilter.value : "same-scenario",
     workbench_panel: workbenchPanelFilter ? workbenchPanelFilter.value : "summary",
+    layer_delta_focus: layerDeltaFocusFilter ? layerDeltaFocusFilter.value : "top-cycle",
     compare_ids: COMPARE_SELECTION.join(","),
   };
 }
@@ -247,6 +257,9 @@ function buildCatalogReturnUrl() {
     if (key === "workbench_panel" && value === "summary") {
       return;
     }
+    if (key === "layer_delta_focus" && value === "top-cycle") {
+      return;
+    }
     params.set(key, String(value));
   });
   const url = new URL(window.location.href);
@@ -262,6 +275,7 @@ function hydrateCatalogStateFromUrl() {
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   if (searchInput) {
     searchInput.value = params.get("search") || "";
   }
@@ -276,6 +290,9 @@ function hydrateCatalogStateFromUrl() {
   }
   if (workbenchPanelFilter) {
     workbenchPanelFilter.value = params.get("workbench_panel") || "summary";
+  }
+  if (layerDeltaFocusFilter) {
+    layerDeltaFocusFilter.value = params.get("layer_delta_focus") || "top-cycle";
   }
   COMPARE_SELECTION.splice(0, COMPARE_SELECTION.length);
   (params.get("compare_ids") || "")
@@ -329,6 +346,11 @@ function currentWorkbenchPanel() {
   return panelFilter ? panelFilter.value : "summary";
 }
 
+function currentLayerDeltaFocus() {
+  const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
+  return layerDeltaFocusFilter ? layerDeltaFocusFilter.value : "top-cycle";
+}
+
 function workbenchPanelLabel(panel) {
   const labels = {
     summary: "Summary",
@@ -349,6 +371,8 @@ function buildComparePanelLinks(entry) {
   }
   return `<div class="compare-link-row">${links.join("")}</div>`;
 }
+
+const MAX_SWEEP_LAYER_DELTA_ROWS = 3;
 
 function formatMetricValue(value) {
   const numeric = Number(value);
@@ -431,6 +455,124 @@ function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
   }).join("")}</ul>`;
 }
 
+function findSweepComparisonMatch(entry, baselineEntry, candidateEntry) {
+  if (!entry || !baselineEntry || !candidateEntry) {
+    return null;
+  }
+  const comparisons = entry.sweep_comparisons || [];
+  const comparison = comparisons.find((comparison) =>
+    entry.sweep_baseline_target_profile_name === baselineEntry.target_profile_name
+    && comparison.candidate_target_profile_name === candidateEntry.target_profile_name
+    && comparison.scenario_name === baselineEntry.scenario_name
+    && comparison.scenario_name === candidateEntry.scenario_name
+    && comparison.mode === baselineEntry.mode
+    && comparison.mode === candidateEntry.mode
+  );
+  return comparison ? { sourceEntry: entry, comparison } : null;
+}
+
+function resolveSweepComparisonMatch(baselineEntry, candidateEntry) {
+  return (
+    findSweepComparisonMatch(baselineEntry, baselineEntry, candidateEntry)
+    || findSweepComparisonMatch(candidateEntry, baselineEntry, candidateEntry)
+    || null
+  );
+}
+
+function resolveSweepComparison(baselineEntry, candidateEntry) {
+  const match = resolveSweepComparisonMatch(baselineEntry, candidateEntry);
+  return match ? match.comparison : null;
+}
+
+function orderedSweepLayerDeltas(layerDeltas) {
+  const focus = currentLayerDeltaFocus();
+  return [...(layerDeltas || [])].sort((left, right) => {
+    const leftScore = focus === "top-by-bytes"
+      ? Math.abs(Number(left.delta_bytes || 0))
+      : Math.abs(Number(left.delta_cycles || 0));
+    const rightScore = focus === "top-by-bytes"
+      ? Math.abs(Number(right.delta_bytes || 0))
+      : Math.abs(Number(right.delta_cycles || 0));
+    const deltaDiff = rightScore - leftScore;
+    if (deltaDiff !== 0) {
+      return deltaDiff;
+    }
+    return Number(left.layer_id || 0) - Number(right.layer_id || 0);
+  });
+}
+
+function selectSweepLayerDeltas(layerDeltas) {
+  const focus = currentLayerDeltaFocus();
+  const filteredLayerDeltas = focus === "regressions-only"
+    ? (layerDeltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0)
+    : (layerDeltas || []);
+  return orderedSweepLayerDeltas(filteredLayerDeltas).slice(0, MAX_SWEEP_LAYER_DELTA_ROWS);
+}
+
+function buildSweepDrilldownLink(baselineEntry, candidateEntry) {
+  const match = resolveSweepComparisonMatch(baselineEntry, candidateEntry);
+  if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
+    return "";
+  }
+  return `<div class="compare-link-row"><a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep")}">Open Sweep Panel (${match.sourceEntry.run_id})</a></div>`;
+}
+
+function buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerId) {
+  const match = resolveSweepComparisonMatch(baselineEntry, candidateEntry);
+  if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
+    return "";
+  }
+  return `<a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { sweep_candidate: candidateEntry.target_profile_name, sweep_layer_focus: layerId })}">Open Layer In Sweep</a>`;
+}
+
+function renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison) {
+  if (!sweepComparison) {
+    return '<p class="empty">No matched sweep compare summary.</p>';
+  }
+  const orderedLayerDeltas = orderedSweepLayerDeltas(sweepComparison.layer_deltas || []);
+  const layerDeltas = selectSweepLayerDeltas(sweepComparison.layer_deltas || []);
+  const focus = currentLayerDeltaFocus();
+  if (!layerDeltas.length) {
+    return focus === "regressions-only"
+      ? '<p class="empty">No candidate regression layers in matched sweep summary.</p>'
+      : '<p class="empty">No matched sweep layer deltas.</p>';
+  }
+  const visibleLayerCount = focus === "regressions-only"
+    ? (sweepComparison.layer_deltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0).length
+    : orderedLayerDeltas.length;
+  const sortDescriptor = focus === "top-by-bytes" ? "|delta_bytes|" : "|delta_cycles|";
+  const countDescriptor = focus === "regressions-only" ? "regression layers" : "layers";
+  const truncationNote = visibleLayerCount > MAX_SWEEP_LAYER_DELTA_ROWS
+    ? `<p class="muted">Showing top 3 of ${visibleLayerCount} ${countDescriptor} by ${sortDescriptor}.</p>`
+    : "";
+  return `${truncationNote}<ul class="metric-detail-list">${layerDeltas.map((layerDelta) => `
+    <li>
+      <span>Layer ${layerDelta.layer_id}</span>
+      <div class="metric-detail-values">
+        <strong>${formatMetricDelta(layerDelta.delta_cycles)} cycles</strong>
+        <em>${formatMetricDelta(layerDelta.delta_bytes)} bytes</em>
+      </div>
+      ${buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerDelta.layer_id)}
+    </li>
+  `).join("")}</ul>`;
+}
+
+function renderSweepComparisonSummary(sweepComparison) {
+  if (!sweepComparison) {
+    return '<p class="muted">No matched sweep compare summary.</p>';
+  }
+  const metricRows = Object.entries(sweepComparison.metric_deltas || {});
+  if (!metricRows.length) {
+    return '<p class="muted">No matched sweep metric deltas.</p>';
+  }
+  const focusLabels = {
+    "top-cycle": "Top By Cycles",
+    "regressions-only": "Candidate Regressions",
+    "top-by-bytes": "Top By Bytes",
+  };
+  return `<p class="muted">${focusLabels[currentLayerDeltaFocus()] || "Top By Cycles"} | ${metricRows.map(([name, delta]) => `${name}: ${formatMetricDelta(delta)}`).join(" | ")}</p>`;
+}
+
 function groupCatalogEntries(entries) {
   const groups = new Map();
   entries.forEach((entry) => {
@@ -506,6 +648,7 @@ function buildCompareSummary(selectedEntries) {
   const sameMetric = baseline.primary_metric_name === candidate.primary_metric_name;
   const delta = candidate.primary_metric_value - baseline.primary_metric_value;
   const ratio = baseline.primary_metric_value !== 0 ? candidate.primary_metric_value / baseline.primary_metric_value : null;
+  const sweepComparison = resolveSweepComparison(baseline, candidate);
   return `
     <article class="compare-card compare-grid">
       <div>
@@ -527,6 +670,12 @@ function buildCompareSummary(selectedEntries) {
         <p>${sameMetric ? `${candidate.primary_metric_name} delta: ${formatMetricDelta(delta)}` : "Metric mismatch"}</p>
         <p>${sameMetric && ratio !== null ? `ratio: ${ratio.toFixed(3)}x` : "ratio unavailable"}</p>
         ${buildSharedMetricDeltaRows(baseline, candidate)}
+      </div>
+      <div>
+        <h3>Sweep Layer Deltas</h3>
+        ${renderSweepComparisonSummary(sweepComparison)}
+        ${buildSweepDrilldownLink(baseline, candidate)}
+        ${renderSweepLayerDeltaRows(baseline, candidate, sweepComparison)}
       </div>
     </article>
   `;
@@ -577,6 +726,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           <th>Primary Delta</th>
           <th>Primary Ratio</th>
           <th>Shared Metric Deltas</th>
+          <th>Sweep Layer Deltas</th>
           <th>Link</th>
         </tr>
       </thead>
@@ -585,6 +735,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           const sameMetric = entry.primary_metric_name === baselineEntry.primary_metric_name;
           const delta = entry.primary_metric_value - baselineEntry.primary_metric_value;
           const ratio = baselineEntry.primary_metric_value !== 0 ? entry.primary_metric_value / baselineEntry.primary_metric_value : null;
+          const sweepComparison = resolveSweepComparison(baselineEntry, entry);
           return `
             <tr>
               <td>${entry.run_id}</td>
@@ -594,6 +745,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</td>
               <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
               <td>${buildSharedMetricDeltaRows(baselineEntry, entry)}</td>
+              <td>${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>
           `;
@@ -687,8 +839,9 @@ function bindCatalogFilters() {
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
+  const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   const swapCompareOrderButton = document.querySelector("#swap-compare-order-button");
-  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !workbenchPanelFilter || !swapCompareOrderButton) {
+  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !workbenchPanelFilter || !layerDeltaFocusFilter || !swapCompareOrderButton) {
     return;
   }
   hydrateCatalogStateFromUrl();
@@ -711,6 +864,7 @@ function bindCatalogFilters() {
   scheduleFilter.addEventListener("change", refresh);
   compareScopeFilter.addEventListener("change", refresh);
   workbenchPanelFilter.addEventListener("change", refresh);
+  layerDeltaFocusFilter.addEventListener("change", refresh);
   swapCompareOrderButton.addEventListener("click", () => {
     swapCompareSelectionOrder();
     refresh();

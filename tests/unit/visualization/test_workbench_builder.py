@@ -42,8 +42,12 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "function downloadCurrentViewJson" in files["workbench/assets/app.js"]
     assert "function buildPanelExportData" in files["workbench/assets/app.js"]
     assert "function buildPanelSnapshotLines" in files["workbench/assets/app.js"]
+    assert "function buildPanelSnapshotTitle" in files["workbench/assets/app.js"]
+    assert "function renderPanelSnapshotHeader" in files["workbench/assets/app.js"]
     assert "function escapeSvgText" in files["workbench/assets/app.js"]
     assert "function buildPanelSnapshotSvg" in files["workbench/assets/app.js"]
+    assert "function slugifyFileSegment" in files["workbench/assets/app.js"]
+    assert "function buildPanelExportFilename" in files["workbench/assets/app.js"]
     assert "function downloadCurrentPanelSvg" in files["workbench/assets/app.js"]
     assert "function buildPanelLink" in files["workbench/assets/app.js"]
     assert "function filterCoverageIssues" in files["workbench/assets/app.js"]
@@ -53,6 +57,8 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "URLSearchParams(window.location.search)" in files["workbench/assets/app.js"]
     assert "function hydrateStateFromUrl" in files["workbench/assets/app.js"]
     assert "catalog_return" in files["workbench/assets/app.js"]
+    assert "sweep_candidate" in files["workbench/assets/app.js"]
+    assert "sweep_layer_focus" in files["workbench/assets/app.js"]
     assert "memory_query" in files["workbench/assets/app.js"]
     assert "coverage_query" in files["workbench/assets/app.js"]
     assert "detail_block" in files["workbench/assets/app.js"]
@@ -74,6 +80,25 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "packed_stream_total_bytes" in files["workbench/assets/app.js"]
     assert "packed_layout_template_counts" in files["workbench/assets/app.js"]
     assert "packed_field_name_counts" in files["workbench/assets/app.js"]
+    assert "Layer Deltas" in files["workbench/assets/app.js"]
+    assert "layer_deltas" in files["workbench/assets/app.js"]
+    assert "delta_cycles" in files["workbench/assets/app.js"]
+    assert "function buildSweepExportData" in files["workbench/assets/app.js"]
+    assert "function buildSweepSnapshotMetadata" in files["workbench/assets/app.js"]
+    assert "snapshot_metadata" in files["workbench/assets/app.js"]
+    assert "header_rows" in files["workbench/assets/app.js"]
+    assert "focused_sweep_candidate" in files["workbench/assets/app.js"]
+    assert "focused_sweep_layer" in files["workbench/assets/app.js"]
+    assert "focused_comparison_count" in files["workbench/assets/app.js"]
+    assert "focused_layer_delta_count" in files["workbench/assets/app.js"]
+    assert "focused_layer_delta_summary" in files["workbench/assets/app.js"]
+    assert "Snapshot Focus" in files["workbench/assets/app.js"]
+    assert "Baseline Sweep Target" in files["workbench/assets/app.js"]
+    assert "Focused Comparisons" in files["workbench/assets/app.js"]
+    assert "Focused Layer Deltas" in files["workbench/assets/app.js"]
+    assert "Focused Layer Summary" in files["workbench/assets/app.js"]
+    assert "Focused Sweep Layer" in files["workbench/assets/app.js"]
+    assert "focused-sweep-row" in files["workbench/assets/app.js"]
 
 
 def test_build_visualization_workbench_omits_sweep_panel_when_bundle_has_no_sweep() -> None:
@@ -270,6 +295,17 @@ def _bundle(*, include_sweep: bool) -> object:
                             "scenario_name": "prefill_seq128",
                             "mode": "prefill",
                             "metric_deltas": {"estimated_cycles": -1024.0},
+                            "layer_deltas": [
+                                {
+                                    "layer_id": 0,
+                                    "baseline_cycles": 2048.0,
+                                    "candidate_cycles": 1536.0,
+                                    "delta_cycles": -512.0,
+                                    "baseline_bytes": 65536.0,
+                                    "candidate_bytes": 49152.0,
+                                    "delta_bytes": -16384.0,
+                                }
+                            ],
                         }
                     ],
                 }

@@ -57,6 +57,8 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     assert bundle.sweep_view is not None
     assert bundle.sweep_view.comparison_count == 1
     assert bundle.sweep_view.comparisons[0].candidate_target_profile_name == "riscv_npu_dual_core_v1"
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
 
 
 def test_build_visualization_bundle_for_decode_without_sweep() -> None:
@@ -622,6 +624,17 @@ def _sweep_report() -> SweepDeltaReport:
                         }
                     ],
                     "macro_deltas": [],
+                    "layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_cycles": 2048.0,
+                            "candidate_cycles": 1536.0,
+                            "delta_cycles": -512.0,
+                            "baseline_bytes": 65536.0,
+                            "candidate_bytes": 49152.0,
+                            "delta_bytes": -16384.0,
+                        }
+                    ],
                 }
             ],
             "issues": [],

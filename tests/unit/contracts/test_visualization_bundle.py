@@ -154,6 +154,17 @@ def test_visualization_bundle_accepts_all_views() -> None:
                         "scenario_name": "prefill_seq128",
                         "mode": "prefill",
                         "metric_deltas": {"estimated_cycles": -1024.0},
+                        "layer_deltas": [
+                            {
+                                "layer_id": 0,
+                                "baseline_cycles": 2048.0,
+                                "candidate_cycles": 1536.0,
+                                "delta_cycles": -512.0,
+                                "baseline_bytes": 65536.0,
+                                "candidate_bytes": 49152.0,
+                                "delta_bytes": -16384.0,
+                            }
+                        ],
                     }
                 ],
             },
@@ -168,6 +179,7 @@ def test_visualization_bundle_accepts_all_views() -> None:
     assert bundle.vmem_view.regions[0].peak_bytes_by_backing_store["ddr-backed-staged"] == 8192
     assert bundle.sweep_view is not None
     assert bundle.sweep_view.comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_bytes == -16384.0
 
 
 def test_visualization_bundle_allows_missing_optional_sweep_view() -> None:

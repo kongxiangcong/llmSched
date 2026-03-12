@@ -22,6 +22,53 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                     "estimated_cycles": 4096.0,
                     "tokens_per_cycle": 0.03125,
                 },
+                sweep_baseline_target_profile_name="riscv_npu_single_core_v1",
+                sweep_comparisons=[
+                    {
+                        "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                        "scenario_name": "prefill_seq128",
+                        "mode": "prefill",
+                        "metric_deltas": {"estimated_cycles": -1024.0},
+                        "layer_deltas": [
+                            {
+                                "layer_id": 2,
+                                "baseline_cycles": 1024.0,
+                                "candidate_cycles": 896.0,
+                                "delta_cycles": -128.0,
+                                "baseline_bytes": 32768.0,
+                                "candidate_bytes": 30720.0,
+                                "delta_bytes": -2048.0,
+                            },
+                            {
+                                "layer_id": 0,
+                                "baseline_cycles": 2048.0,
+                                "candidate_cycles": 1536.0,
+                                "delta_cycles": -512.0,
+                                "baseline_bytes": 65536.0,
+                                "candidate_bytes": 49152.0,
+                                "delta_bytes": -16384.0,
+                            },
+                            {
+                                "layer_id": 3,
+                                "baseline_cycles": 1536.0,
+                                "candidate_cycles": 1280.0,
+                                "delta_cycles": -256.0,
+                                "baseline_bytes": 49152.0,
+                                "candidate_bytes": 45056.0,
+                                "delta_bytes": -4096.0,
+                            },
+                            {
+                                "layer_id": 1,
+                                "baseline_cycles": 768.0,
+                                "candidate_cycles": 640.0,
+                                "delta_cycles": -128.0,
+                                "baseline_bytes": 24576.0,
+                                "candidate_bytes": 22528.0,
+                                "delta_bytes": -2048.0,
+                            }
+                        ],
+                    }
+                ],
                 workbench_entry_path="../run-prefill-single/workbench/index.html",
             ),
             VisualizationCatalogEntry(
@@ -62,6 +109,7 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "catalog-compare-workspace-content" in files["catalog/index.html"]
     assert "catalog-compare-scope-filter" in files["catalog/index.html"]
     assert "catalog-workbench-panel-filter" in files["catalog/index.html"]
+    assert "catalog-layer-delta-focus-filter" in files["catalog/index.html"]
     assert "swap-compare-order-button" in files["catalog/index.html"]
     assert "compare-toggle" in files["catalog/index.html"]
     assert "../run-prefill-single/workbench/index.html" in files["catalog/index.html"]
@@ -78,14 +126,37 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "function renderCompareWorkspace" in files["catalog/assets/app.js"]
     assert "function currentWorkbenchPanel" in files["catalog/assets/app.js"]
     assert "function buildComparePanelLinks" in files["catalog/assets/app.js"]
+    assert "function currentLayerDeltaFocus" in files["catalog/assets/app.js"]
+    assert "function selectSweepLayerDeltas" in files["catalog/assets/app.js"]
     assert "function serializeCatalogState" in files["catalog/assets/app.js"]
     assert "function hydrateCatalogStateFromUrl" in files["catalog/assets/app.js"]
+    assert "layer_delta_focus" in files["catalog/assets/app.js"]
+    assert "sweep_candidate" in files["catalog/assets/app.js"]
+    assert "sweep_layer_focus" in files["catalog/assets/app.js"]
     assert "catalog_return" in files["catalog/assets/app.js"]
     assert "compare_ids" in files["catalog/assets/app.js"]
     assert "Open Selected Panel" in files["catalog/assets/app.js"]
     assert "function buildSharedMetricDeltaRows" in files["catalog/assets/app.js"]
+    assert "function resolveSweepComparison" in files["catalog/assets/app.js"]
+    assert "function renderSweepLayerDeltaRows" in files["catalog/assets/app.js"]
+    assert "function orderedSweepLayerDeltas" in files["catalog/assets/app.js"]
+    assert "function buildSweepDrilldownLink" in files["catalog/assets/app.js"]
+    assert "function buildSweepLayerDrilldownLink" in files["catalog/assets/app.js"]
+    assert "MAX_SWEEP_LAYER_DELTA_ROWS" in files["catalog/assets/app.js"]
+    assert "regressions-only" in files["catalog/assets/app.js"]
+    assert "top-by-bytes" in files["catalog/assets/app.js"]
     assert "Shared Metric Deltas" in files["catalog/assets/app.js"]
+    assert "Sweep Layer Deltas" in files["catalog/assets/app.js"]
+    assert "Candidate Regressions" in files["catalog/assets/app.js"]
+    assert "Top By Bytes" in files["catalog/assets/app.js"]
+    assert "Showing top 3 of" in files["catalog/assets/app.js"]
+    assert "|delta_cycles|" in files["catalog/assets/app.js"]
+    assert "|delta_bytes|" in files["catalog/assets/app.js"]
+    assert "Open Sweep Panel" in files["catalog/assets/app.js"]
+    assert "Open Layer In Sweep" in files["catalog/assets/app.js"]
     assert "metric_values" in files["catalog/assets/app.js"]
+    assert "sweep_comparisons" in files["catalog/assets/app.js"]
+    assert "layer_deltas" in files["catalog/assets/app.js"]
     assert "Workspace Compare" in files["catalog/index.html"]
     assert "function filterCatalogEntries" in files["catalog/assets/app.js"]
     assert "function groupCatalogEntries" in files["catalog/assets/app.js"]

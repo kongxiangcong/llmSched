@@ -15,7 +15,13 @@ from llm_sched.contracts.decode_report import DecodeEvaluationReport
 from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.prefill_report import PrefillEvaluationReport
 from llm_sched.contracts.run_summary import RunSummary
-from llm_sched.contracts.sweep_report import SweepDeltaReport, SweepMacroPoint, SweepRunRecord, SweepSpec
+from llm_sched.contracts.sweep_report import (
+    SweepDeltaReport,
+    SweepLayerPoint,
+    SweepMacroPoint,
+    SweepRunRecord,
+    SweepSpec,
+)
 from llm_sched.pipeline.decode_evaluation import run_decode_evaluation
 from llm_sched.pipeline.descriptor_generation import run_descriptor_generation
 from llm_sched.pipeline.dual_core_scheduling import run_dual_core_scheduling
@@ -170,6 +176,14 @@ def _execute_run_root(
                 )
                 for hotspot in report.macro_hotspots
             ],
+            layer_breakdown=[
+                SweepLayerPoint(
+                    layer_id=row.layer_id,
+                    estimated_cycles=row.estimated_cycles,
+                    total_bytes=row.total_bytes,
+                )
+                for row in report.layer_breakdown
+            ],
         )
 
     report_path = run_root / "reports" / "decode_evaluation_report.json"
@@ -198,6 +212,14 @@ def _execute_run_root(
                 total_bytes=hotspot.total_bytes,
             )
             for hotspot in report.macro_hotspots
+        ],
+        layer_breakdown=[
+            SweepLayerPoint(
+                layer_id=row.layer_id,
+                estimated_cycles=row.estimated_cycles,
+                total_bytes=row.total_bytes,
+            )
+            for row in report.layer_breakdown
         ],
     )
 

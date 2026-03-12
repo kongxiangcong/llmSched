@@ -28,7 +28,7 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     run_root_a = tmp_path / "run-a"
     run_root_b = tmp_path / "run-b"
     catalog_root = tmp_path / "catalog-root"
-    _write_packaged_run(run_root_a, run_id="run-a", mode="prefill", schedule_kind="single-core")
+    _write_packaged_run(run_root_a, run_id="run-a", mode="prefill", schedule_kind="single-core", include_sweep=True)
     _write_packaged_run(run_root_b, run_id="run-b", mode="decode", schedule_kind="dual-core")
 
     result = run_cli(
@@ -49,13 +49,35 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     app_js = (catalog_root / "catalog" / "assets" / "app.js").read_text(encoding="utf-8")
     assert "catalog-workbench-panel-filter" in index_html
     assert "function currentWorkbenchPanel" in app_js
+    assert "function currentLayerDeltaFocus" in app_js
+    assert "function selectSweepLayerDeltas" in app_js
+    assert "sweep_candidate" in app_js
+    assert "sweep_layer_focus" in app_js
     assert "function serializeCatalogState" in app_js
     assert "function hydrateCatalogStateFromUrl" in app_js
+    assert "layer_delta_focus" in app_js
     assert "catalog_return" in app_js
     assert "Open Selected Panel" in app_js
+    assert "function resolveSweepComparison" in app_js
+    assert "function renderSweepLayerDeltaRows" in app_js
+    assert "function orderedSweepLayerDeltas" in app_js
+    assert "function buildSweepDrilldownLink" in app_js
+    assert "function buildSweepLayerDrilldownLink" in app_js
+    assert "Sweep Layer Deltas" in app_js
+    assert "regressions-only" in app_js
+    assert "top-by-bytes" in app_js
+    assert "Candidate Regressions" in app_js
+    assert "Top By Bytes" in app_js
+    assert "Showing top 3 of" in app_js
+    assert "|delta_cycles|" in app_js
+    assert "|delta_bytes|" in app_js
+    assert "Open Sweep Panel" in app_js
+    assert "Open Layer In Sweep" in app_js
+    assert "sweep_comparisons" in app_js
 
     manifest = json.loads((catalog_root / "catalog" / "catalog_manifest.json").read_text(encoding="utf-8"))
     assert manifest["metadata"]["entry_count"] == 2
+    assert "catalog-layer-delta-focus-filter" in index_html
 
 
 def test_run_visualization_catalog_rejects_missing_workbench_without_traceback(tmp_path: Path) -> None:
@@ -448,7 +470,14 @@ def test_run_visualization_catalog_surfaces_descriptor_generation_focus_link(
     assert "workbenchCoverageFocus" in app_js
 
 
-def _write_packaged_run(run_root: Path, *, run_id: str, mode: str, schedule_kind: str) -> None:
+def _write_packaged_run(
+    run_root: Path,
+    *,
+    run_id: str,
+    mode: str,
+    schedule_kind: str,
+    include_sweep: bool = False,
+) -> None:
     (run_root / "reports").mkdir(parents=True, exist_ok=True)
     (run_root / "workbench").mkdir(parents=True, exist_ok=True)
     (run_root / "workbench" / "index.html").write_text("<html></html>", encoding="utf-8")
@@ -569,7 +598,61 @@ def _write_packaged_run(run_root: Path, *, run_id: str, mode: str, schedule_kind
                     "gap_counts": {},
                     "issues": [],
                 },
-                "sweep_view": None,
+                "sweep_view": (
+                    {
+                        "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                        "comparison_count": 1,
+                        "issue_count": 0,
+                        "comparisons": [
+                            {
+                                "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                                "scenario_name": "prefill_seq128" if mode == "prefill" else "decode_token1_kv2048",
+                                "mode": mode,
+                                "metric_deltas": {"estimated_cycles": -1024.0},
+                                "layer_deltas": [
+                                    {
+                                        "layer_id": 2,
+                                        "baseline_cycles": 1024.0,
+                                        "candidate_cycles": 896.0,
+                                        "delta_cycles": -128.0,
+                                        "baseline_bytes": 32768.0,
+                                        "candidate_bytes": 30720.0,
+                                        "delta_bytes": -2048.0,
+                                    },
+                                    {
+                                        "layer_id": 0,
+                                        "baseline_cycles": 2048.0,
+                                        "candidate_cycles": 1536.0,
+                                        "delta_cycles": -512.0,
+                                        "baseline_bytes": 65536.0,
+                                        "candidate_bytes": 49152.0,
+                                        "delta_bytes": -16384.0,
+                                    },
+                                    {
+                                        "layer_id": 3,
+                                        "baseline_cycles": 1536.0,
+                                        "candidate_cycles": 1280.0,
+                                        "delta_cycles": -256.0,
+                                        "baseline_bytes": 49152.0,
+                                        "candidate_bytes": 45056.0,
+                                        "delta_bytes": -4096.0,
+                                    },
+                                    {
+                                        "layer_id": 1,
+                                        "baseline_cycles": 768.0,
+                                        "candidate_cycles": 640.0,
+                                        "delta_cycles": -128.0,
+                                        "baseline_bytes": 24576.0,
+                                        "candidate_bytes": 22528.0,
+                                        "delta_bytes": -2048.0,
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                    if include_sweep
+                    else None
+                ),
                 "issues": [],
             },
             indent=2,

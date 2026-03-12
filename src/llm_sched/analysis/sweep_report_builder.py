@@ -8,6 +8,7 @@ from llm_sched.contracts.sweep_report import (
     SweepComparison,
     SweepDeltaReport,
     SweepIssue,
+    SweepLayerDelta,
     SweepMacroDelta,
     SweepMetricDelta,
     SweepRunRecord,
@@ -71,6 +72,7 @@ def build_sweep_delta_report(
                     profile_diff_fields=profile_diff_lookup.get(candidate_run.target_profile_name, []),
                     metric_deltas=_build_metric_deltas(baseline_run, candidate_run),
                     macro_deltas=_build_macro_deltas(baseline_run, candidate_run),
+                    layer_deltas=_build_layer_deltas(baseline_run, candidate_run),
                 )
             )
 
@@ -129,3 +131,35 @@ def _build_macro_deltas(
         for macro_op in macro_names
     ]
     return sorted(deltas, key=lambda delta: abs(delta.delta_cycles), reverse=True)
+
+
+def _build_layer_deltas(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> list[SweepLayerDelta]:
+    baseline_layers = {
+        int(row.layer_id): row for row in baseline_run.layer_breakdown
+    }
+    candidate_layers = {
+        int(row.layer_id): row for row in candidate_run.layer_breakdown
+    }
+    layer_ids = set(baseline_layers) | set(candidate_layers)
+    deltas = [
+        SweepLayerDelta(
+            layer_id=layer_id,
+            baseline_cycles=float(baseline_layers.get(layer_id).estimated_cycles if layer_id in baseline_layers else 0.0),
+            candidate_cycles=float(candidate_layers.get(layer_id).estimated_cycles if layer_id in candidate_layers else 0.0),
+            delta_cycles=float(
+                (candidate_layers.get(layer_id).estimated_cycles if layer_id in candidate_layers else 0.0)
+                - (baseline_layers.get(layer_id).estimated_cycles if layer_id in baseline_layers else 0.0)
+            ),
+            baseline_bytes=float(baseline_layers.get(layer_id).total_bytes if layer_id in baseline_layers else 0.0),
+            candidate_bytes=float(candidate_layers.get(layer_id).total_bytes if layer_id in candidate_layers else 0.0),
+            delta_bytes=float(
+                (candidate_layers.get(layer_id).total_bytes if layer_id in candidate_layers else 0.0)
+                - (baseline_layers.get(layer_id).total_bytes if layer_id in baseline_layers else 0.0)
+            ),
+        )
+        for layer_id in layer_ids
+    ]
+    return sorted(deltas, key=lambda delta: (-abs(delta.delta_cycles), delta.layer_id))

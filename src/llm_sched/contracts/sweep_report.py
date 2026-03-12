@@ -33,6 +33,14 @@ class SweepMacroPoint(BaseModel):
     total_bytes: float = Field(ge=0.0)
 
 
+class SweepLayerPoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    estimated_cycles: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
 class SweepRunRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -47,6 +55,7 @@ class SweepRunRecord(BaseModel):
     report_path: str | None = None
     metrics: dict[str, float] = Field(default_factory=dict)
     macro_hotspots: list[SweepMacroPoint] = Field(default_factory=list)
+    layer_breakdown: list[SweepLayerPoint] = Field(default_factory=list)
     failure_message: str | None = None
 
 
@@ -69,6 +78,18 @@ class SweepMacroDelta(BaseModel):
     delta_cycles: float
 
 
+class SweepLayerDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    baseline_cycles: float
+    candidate_cycles: float
+    delta_cycles: float
+    baseline_bytes: float = Field(ge=0.0)
+    candidate_bytes: float = Field(ge=0.0)
+    delta_bytes: float
+
+
 class SweepComparison(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -79,6 +100,7 @@ class SweepComparison(BaseModel):
     profile_diff_fields: list[str] = Field(default_factory=list)
     metric_deltas: list[SweepMetricDelta] = Field(default_factory=list)
     macro_deltas: list[SweepMacroDelta] = Field(default_factory=list)
+    layer_deltas: list[SweepLayerDelta] = Field(default_factory=list)
 
 
 class SweepIssue(BaseModel):

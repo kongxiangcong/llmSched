@@ -137,6 +137,8 @@ const UI_STATE = {
   memoryQuery: "",
   coverageQuery: "",
   coverageFocus: "",
+  sweepCandidate: "",
+  sweepLayerFocus: "",
   activeDetailBlockId: null,
   catalogReturnUrl: "",
   requestedPanel: "summary",
@@ -189,6 +191,8 @@ function serializeUiState() {
     memory_query: UI_STATE.memoryQuery,
     coverage_query: UI_STATE.coverageQuery,
     coverage_focus: UI_STATE.coverageFocus,
+    sweep_candidate: UI_STATE.sweepCandidate,
+    sweep_layer_focus: UI_STATE.sweepLayerFocus,
     detail_block: UI_STATE.activeDetailBlockId,
     catalog_return: UI_STATE.catalogReturnUrl,
   };
@@ -211,6 +215,8 @@ function hydrateStateFromUrl() {
   UI_STATE.memoryQuery = params.get("memory_query") || "";
   UI_STATE.coverageQuery = params.get("coverage_query") || "";
   UI_STATE.coverageFocus = params.get("coverage_focus") || "";
+  UI_STATE.sweepCandidate = params.get("sweep_candidate") || "";
+  UI_STATE.sweepLayerFocus = params.get("sweep_layer_focus") || "";
   UI_STATE.activeDetailBlockId = params.get("detail_block");
   UI_STATE.catalogReturnUrl = params.get("catalog_return") || "";
 }
@@ -626,24 +632,152 @@ function scrollCoverageFocusIntoView() {
   }
 }
 
+function selectedSweepComparisons(comparisons) {
+  if (!UI_STATE.sweepCandidate) {
+    return comparisons || [];
+  }
+  return (comparisons || []).filter(
+    (comparison) => comparison.candidate_target_profile_name === UI_STATE.sweepCandidate
+  );
+}
+
+function selectedSweepLayerDeltas(comparison) {
+  if (!UI_STATE.sweepLayerFocus) {
+    return comparison.layer_deltas || [];
+  }
+  return (comparison.layer_deltas || []).filter(
+    (layerDelta) => String(layerDelta.layer_id) === String(UI_STATE.sweepLayerFocus)
+  );
+}
+
+function buildSweepSnapshotMetadata(sweepData) {
+  const headerRows = [
+    sweepData.baseline_target_profile_name
+      ? `Baseline Sweep Target: ${sweepData.baseline_target_profile_name}`
+      : "",
+    sweepData.focused_sweep_candidate
+      ? `Focused Sweep Candidate: ${sweepData.focused_sweep_candidate}`
+      : "",
+    sweepData.focused_sweep_layer
+      ? `Focused Sweep Layer: ${sweepData.focused_sweep_layer}`
+      : "",
+    sweepData.focused_layer_delta_summary
+      ? `Focused Layer Summary: ${sweepData.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(sweepData.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(sweepData.focused_layer_delta_summary.delta_bytes)}`
+      : "",
+  ].filter(Boolean);
+  const titleParts = ["sweep snapshot"];
+  if (sweepData.focused_sweep_candidate) {
+    titleParts.push(sweepData.focused_sweep_candidate);
+  }
+  if (sweepData.focused_sweep_layer) {
+    titleParts.push(`layer ${sweepData.focused_sweep_layer}`);
+  }
+  return {
+    title: titleParts.join(" / "),
+    header_label: "Snapshot Focus",
+    header_rows: headerRows,
+  };
+}
+
+function buildSweepExportData(bundle) {
+  const emptySweepData = {
+    baseline_target_profile_name: null,
+    focused_sweep_candidate: UI_STATE.sweepCandidate || null,
+    focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
+    focused_comparison_count: 0,
+    focused_layer_delta_count: 0,
+    focused_layer_delta_summary: null,
+    comparisons: [],
+  };
+  if (!bundle.sweep_view) {
+    return {
+      ...emptySweepData,
+      snapshot_metadata: buildSweepSnapshotMetadata(emptySweepData),
+    };
+  }
+  const comparisons = selectedSweepComparisons(bundle.sweep_view.comparisons || []).map((comparison) => ({
+    ...comparison,
+    layer_deltas: selectedSweepLayerDeltas(comparison),
+  }));
+  const focusedLayerDeltaSummary = UI_STATE.sweepLayerFocus
+    ? (() => {
+        for (const comparison of comparisons) {
+          for (const layerDelta of comparison.layer_deltas || []) {
+            return {
+              candidate_target_profile_name: comparison.candidate_target_profile_name,
+              scenario_name: comparison.scenario_name,
+              mode: comparison.mode,
+              layer_id: layerDelta.layer_id,
+              baseline_cycles: layerDelta.baseline_cycles,
+              candidate_cycles: layerDelta.candidate_cycles,
+              delta_cycles: layerDelta.delta_cycles,
+              baseline_bytes: layerDelta.baseline_bytes,
+              candidate_bytes: layerDelta.candidate_bytes,
+              delta_bytes: layerDelta.delta_bytes,
+            };
+          }
+        }
+        return null;
+      })()
+    : null;
+  const sweepData = {
+    baseline_target_profile_name: bundle.sweep_view.baseline_target_profile_name || null,
+    focused_sweep_candidate: UI_STATE.sweepCandidate || null,
+    focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
+    focused_comparison_count: comparisons.length,
+    focused_layer_delta_count: comparisons.reduce(
+      (total, comparison) => total + ((comparison.layer_deltas || []).length),
+      0,
+    ),
+    focused_layer_delta_summary: focusedLayerDeltaSummary,
+    comparisons,
+  };
+  return {
+    ...sweepData,
+    snapshot_metadata: buildSweepSnapshotMetadata(sweepData),
+  };
+}
+
 function renderSweep(bundle) {
   if (!bundle.sweep_view) {
     return `<article class="card"><h2>Sweep</h2><p class="empty">No sweep context.</p></article>`;
   }
-  const rows = (bundle.sweep_view.comparisons || []).map((comparison) => `
+  const sweepData = buildSweepExportData(bundle);
+  const comparisons = sweepData.comparisons || [];
+  const focusSummary = [
+    sweepData.baseline_target_profile_name
+      ? `Baseline Sweep Target: ${sweepData.baseline_target_profile_name}`
+      : "",
+    sweepData.focused_sweep_candidate
+      ? `Focused Sweep Candidate: ${sweepData.focused_sweep_candidate}`
+      : "",
+    sweepData.focused_sweep_layer ? `Focused Sweep Layer: ${sweepData.focused_sweep_layer}` : "",
+    `Focused Comparisons: ${sweepData.focused_comparison_count}`,
+    `Focused Layer Deltas: ${sweepData.focused_layer_delta_count}`,
+    sweepData.focused_layer_delta_summary
+      ? `Focused Layer Summary: ${sweepData.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(sweepData.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(sweepData.focused_layer_delta_summary.delta_bytes)}`
+      : "",
+  ].filter(Boolean).map((line) => `<p class="muted">${line}</p>`).join("");
+  const rows = comparisons.map((comparison) => `
     <tr>
       <td>${comparison.candidate_target_profile_name}</td>
       <td>${comparison.scenario_name}</td>
       <td>${comparison.mode}</td>
       <td>${Object.entries(comparison.metric_deltas || {}).map(([k, v]) => `${k}: ${formatNumber(v)}`).join("<br>")}</td>
+      <td>${(comparison.layer_deltas || []).length > 0
+        ? (comparison.layer_deltas || []).map((layerDelta) =>
+            `<span class="${sweepData.focused_sweep_layer && String(layerDelta.layer_id) === String(sweepData.focused_sweep_layer) ? "focused-sweep-row" : ""}">Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}, delta_bytes ${formatNumber(layerDelta.delta_bytes)}</span>`
+          ).join("<br>")
+        : `<span class="muted">${sweepData.focused_sweep_layer ? "Focused sweep layer not found." : "No layer deltas."}</span>`}</td>
     </tr>
   `).join("");
   return `
     <article class="card wide-card">
       <h2>Sweep Comparison</h2>
+      ${focusSummary}
       <table class="data-table">
-        <thead><tr><th>Candidate</th><th>Scenario</th><th>Mode</th><th>Metric Deltas</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <thead><tr><th>Candidate</th><th>Scenario</th><th>Mode</th><th>Metric Deltas</th><th>Layer Deltas</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="empty-cell">No sweep comparisons match the current focus.</td></tr>'}</tbody>
       </table>
     </article>
   `;
@@ -718,9 +852,7 @@ function buildPanelExportData(bundle, panelId) {
       return {
         panel: panelId,
         ui_state: state,
-        data: {
-          comparisons: bundle.sweep_view ? bundle.sweep_view.comparisons || [] : [],
-        },
+        data: buildSweepExportData(bundle),
       };
     default:
       return {
@@ -801,7 +933,33 @@ function buildPanelSnapshotLines(bundle, panelId) {
       });
       break;
     case "sweep":
+      const snapshotHeaderRows =
+        payload.data.snapshot_metadata && Array.isArray(payload.data.snapshot_metadata.header_rows)
+          ? payload.data.snapshot_metadata.header_rows.filter(Boolean)
+          : [];
+      if (snapshotHeaderRows.length === 0 && payload.data.baseline_target_profile_name) {
+        lines.push(`Baseline Sweep Target: ${payload.data.baseline_target_profile_name}`);
+      }
       lines.push(`Comparisons: ${(payload.data.comparisons || []).length}`);
+      lines.push(`Focused Comparisons: ${payload.data.focused_comparison_count || 0}`);
+      lines.push(`Focused Layer Deltas: ${payload.data.focused_layer_delta_count || 0}`);
+      if (snapshotHeaderRows.length === 0 && payload.data.focused_sweep_candidate) {
+        lines.push(`Focused Sweep Candidate: ${payload.data.focused_sweep_candidate}`);
+      }
+      if (snapshotHeaderRows.length === 0 && payload.data.focused_sweep_layer) {
+        lines.push(`Focused Sweep Layer: ${payload.data.focused_sweep_layer}`);
+      }
+      if (snapshotHeaderRows.length === 0 && payload.data.focused_layer_delta_summary) {
+        lines.push(
+          `Focused Layer Summary: ${payload.data.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${payload.data.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(payload.data.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(payload.data.focused_layer_delta_summary.delta_bytes)}`
+        );
+      }
+      (payload.data.comparisons || []).slice(0, 3).forEach((comparison) => {
+        lines.push(`${comparison.candidate_target_profile_name}: ${(comparison.layer_deltas || []).length} layer deltas`);
+        (comparison.layer_deltas || []).slice(0, 2).forEach((layerDelta) => {
+          lines.push(`Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}`);
+        });
+      });
       break;
     default:
       lines.push("No panel-specific snapshot lines.");
@@ -819,12 +977,55 @@ function escapeSvgText(value) {
     .replace(/\"/g, "&quot;");
 }
 
+function buildPanelSnapshotTitle(bundle, panelId, payload) {
+  if (payload.data.snapshot_metadata && payload.data.snapshot_metadata.title) {
+    return payload.data.snapshot_metadata.title;
+  }
+  if (panelId !== "sweep") {
+    return `${panelId} snapshot`;
+  }
+  const parts = ["sweep snapshot"];
+  if (payload.data.focused_sweep_candidate) {
+    parts.push(payload.data.focused_sweep_candidate);
+  }
+  if (payload.data.focused_sweep_layer) {
+    parts.push(`layer ${payload.data.focused_sweep_layer}`);
+  }
+  return parts.join(" / ");
+}
+
+function renderPanelSnapshotHeader(payload, topY) {
+  const metadata = payload.data.snapshot_metadata || null;
+  const headerRows = metadata && Array.isArray(metadata.header_rows) ? metadata.header_rows.filter(Boolean) : [];
+  if (headerRows.length === 0) {
+    return { svg: "", height: 0 };
+  }
+  const rowGap = 20;
+  const blockHeight = 44 + (headerRows.length * rowGap);
+  const blockWidth = 1136;
+  const textRows = headerRows.map((line, index) => {
+    const y = topY + 46 + (index * rowGap);
+    return `<text x="52" y="${y}" font-size="15" fill="#102033">${escapeSvgText(line)}</text>`;
+  }).join("");
+  return {
+    svg: `
+  <rect x="32" y="${topY}" width="${blockWidth}" height="${blockHeight}" rx="18" fill="#edf7fb" stroke="#9ac7d8" />
+  <text x="52" y="${topY + 24}" font-size="13" fill="#0b4f6c">${escapeSvgText(metadata.header_label || "Snapshot Focus")}</text>
+  ${textRows}`.trim(),
+    height: blockHeight + 20,
+  };
+}
+
 function buildPanelSnapshotSvg(bundle, panelId) {
+  const payload = buildPanelExportData(bundle, panelId);
   const lines = buildPanelSnapshotLines(bundle, panelId);
+  const snapshotTitle = buildPanelSnapshotTitle(bundle, panelId, payload);
+  const snapshotHeader = renderPanelSnapshotHeader(payload, 92);
   const lineHeight = 24;
-  const height = 120 + (lines.length * lineHeight);
+  const bodyStartY = 84 + snapshotHeader.height;
+  const height = 120 + snapshotHeader.height + (lines.length * lineHeight);
   const textRows = lines.map((line, index) => {
-    const y = 84 + (index * lineHeight);
+    const y = bodyStartY + (index * lineHeight);
     return `<text x="32" y="${y}" font-size="16" fill="#102033">${escapeSvgText(line)}</text>`;
   }).join("");
 
@@ -833,9 +1034,30 @@ function buildPanelSnapshotSvg(bundle, panelId) {
   <rect width="1200" height="${height}" fill="#f3efe4" />
   <rect x="24" y="24" width="1152" height="${height - 48}" rx="24" fill="#fffaf1" stroke="#d9d1c4" />
   <text x="32" y="52" font-size="28" font-family="Georgia, Times New Roman, serif" fill="#102033">${escapeSvgText(bundle.metadata.run_id)}</text>
-  <text x="32" y="76" font-size="18" fill="#5b6980">${escapeSvgText(panelId)} snapshot</text>
+  <text x="32" y="76" font-size="18" fill="#5b6980">${escapeSvgText(snapshotTitle)}</text>
+  ${snapshotHeader.svg}
   ${textRows}
 </svg>`.trim();
+}
+
+function slugifyFileSegment(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "focus";
+}
+
+function buildPanelExportFilename(bundle, panelId, payload, suffix) {
+  const segments = [bundle.metadata.run_id, panelId];
+  if (panelId === "sweep") {
+    if (payload.data.focused_sweep_candidate) {
+      segments.push(slugifyFileSegment(payload.data.focused_sweep_candidate));
+    }
+    if (payload.data.focused_sweep_layer) {
+      segments.push(`layer-${slugifyFileSegment(payload.data.focused_sweep_layer)}`);
+    }
+  }
+  return `${segments.join("-")}-${suffix}`;
 }
 
 function renderPanel(bundle, panelId) {
@@ -927,7 +1149,7 @@ function downloadCurrentViewJson(bundle) {
   const downloadUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = downloadUrl;
-  anchor.download = `${bundle.metadata.run_id}-${panelId}-view.json`;
+  anchor.download = buildPanelExportFilename(bundle, panelId, payload, "view.json");
   anchor.click();
   URL.revokeObjectURL(downloadUrl);
   setWorkbenchActionStatus(`Exported ${panelId} panel JSON.`);
@@ -935,12 +1157,13 @@ function downloadCurrentViewJson(bundle) {
 
 function downloadCurrentPanelSvg(bundle) {
   const panelId = getActivePanelId();
+  const payload = buildPanelExportData(bundle, panelId);
   const svg = buildPanelSnapshotSvg(bundle, panelId);
   const blob = new Blob([svg], { type: "image/svg+xml" });
   const downloadUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = downloadUrl;
-  anchor.download = `${bundle.metadata.run_id}-${panelId}-snapshot.svg`;
+  anchor.download = buildPanelExportFilename(bundle, panelId, payload, "snapshot.svg");
   anchor.click();
   URL.revokeObjectURL(downloadUrl);
   setWorkbenchActionStatus(`Exported ${panelId} panel SVG.`);
@@ -1236,6 +1459,14 @@ def _build_styles_css() -> str:
 .card.is-focused {
   border-color: rgba(28, 181, 224, 0.72);
   box-shadow: 0 18px 44px rgba(28, 181, 224, 0.18);
+}
+
+.focused-sweep-row {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(28, 181, 224, 0.14);
+  color: #0b4f6c;
 }
 
 .wide-card {

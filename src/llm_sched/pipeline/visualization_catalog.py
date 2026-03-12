@@ -17,6 +17,8 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogPhaseCBlockedCase,
     VisualizationCatalogEntry,
     VisualizationCatalogPhaseCGateSummary,
+    VisualizationCatalogSweepComparison,
+    VisualizationCatalogSweepLayerDelta,
 )
 from llm_sched.contracts.visualization_workbench import VisualizationWorkbenchArtifact
 from llm_sched.visualization import build_visualization_catalog
@@ -119,6 +121,10 @@ def _build_catalog_entry(catalog_root: Path, run_root: Path) -> VisualizationCat
         primary_metric_name=primary_metric_name,
         primary_metric_value=primary_metric_value,
         metric_values=_collect_metric_values(bundle),
+        sweep_baseline_target_profile_name=(
+            bundle.sweep_view.baseline_target_profile_name if bundle.sweep_view is not None else None
+        ),
+        sweep_comparisons=_collect_sweep_comparisons(bundle),
         workbench_entry_path=relative_entry_path,
     )
 
@@ -140,6 +146,35 @@ def _collect_metric_values(bundle: VisualizationBundle) -> dict[str, float]:
         key: float(value)
         for key, value in bundle.report_summary.primary_metrics.items()
     }
+
+
+def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[VisualizationCatalogSweepComparison]:
+    if bundle.sweep_view is None:
+        return []
+    return [
+        VisualizationCatalogSweepComparison(
+            candidate_target_profile_name=comparison.candidate_target_profile_name,
+            scenario_name=comparison.scenario_name,
+            mode=comparison.mode,
+            metric_deltas={key: float(value) for key, value in comparison.metric_deltas.items()},
+            layer_deltas=[
+                VisualizationCatalogSweepLayerDelta(
+                    layer_id=layer_delta.layer_id,
+                    baseline_cycles=layer_delta.baseline_cycles,
+                    candidate_cycles=layer_delta.candidate_cycles,
+                    delta_cycles=layer_delta.delta_cycles,
+                    baseline_bytes=layer_delta.baseline_bytes,
+                    candidate_bytes=layer_delta.candidate_bytes,
+                    delta_bytes=layer_delta.delta_bytes,
+                )
+                for layer_delta in sorted(
+                    comparison.layer_deltas,
+                    key=lambda item: (-abs(item.delta_cycles), item.layer_id),
+                )
+            ],
+        )
+        for comparison in bundle.sweep_view.comparisons
+    ]
 
 
 def _resolve_run_roots(

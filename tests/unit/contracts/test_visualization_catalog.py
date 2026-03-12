@@ -53,6 +53,63 @@ def test_visualization_catalog_contract_accepts_minimal_static_index() -> None:
     assert artifact.entries[0].metric_values["tokens_per_cycle"] == 0.03125
 
 
+def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> None:
+    from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
+
+    artifact = VisualizationCatalogArtifact.model_validate(
+        {
+            "catalog_id": "catalog.phase-e",
+            "title": "Phase E Catalog",
+            "metadata": {
+                "generated_by": "run-visualization-catalog",
+                "entry_count": 1,
+                "default_sort_key": "primary_metric",
+            },
+            "entries": [
+                {
+                    "entry_id": "run.prefill.single",
+                    "run_id": "run-prefill-single",
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "schedule_kind": "single-core",
+                    "target_profile_name": "riscv_npu_single_core_v1",
+                    "primary_metric_name": "estimated_cycles",
+                    "primary_metric_value": 4096.0,
+                    "metric_values": {
+                        "estimated_cycles": 4096.0,
+                        "tokens_per_cycle": 0.03125,
+                    },
+                    "sweep_baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "sweep_comparisons": [
+                        {
+                            "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                            "scenario_name": "prefill_seq128",
+                            "mode": "prefill",
+                            "metric_deltas": {"estimated_cycles": -1024.0},
+                            "layer_deltas": [
+                                {
+                                    "layer_id": 0,
+                                    "baseline_cycles": 2048.0,
+                                    "candidate_cycles": 1536.0,
+                                    "delta_cycles": -512.0,
+                                    "baseline_bytes": 65536.0,
+                                    "candidate_bytes": 49152.0,
+                                    "delta_bytes": -16384.0,
+                                }
+                            ],
+                        }
+                    ],
+                    "workbench_entry_path": "../run-prefill-single/workbench/index.html",
+                }
+            ],
+        }
+    )
+
+    assert artifact.entries[0].sweep_baseline_target_profile_name == "riscv_npu_single_core_v1"
+    assert artifact.entries[0].sweep_comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
+    assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
+
+
 def test_visualization_catalog_contract_rejects_duplicate_entry_ids() -> None:
     from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
 

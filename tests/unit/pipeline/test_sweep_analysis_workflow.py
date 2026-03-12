@@ -41,6 +41,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.completed_run_count == 2
     assert report.failed_run_count == 0
     assert len(report.comparisons) == 1
+    assert report.run_records[0].layer_breakdown
+    assert report.comparisons[0].layer_deltas
 
 
 def test_run_sweep_analysis_rejects_invalid_baseline_spec(tmp_path: Path) -> None:

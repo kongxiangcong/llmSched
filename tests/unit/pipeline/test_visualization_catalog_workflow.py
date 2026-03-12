@@ -16,6 +16,7 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
         schedule_kind="single-core",
         target_profile_name="riscv_npu_single_core_v1",
         primary_metrics={"estimated_cycles": 4096.0, "tokens_per_cycle": 0.03125},
+        include_sweep=True,
     )
     _write_packaged_run(
         run_root_b,
@@ -41,13 +42,34 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert artifact.entries[0].workbench_entry_path.endswith("workbench/index.html")
     assert artifact.entries[0].metric_values["estimated_cycles"] == 4096.0
     assert artifact.entries[0].metric_values["tokens_per_cycle"] == 0.03125
+    assert artifact.entries[0].sweep_baseline_target_profile_name == "riscv_npu_single_core_v1"
+    assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert artifact.entries[1].metric_values["token_latency_cycles"] == 512.0
     assert artifact.entries[1].metric_values["tokens_per_second"] == 1953.125
     assert (catalog_root / "catalog" / "index.html").is_file()
     app_js = (catalog_root / "catalog" / "assets" / "app.js").read_text(encoding="utf-8")
     assert "function buildSharedMetricDeltaRows" in app_js
+    assert "function resolveSweepComparison" in app_js
+    assert "function renderSweepLayerDeltaRows" in app_js
+    assert "function orderedSweepLayerDeltas" in app_js
+    assert "function buildSweepDrilldownLink" in app_js
+    assert "function buildSweepLayerDrilldownLink" in app_js
+    assert "function currentLayerDeltaFocus" in app_js
+    assert "function selectSweepLayerDeltas" in app_js
+    assert "sweep_candidate" in app_js
+    assert "sweep_layer_focus" in app_js
     assert "Shared Metric Deltas" in app_js
+    assert "Sweep Layer Deltas" in app_js
+    assert "layer_delta_focus" in app_js
+    assert "regressions-only" in app_js
+    assert "top-by-bytes" in app_js
+    assert "Showing top 3 of" in app_js
+    assert "|delta_cycles|" in app_js
+    assert "|delta_bytes|" in app_js
+    assert "Open Sweep Panel" in app_js
+    assert "Open Layer In Sweep" in app_js
     assert "metric_values" in app_js
+    assert "sweep_comparisons" in app_js
     assert "function currentWorkbenchPanel" in app_js
     assert "function buildComparePanelLinks" in app_js
     assert "function serializeCatalogState" in app_js
@@ -57,6 +79,7 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "Open Selected Panel" in app_js
     index_html = (catalog_root / "catalog" / "index.html").read_text(encoding="utf-8")
     assert "catalog-workbench-panel-filter" in index_html
+    assert "catalog-layer-delta-focus-filter" in index_html
 
 
 def test_run_visualization_catalog_rejects_missing_workbench_manifest(tmp_path: Path) -> None:
@@ -418,6 +441,7 @@ def _write_packaged_run(
     schedule_kind: str,
     target_profile_name: str,
     primary_metrics: dict[str, float],
+    include_sweep: bool = False,
 ) -> None:
     (run_root / "reports").mkdir(parents=True, exist_ok=True)
     (run_root / "workbench" / "assets").mkdir(parents=True, exist_ok=True)
@@ -459,6 +483,7 @@ def _write_packaged_run(
                 schedule_kind=schedule_kind,
                 target_profile_name=target_profile_name,
                 primary_metrics=primary_metrics,
+                include_sweep=include_sweep,
             ),
             indent=2,
         ),
@@ -474,6 +499,7 @@ def _bundle_payload(
     schedule_kind: str = "single-core",
     target_profile_name: str = "riscv_npu_single_core_v1",
     primary_metrics: dict[str, float] | None = None,
+    include_sweep: bool = False,
 ) -> dict[str, object]:
     return {
         "bundle_id": f"viz.{run_id}",
@@ -564,6 +590,60 @@ def _bundle_payload(
             "gap_counts": {},
             "issues": [],
         },
-        "sweep_view": None,
+        "sweep_view": (
+            {
+                "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                "comparison_count": 1,
+                "issue_count": 0,
+                "comparisons": [
+                    {
+                        "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                        "scenario_name": scenario_name,
+                        "mode": mode,
+                        "metric_deltas": {"estimated_cycles": -1024.0},
+                        "layer_deltas": [
+                            {
+                                "layer_id": 2,
+                                "baseline_cycles": 1024.0,
+                                "candidate_cycles": 896.0,
+                                "delta_cycles": -128.0,
+                                "baseline_bytes": 32768.0,
+                                "candidate_bytes": 30720.0,
+                                "delta_bytes": -2048.0,
+                            },
+                            {
+                                "layer_id": 0,
+                                "baseline_cycles": 2048.0,
+                                "candidate_cycles": 1536.0,
+                                "delta_cycles": -512.0,
+                                "baseline_bytes": 65536.0,
+                                "candidate_bytes": 49152.0,
+                                "delta_bytes": -16384.0,
+                            },
+                            {
+                                "layer_id": 3,
+                                "baseline_cycles": 1536.0,
+                                "candidate_cycles": 1280.0,
+                                "delta_cycles": -256.0,
+                                "baseline_bytes": 49152.0,
+                                "candidate_bytes": 45056.0,
+                                "delta_bytes": -4096.0,
+                            },
+                            {
+                                "layer_id": 1,
+                                "baseline_cycles": 768.0,
+                                "candidate_cycles": 640.0,
+                                "delta_cycles": -128.0,
+                                "baseline_bytes": 24576.0,
+                                "candidate_bytes": 22528.0,
+                                "delta_bytes": -2048.0,
+                            }
+                        ],
+                    }
+                ],
+            }
+            if include_sweep
+            else None
+        ),
         "issues": [],
     }

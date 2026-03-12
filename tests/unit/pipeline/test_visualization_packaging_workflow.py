@@ -39,6 +39,7 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
 
     assert bundle.metadata.mode == "decode"
     assert bundle.sweep_view is not None
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
     assert bundle.coverage_view.packed_record_count > 0
@@ -90,6 +91,17 @@ def _sweep_report():
                         }
                     ],
                     "macro_deltas": [],
+                    "layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_cycles": 384.0,
+                            "candidate_cycles": 256.0,
+                            "delta_cycles": -128.0,
+                            "baseline_bytes": 8192.0,
+                            "candidate_bytes": 6144.0,
+                            "delta_bytes": -2048.0,
+                        }
+                    ],
                 }
             ],
             "issues": [],

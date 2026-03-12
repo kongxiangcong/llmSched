@@ -58,8 +58,28 @@ def test_run_visualization_workbench_writes_static_assets(
     assert "memory-search-input" in index_html
     assert "function updateCatalogReturnLink" in app_js
     assert "catalog_return" in app_js
+    assert "sweep_candidate" in app_js
+    assert "sweep_layer_focus" in app_js
+    assert "focused_sweep_candidate" in app_js
+    assert "focused_sweep_layer" in app_js
+    assert "focused_comparison_count" in app_js
+    assert "focused_layer_delta_count" in app_js
+    assert "focused_layer_delta_summary" in app_js
     assert "memory_query" in app_js
     assert "Back to Catalog Compare" in app_js
+    assert "Baseline Sweep Target" in app_js
+    assert "Focused Comparisons" in app_js
+    assert "Focused Layer Deltas" in app_js
+    assert "Focused Layer Summary" in app_js
+    assert "function buildPanelSnapshotTitle" in app_js
+    assert "function renderPanelSnapshotHeader" in app_js
+    assert "function buildPanelExportFilename" in app_js
+    assert "Focused Sweep Layer" in app_js
+    assert "focused-sweep-row" in app_js
+    assert "function buildSweepSnapshotMetadata" in app_js
+    assert "snapshot_metadata" in app_js
+    assert "header_rows" in app_js
+    assert "Snapshot Focus" in app_js
 
 
 def test_run_visualization_workbench_rejects_missing_bundle_without_traceback(tmp_path: Path) -> None:
