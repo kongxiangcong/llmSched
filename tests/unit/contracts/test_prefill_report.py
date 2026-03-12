@@ -32,6 +32,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                 "phase_attribution": {
                     "projection": {
                         "estimated_cycles": 1536.0,
+                        "compute_cycles": 1536.0,
+                        "memory_cycles": 0.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 65536.0,
                         "cycles_per_token": 12.0,
                         "bytes_per_token": 512.0,
@@ -46,6 +49,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                     },
                     "kv_io": {
                         "estimated_cycles": 0.0,
+                        "compute_cycles": 0.0,
+                        "memory_cycles": 0.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 0.0,
                         "cycles_per_token": 0.0,
                         "bytes_per_token": 0.0,
@@ -60,6 +66,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                     },
                     "attention": {
                         "estimated_cycles": 2048.0,
+                        "compute_cycles": 1536.0,
+                        "memory_cycles": 512.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 163840.0,
                         "cycles_per_token": 16.0,
                         "bytes_per_token": 1280.0,
@@ -80,6 +89,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                     },
                     "sync": {
                         "estimated_cycles": 0.0,
+                        "compute_cycles": 0.0,
+                        "memory_cycles": 0.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 0.0,
                         "cycles_per_token": 0.0,
                         "bytes_per_token": 0.0,
@@ -94,6 +106,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                     },
                     "other": {
                         "estimated_cycles": 512.0,
+                        "compute_cycles": 256.0,
+                        "memory_cycles": 256.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 32768.0,
                         "cycles_per_token": 4.0,
                         "bytes_per_token": 256.0,
@@ -173,6 +188,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.throughput.projection_bytes == 65536.0
     assert report.throughput.attention_bytes == 163840.0
     assert report.throughput.other_bytes == 32768.0
+    assert report.throughput.phase_attribution["projection"].compute_cycles == 1536.0
+    assert report.throughput.phase_attribution["attention"].memory_cycles == 512.0
+    assert report.throughput.phase_attribution["other"].sync_cycles == 0.0
     assert report.throughput.phase_attribution["projection"].cycles_per_token == 12.0
     assert report.throughput.phase_attribution["attention"].bytes_per_token == 1280.0
     assert report.throughput.phase_attribution["projection"].occupied_slots == 1024.0

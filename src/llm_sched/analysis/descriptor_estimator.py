@@ -101,6 +101,9 @@ def build_perf_summary_report(
     per_macro_cycles: Counter[str] = Counter()
     per_macro_bytes: Counter[str] = Counter()
     phase_cycles: Counter[str] = Counter()
+    phase_compute_cycles: Counter[str] = Counter()
+    phase_memory_cycles: Counter[str] = Counter()
+    phase_sync_component_cycles: Counter[str] = Counter()
     phase_bytes: Counter[str] = Counter()
     per_node_cycles: Counter[str] = Counter()
     per_node_bytes: Counter[str] = Counter()
@@ -166,9 +169,18 @@ def build_perf_summary_report(
 
         descriptor = descriptor_by_subject.get(record.subject_id)
         attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
+        attributed_compute_cycles, attributed_memory_cycles, attributed_sync_component_cycles = (
+            _phase_cycle_components_for_record(descriptor, record.metrics)
+        )
         record_phase_name = _classify_record_phase(descriptor)
         for phase_key, estimated_cycles in attributed_cycles.items():
             phase_cycles[phase_key] += estimated_cycles
+        for phase_key, compute_cycles in attributed_compute_cycles.items():
+            phase_compute_cycles[phase_key] += compute_cycles
+        for phase_key, memory_cycles in attributed_memory_cycles.items():
+            phase_memory_cycles[phase_key] += memory_cycles
+        for phase_key, sync_component_cycles in attributed_sync_component_cycles.items():
+            phase_sync_component_cycles[phase_key] += sync_component_cycles
         for phase_key, total_bytes in attributed_bytes.items():
             phase_bytes[phase_key] += total_bytes
 
@@ -261,7 +273,10 @@ def build_perf_summary_report(
         totals=totals,
         phase_attribution=_build_phase_attribution(
             phase_cycles,
-            phase_bytes,
+            phase_compute_cycles=phase_compute_cycles,
+            phase_memory_cycles=phase_memory_cycles,
+            phase_sync_component_cycles=phase_sync_component_cycles,
+            phase_bytes=phase_bytes,
             phase_occupied_slots=phase_occupied_slots,
             phase_read_bytes_by_address_space=phase_read_bytes_by_address_space,
             phase_write_bytes_by_address_space=phase_write_bytes_by_address_space,
@@ -454,9 +469,7 @@ def _phase_contribution_for_record(
     descriptor: DescriptorRecord | None,
     metrics: dict[str, float],
 ) -> tuple[dict[str, float], dict[str, float]]:
-    estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
-    sync_cycles = min(float(metrics.get("sync_cycles", 0.0)), estimated_cycles)
-    non_sync_cycles = max(0.0, estimated_cycles - sync_cycles)
+    non_sync_cycles, sync_cycles = _split_sync_cycles(metrics)
     total_bytes = float(metrics.get("total_bytes", 0.0))
 
     cycles = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
@@ -468,18 +481,57 @@ def _phase_contribution_for_record(
     return cycles, bytes_by_phase
 
 
+def _phase_cycle_components_for_record(
+    descriptor: DescriptorRecord | None,
+    metrics: dict[str, float],
+) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
+    non_sync_cycles, sync_cycles = _split_sync_cycles(metrics)
+    phase_name = _classify_record_phase(descriptor)
+    compute_cycles = {phase_key: 0.0 for phase_key in _PERF_PHASE_ORDER}
+    memory_cycles = {phase_key: 0.0 for phase_key in _PERF_PHASE_ORDER}
+    sync_component_cycles = {phase_key: 0.0 for phase_key in _PERF_PHASE_ORDER}
+
+    if _non_sync_cycle_component_for_stage(_record_stage(descriptor)) == "compute":
+        compute_cycles[phase_name] = non_sync_cycles
+    else:
+        memory_cycles[phase_name] = non_sync_cycles
+    sync_component_cycles["sync"] = sync_cycles
+    return compute_cycles, memory_cycles, sync_component_cycles
+
+
+def _split_sync_cycles(metrics: dict[str, float]) -> tuple[float, float]:
+    estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
+    sync_cycles = min(float(metrics.get("sync_cycles", 0.0)), estimated_cycles)
+    return max(0.0, estimated_cycles - sync_cycles), sync_cycles
+
+
+def _record_stage(descriptor: DescriptorRecord | None) -> str:
+    if descriptor is None:
+        return "unknown"
+    return str(descriptor.ctrl_fields.get("stage", "compute"))
+
+
+def _non_sync_cycle_component_for_stage(stage: str) -> str:
+    if stage in {"compute", "prepare"}:
+        return "compute"
+    return "memory"
+
+
 def _classify_record_phase(descriptor: DescriptorRecord | None) -> str:
     if descriptor is None:
         return "other"
-    stage = str(descriptor.ctrl_fields.get("stage", "compute"))
+    stage = _record_stage(descriptor)
     macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
     return _classify_phase(stage=stage, macro=macro)
 
 
 def _build_phase_attribution(
     phase_cycles: Counter[str],
-    phase_bytes: Counter[str],
     *,
+    phase_compute_cycles: Counter[str],
+    phase_memory_cycles: Counter[str],
+    phase_sync_component_cycles: Counter[str],
+    phase_bytes: Counter[str],
     phase_occupied_slots: dict[str, float],
     phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
@@ -492,6 +544,9 @@ def _build_phase_attribution(
     return {
         phase_name: PerfPhaseSummary(
             estimated_cycles=float(phase_cycles.get(phase_name, 0.0)),
+            compute_cycles=float(phase_compute_cycles.get(phase_name, 0.0)),
+            memory_cycles=float(phase_memory_cycles.get(phase_name, 0.0)),
+            sync_cycles=float(phase_sync_component_cycles.get(phase_name, 0.0)),
             total_bytes=float(phase_bytes.get(phase_name, 0.0)),
             cycles_per_token=(
                 float(phase_cycles.get(phase_name, 0.0)) / float(total_tokens)

@@ -15,6 +15,9 @@ class PerfPhaseSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     estimated_cycles: float = Field(ge=0.0)
+    compute_cycles: float = Field(ge=0.0, default=0.0)
+    memory_cycles: float = Field(ge=0.0, default=0.0)
+    sync_cycles: float = Field(ge=0.0, default=0.0)
     total_bytes: float = Field(ge=0.0)
     cycles_per_token: float = Field(ge=0.0, default=0.0)
     bytes_per_token: float = Field(ge=0.0, default=0.0)

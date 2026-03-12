@@ -2141,3 +2141,22 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-13 Phase Cycle Components Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-13-phase-cycle-components.md`
+- `SPEC-13` phase attribution now carries per-phase `compute_cycles`, `memory_cycles`, and `sync_cycles`, so downstream consumers can inspect how each phase's top-line cycles split between compute work, non-sync memory movement, and explicit synchronization directly from the canonical perf surface.
+- this slice stays on the existing `DescriptorIR/AnalysisIR -> PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport` chain and reuses current descriptor `stage` plus `sync_cycles` semantics instead of opening a second estimator or compare workflow.
+- new closure evidence:
+  - `PerfPhaseSummary` now carries `compute_cycles`, `memory_cycles`, and `sync_cycles` with compatibility-friendly zero defaults
+  - performance estimation now maps `compute/prepare` descriptors into phase-local compute cycles, `dma_in/store/transfer` non-sync time into phase-local memory cycles, and explicit `sync_cycles` into the canonical `sync` phase
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer structured phase surface automatically through their existing canonical `phase_attribution` handoff
+  - focused contract/builder/workflow verification remains green (`22 passed`), and performance/prefill/decode CLI smoke now asserts the new JSON fields end to end (`6 passed`)
+- what this closes:
+  - one `SPEC-13` deeper-cycle gap where phase attribution still exposed only total phase cycles and could not distinguish compute versus memory versus synchronization components
+  - one `SPEC-13 -> SPEC-14/15` handoff gap where top-level reports preserved richer phase pressure surfaces but still lacked canonical phase-local cycle-component structure
+  - one future-consumer gap where later compare or visualization surfaces would otherwise have needed to reverse-engineer phase cycle components from raw descriptor stages plus sync totals
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase, cycle-component, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

@@ -30,6 +30,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                 "phase_attribution": {
                     "projection": {
                         "estimated_cycles": 1100.0,
+                        "compute_cycles": 1000.0,
+                        "memory_cycles": 100.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 50000.0,
                         "cycles_per_token": 1100.0,
                         "bytes_per_token": 50000.0,
@@ -50,6 +53,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     },
                     "kv_io": {
                         "estimated_cycles": 1100.0,
+                        "compute_cycles": 0.0,
+                        "memory_cycles": 1100.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 96000.0,
                         "cycles_per_token": 1100.0,
                         "bytes_per_token": 96000.0,
@@ -64,6 +70,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     },
                     "attention": {
                         "estimated_cycles": 700.0,
+                        "compute_cycles": 620.0,
+                        "memory_cycles": 80.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 26000.0,
                         "cycles_per_token": 700.0,
                         "bytes_per_token": 26000.0,
@@ -84,6 +93,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     },
                     "sync": {
                         "estimated_cycles": 120.0,
+                        "compute_cycles": 0.0,
+                        "memory_cycles": 0.0,
+                        "sync_cycles": 120.0,
                         "total_bytes": 4000.0,
                         "cycles_per_token": 120.0,
                         "bytes_per_token": 4000.0,
@@ -98,6 +110,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     },
                     "other": {
                         "estimated_cycles": 100.0,
+                        "compute_cycles": 20.0,
+                        "memory_cycles": 80.0,
+                        "sync_cycles": 0.0,
                         "total_bytes": 4000.0,
                         "cycles_per_token": 100.0,
                         "bytes_per_token": 4000.0,
@@ -181,6 +196,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.token_latency.projection_bytes == 50000.0
     assert report.token_latency.kv_io_bytes == 96000.0
     assert report.token_latency.attention_bytes == 26000.0
+    assert report.token_latency.phase_attribution["projection"].compute_cycles == 1000.0
+    assert report.token_latency.phase_attribution["kv_io"].memory_cycles == 1100.0
+    assert report.token_latency.phase_attribution["sync"].sync_cycles == 120.0
     assert report.token_latency.phase_attribution["kv_io"].cycles_per_token == 1100.0
     assert report.token_latency.phase_attribution["sync"].bytes_per_token == 4000.0
     assert report.token_latency.phase_attribution["kv_io"].occupied_slots == 960.0

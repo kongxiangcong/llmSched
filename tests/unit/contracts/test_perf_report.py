@@ -30,6 +30,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             "phase_attribution": {
                 "projection": {
                     "estimated_cycles": 768.0,
+                    "compute_cycles": 768.0,
+                    "memory_cycles": 0.0,
+                    "sync_cycles": 0.0,
                     "total_bytes": 32768.0,
                     "cycles_per_token": 6.0,
                     "bytes_per_token": 256.0,
@@ -44,6 +47,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "sync": {
                     "estimated_cycles": 256.0,
+                    "compute_cycles": 0.0,
+                    "memory_cycles": 0.0,
+                    "sync_cycles": 256.0,
                     "total_bytes": 32768.0,
                     "cycles_per_token": 2.0,
                     "bytes_per_token": 256.0,
@@ -58,6 +64,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "kv_io": {
                     "estimated_cycles": 0.0,
+                    "compute_cycles": 0.0,
+                    "memory_cycles": 0.0,
+                    "sync_cycles": 0.0,
                     "total_bytes": 0.0,
                     "cycles_per_token": 0.0,
                     "bytes_per_token": 0.0,
@@ -72,6 +81,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "attention": {
                     "estimated_cycles": 0.0,
+                    "compute_cycles": 0.0,
+                    "memory_cycles": 0.0,
+                    "sync_cycles": 0.0,
                     "total_bytes": 0.0,
                     "cycles_per_token": 0.0,
                     "bytes_per_token": 0.0,
@@ -86,6 +98,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "other": {
                     "estimated_cycles": 0.0,
+                    "compute_cycles": 0.0,
+                    "memory_cycles": 0.0,
+                    "sync_cycles": 0.0,
                     "total_bytes": 0.0,
                     "cycles_per_token": 0.0,
                     "bytes_per_token": 0.0,
@@ -133,7 +148,11 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["critical_path_cycles"] == 128.0
     assert report.phase_attribution["projection"].estimated_cycles == 768.0
+    assert report.phase_attribution["projection"].compute_cycles == 768.0
+    assert report.phase_attribution["projection"].memory_cycles == 0.0
+    assert report.phase_attribution["projection"].sync_cycles == 0.0
     assert report.phase_attribution["sync"].total_bytes == 32768.0
+    assert report.phase_attribution["sync"].sync_cycles == 256.0
     assert report.phase_attribution["projection"].cycles_per_token == 6.0
     assert report.phase_attribution["sync"].bytes_per_token == 256.0
     assert report.phase_attribution["projection"].occupied_slots == 96.0
