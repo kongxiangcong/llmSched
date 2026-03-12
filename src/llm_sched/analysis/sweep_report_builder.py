@@ -251,21 +251,41 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
         ),
+        projection_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_cycle_share"),
+            _metric_value(candidate_run, "projection_cycle_share"),
+        ),
         kv_io_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
+        ),
+        kv_io_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_cycle_share"),
+            _metric_value(candidate_run, "kv_io_cycle_share"),
         ),
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
         ),
+        attention_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_cycle_share"),
+            _metric_value(candidate_run, "attention_cycle_share"),
+        ),
         sync_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
         ),
+        sync_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_cycle_share"),
+            _metric_value(candidate_run, "sync_cycle_share"),
+        ),
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "other_cycle_share"),
+            _metric_value(candidate_run, "other_cycle_share"),
         ),
         tokens_per_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "tokens_per_cycle"),
@@ -309,13 +329,25 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
         ),
+        projection_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_cycle_share"),
+            _metric_value(candidate_run, "projection_cycle_share"),
+        ),
         kv_io_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
         ),
+        kv_io_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_cycle_share"),
+            _metric_value(candidate_run, "kv_io_cycle_share"),
+        ),
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
+        ),
+        attention_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_cycle_share"),
+            _metric_value(candidate_run, "attention_cycle_share"),
         ),
         cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "cycles_per_token"),
@@ -337,8 +369,16 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
         ),
+        sync_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_cycle_share"),
+            _metric_value(candidate_run, "sync_cycle_share"),
+        ),
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "other_cycle_share"),
+            _metric_value(candidate_run, "other_cycle_share"),
         ),
     )

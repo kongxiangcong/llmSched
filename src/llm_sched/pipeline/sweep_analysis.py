@@ -42,6 +42,12 @@ class SweepAnalysisResult(BaseModel):
     diagnostics: list[Diagnostic] = []
 
 
+def _phase_cycle_share(phase_cycles: float, estimated_cycles: float) -> float:
+    if estimated_cycles <= 0.0:
+        return 0.0
+    return float(phase_cycles) / float(estimated_cycles)
+
+
 def run_sweep_analysis(
     sweep_spec_path: str | Path,
     sweep_root: str | Path,
@@ -151,6 +157,7 @@ def _execute_run_root(
     if scenario_profile.mode == "prefill":
         report_path = run_root / "reports" / "prefill_evaluation_report.json"
         report = PrefillEvaluationReport.model_validate_json(report_path.read_text(encoding="utf-8"))
+        estimated_cycles = float(report.throughput.estimated_cycles)
         return SweepRunRecord(
             run_id=run_root.name,
             run_root=str(run_root),
@@ -165,10 +172,30 @@ def _execute_run_root(
                 "estimated_cycles": report.throughput.estimated_cycles,
                 "critical_path_cycles": report.throughput.critical_path_cycles,
                 "projection_cycles": report.throughput.projection_cycles,
+                "projection_cycle_share": _phase_cycle_share(
+                    report.throughput.projection_cycles,
+                    estimated_cycles,
+                ),
                 "kv_io_cycles": report.throughput.kv_io_cycles,
+                "kv_io_cycle_share": _phase_cycle_share(
+                    report.throughput.kv_io_cycles,
+                    estimated_cycles,
+                ),
                 "attention_cycles": report.throughput.attention_cycles,
+                "attention_cycle_share": _phase_cycle_share(
+                    report.throughput.attention_cycles,
+                    estimated_cycles,
+                ),
                 "sync_cycles": report.throughput.sync_cycles,
+                "sync_cycle_share": _phase_cycle_share(
+                    report.throughput.sync_cycles,
+                    estimated_cycles,
+                ),
                 "other_cycles": report.throughput.other_cycles,
+                "other_cycle_share": _phase_cycle_share(
+                    report.throughput.other_cycles,
+                    estimated_cycles,
+                ),
                 "tokens_per_cycle": report.throughput.tokens_per_cycle,
                 "tokens_per_critical_path_cycle": report.throughput.tokens_per_critical_path_cycle,
                 "cycles_per_token": report.throughput.cycles_per_token,
@@ -196,6 +223,7 @@ def _execute_run_root(
 
     report_path = run_root / "reports" / "decode_evaluation_report.json"
     report = DecodeEvaluationReport.model_validate_json(report_path.read_text(encoding="utf-8"))
+    estimated_cycles = float(report.token_latency.estimated_cycles)
     return SweepRunRecord(
         run_id=run_root.name,
         run_root=str(run_root),
@@ -210,14 +238,34 @@ def _execute_run_root(
             "estimated_cycles": report.token_latency.estimated_cycles,
             "critical_path_cycles": report.token_latency.critical_path_cycles,
             "projection_cycles": report.token_latency.projection_cycles,
+            "projection_cycle_share": _phase_cycle_share(
+                report.token_latency.projection_cycles,
+                estimated_cycles,
+            ),
             "kv_io_cycles": report.token_latency.kv_io_cycles,
+            "kv_io_cycle_share": _phase_cycle_share(
+                report.token_latency.kv_io_cycles,
+                estimated_cycles,
+            ),
             "attention_cycles": report.token_latency.attention_cycles,
+            "attention_cycle_share": _phase_cycle_share(
+                report.token_latency.attention_cycles,
+                estimated_cycles,
+            ),
             "cycles_per_token": report.token_latency.cycles_per_token,
             "critical_path_cycles_per_token": report.token_latency.critical_path_cycles_per_token,
             "kv_related_cycle_share": report.kv_summary.kv_related_cycle_share,
             "kv_related_bytes": report.kv_summary.kv_related_bytes,
             "sync_cycles": report.token_latency.sync_cycles,
+            "sync_cycle_share": _phase_cycle_share(
+                report.token_latency.sync_cycles,
+                estimated_cycles,
+            ),
             "other_cycles": report.token_latency.other_cycles,
+            "other_cycle_share": _phase_cycle_share(
+                report.token_latency.other_cycles,
+                estimated_cycles,
+            ),
         },
         macro_hotspots=[
             SweepMacroPoint(

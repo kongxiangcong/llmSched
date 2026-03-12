@@ -70,8 +70,11 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         "estimated_cycles",
         "critical_path_cycles",
         "projection_cycles",
+        "projection_cycle_share",
         "attention_cycles",
+        "attention_cycle_share",
         "other_cycles",
+        "other_cycle_share",
         "tokens_per_critical_path_cycle",
     }
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
@@ -709,7 +712,19 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_value": -512.0,
                         "delta_ratio": -0.3333333333,
                     },
+                    "projection_cycle_share": {
+                        "baseline_value": 0.375,
+                        "candidate_value": 0.3333333333,
+                        "delta_value": -0.0416666667,
+                        "delta_ratio": -0.1111111111,
+                    },
                     "kv_io_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_cycle_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -721,7 +736,19 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_value": -256.0,
                         "delta_ratio": -0.125,
                     },
+                    "attention_cycle_share": {
+                        "baseline_value": 0.5,
+                        "candidate_value": 0.5833333333,
+                        "delta_value": 0.0833333333,
+                        "delta_ratio": 0.1666666667,
+                    },
                     "sync_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_cycle_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -732,6 +759,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "candidate_value": 256.0,
                         "delta_value": -256.0,
                         "delta_ratio": -0.5,
+                    },
+                    "other_cycle_share": {
+                        "baseline_value": 0.125,
+                        "candidate_value": 0.0833333333,
+                        "delta_value": -0.0416666667,
+                        "delta_ratio": -0.3333333333,
                     },
                     "tokens_per_cycle": {
                         "baseline_value": 0.03125,

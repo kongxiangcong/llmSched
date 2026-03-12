@@ -55,9 +55,14 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         "critical_path_cycles",
         "critical_path_cycles_per_token",
         "projection_cycles",
+        "projection_cycle_share",
         "kv_io_cycles",
+        "kv_io_cycle_share",
         "attention_cycles",
+        "attention_cycle_share",
         "other_cycles",
+        "other_cycle_share",
+        "sync_cycle_share",
     }
     assert metric_names.count("sync_cycles") == 1
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
@@ -171,11 +176,23 @@ def _phase_d_compare_report():
                         "delta_value": -72.0,
                         "delta_ratio": -0.36,
                     },
+                    "projection_cycle_share": {
+                        "baseline_value": 0.2604166667,
+                        "candidate_value": 0.25,
+                        "delta_value": -0.0104166667,
+                        "delta_ratio": -0.04,
+                    },
                     "kv_io_cycles": {
                         "baseline_value": 256.0,
                         "candidate_value": 192.0,
                         "delta_value": -64.0,
                         "delta_ratio": -0.25,
+                    },
+                    "kv_io_cycle_share": {
+                        "baseline_value": 0.3333333333,
+                        "candidate_value": 0.375,
+                        "delta_value": 0.0416666667,
+                        "delta_ratio": 0.1250000001,
                     },
                     "attention_cycles": {
                         "baseline_value": 160.0,
@@ -183,11 +200,23 @@ def _phase_d_compare_report():
                         "delta_value": -32.0,
                         "delta_ratio": -0.2,
                     },
+                    "attention_cycle_share": {
+                        "baseline_value": 0.2083333333,
+                        "candidate_value": 0.25,
+                        "delta_value": 0.0416666667,
+                        "delta_ratio": 0.2000000002,
+                    },
                     "other_cycles": {
                         "baseline_value": 48.0,
                         "candidate_value": 32.0,
                         "delta_value": -16.0,
                         "delta_ratio": -0.3333333333,
+                    },
+                    "other_cycle_share": {
+                        "baseline_value": 0.0625,
+                        "candidate_value": 0.0625,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
                     },
                     "cycles_per_token": {
                         "baseline_value": 768.0,
@@ -218,6 +247,12 @@ def _phase_d_compare_report():
                         "candidate_value": 32.0,
                         "delta_value": -32.0,
                         "delta_ratio": -0.5,
+                    },
+                    "sync_cycle_share": {
+                        "baseline_value": 0.0833333333,
+                        "candidate_value": 0.0625,
+                        "delta_value": -0.0208333333,
+                        "delta_ratio": -0.25,
                     },
                 }
             ],
