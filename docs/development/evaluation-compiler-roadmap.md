@@ -2024,3 +2024,23 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-16 Compare-Summary Highlights Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-16-compare-summary-highlights.md`
+- `SPEC-18/19` compare-summary handoff now includes stable `highlighted_scalar_deltas` above the full `scalar_deltas` list, computed once from existing `PhaseDCompareReport` rows and preserved end to end through visualization bundle and catalog artifacts.
+- no new compare workflow or frontend-only re-ranking pass was introduced; workbench and catalog now prefer this highlight surface while keeping the complete scalar compare rows available.
+- new closure evidence:
+  - `VisualizationSweepCompareSummaryView` and `VisualizationCatalogSweepCompareSummary` now carry `highlighted_scalar_deltas` with compatibility-friendly empty defaults
+  - visualization bundle builder now derives a deterministic highlight set from headline metrics plus dominant normalized phase-shift rows (`*_cycle_share`, `*_byte_share`, `*_bytes_per_cycle`)
+  - visualization catalog packaging forwards the same highlight rows without reopening or re-sorting raw sweep compare artifacts
+  - workbench and catalog static JS now render `Highlighted Metric Shifts` first while preserving access to the full scalar compare list
+  - focused unit/workflow verification remains green (`30 passed`), and compare-facing visualization smoke remains green (`10 passed`)
+- what this closes:
+  - one `SPEC-16` compare-shaping gap where downstream consumers still had to re-rank long scalar compare lists just to find the most important movement
+  - one `SPEC-18/19` consumer gap where richer compare rows already existed but no stable high-signal selection surface was preserved across artifacts
+  - one architecture gap where highlight selection logic would otherwise have forked between workbench and catalog instead of staying centralized in the existing compare-summary chain
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

@@ -50,6 +50,10 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
     metric_names = [
         scalar.metric_name for scalar in bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas
     ]
+    highlighted_metric_names = [
+        scalar.metric_name
+        for scalar in bundle.sweep_view.comparisons[0].compare_summary.highlighted_scalar_deltas
+    ]
     assert set(metric_names) >= {
         "estimated_cycles",
         "critical_path_cycles",
@@ -81,6 +85,14 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
     }
     assert metric_names.count("sync_cycles") == 1
     assert metric_names.count("kv_related_bytes") == 1
+    assert highlighted_metric_names == [
+        "estimated_cycles",
+        "critical_path_cycles",
+        "critical_path_cycles_per_token",
+        "sync_cycle_share",
+        "attention_byte_share",
+        "attention_bytes_per_cycle",
+    ]
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store

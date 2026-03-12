@@ -211,6 +211,7 @@ class VisualizationSweepCompareSummaryView(BaseModel):
     baseline_schedule_kind: Literal["single-core", "dual-core"]
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     profile_diff_fields: list[str] = Field(default_factory=list)
+    highlighted_scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
     scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
 
 

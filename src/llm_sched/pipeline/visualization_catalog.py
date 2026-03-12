@@ -164,6 +164,16 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                     baseline_schedule_kind=comparison.compare_summary.baseline_schedule_kind,
                     candidate_schedule_kind=comparison.compare_summary.candidate_schedule_kind,
                     profile_diff_fields=list(comparison.compare_summary.profile_diff_fields),
+                    highlighted_scalar_deltas=[
+                        VisualizationCatalogSweepCompareScalarDelta(
+                            metric_name=scalar_delta.metric_name,
+                            baseline_value=scalar_delta.baseline_value,
+                            candidate_value=scalar_delta.candidate_value,
+                            delta_value=scalar_delta.delta_value,
+                            delta_ratio=scalar_delta.delta_ratio,
+                        )
+                        for scalar_delta in comparison.compare_summary.highlighted_scalar_deltas
+                    ],
                     scalar_deltas=[
                         VisualizationCatalogSweepCompareScalarDelta(
                             metric_name=scalar_delta.metric_name,

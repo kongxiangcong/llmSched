@@ -46,6 +46,9 @@ from llm_sched.ir.graph_ir import GraphIR
 from llm_sched.ir.schedule_ir import ScheduleIR
 
 
+_PHASE_METRIC_PREFIXES = ("projection", "kv_io", "attention", "sync", "other")
+
+
 def build_visualization_bundle(
     *,
     run_root: str | Path,
@@ -510,6 +513,14 @@ def _build_compare_summary(
             _build_scalar_delta("bytes_per_cycle", compare_row.bytes_per_cycle),
             _build_scalar_delta("max_region_utilization", compare_row.max_region_utilization),
         ]
+        headline_metric_names = (
+            "estimated_cycles",
+            "critical_path_cycles",
+            "tokens_per_critical_path_cycle",
+            "tokens_per_cycle",
+            "bytes_per_cycle",
+            "max_region_utilization",
+        )
     else:
         scalar_deltas = [
             _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
@@ -547,13 +558,86 @@ def _build_compare_summary(
             _build_scalar_delta("kv_related_cycle_share", compare_row.kv_related_cycle_share),
             _build_scalar_delta("kv_related_bytes", compare_row.kv_related_bytes),
         ]
+        headline_metric_names = (
+            "estimated_cycles",
+            "critical_path_cycles",
+            "critical_path_cycles_per_token",
+            "cycles_per_token",
+            "kv_related_cycle_share",
+            "kv_related_bytes",
+        )
 
     return VisualizationSweepCompareSummaryView(
         baseline_schedule_kind=compare_row.baseline_schedule_kind,
         candidate_schedule_kind=compare_row.candidate_schedule_kind,
         profile_diff_fields=list(compare_row.profile_diff_fields),
+        highlighted_scalar_deltas=_select_highlighted_scalar_deltas(
+            scalar_deltas,
+            headline_metric_names=headline_metric_names,
+        ),
         scalar_deltas=scalar_deltas,
     )
+
+
+def _select_highlighted_scalar_deltas(
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView],
+    *,
+    headline_metric_names: tuple[str, ...],
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    scalar_by_name = {scalar.metric_name: scalar for scalar in scalar_deltas}
+    highlighted: list[VisualizationSweepCompareScalarDeltaView] = []
+    seen_metric_names: set[str] = set()
+
+    for metric_name in headline_metric_names:
+        scalar_delta = scalar_by_name.get(metric_name)
+        if scalar_delta is None or metric_name in seen_metric_names:
+            continue
+        highlighted.append(scalar_delta)
+        seen_metric_names.add(metric_name)
+        if len(highlighted) == 3:
+            break
+
+    for metric_suffix in ("cycle_share", "byte_share", "bytes_per_cycle"):
+        scalar_delta = _select_phase_metric_highlight(
+            scalar_deltas,
+            metric_suffix=metric_suffix,
+        )
+        if scalar_delta is None or scalar_delta.metric_name in seen_metric_names:
+            continue
+        highlighted.append(scalar_delta)
+        seen_metric_names.add(scalar_delta.metric_name)
+
+    return highlighted
+
+
+def _select_phase_metric_highlight(
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView],
+    *,
+    metric_suffix: str,
+) -> VisualizationSweepCompareScalarDeltaView | None:
+    candidate_metric_names = {
+        f"{metric_prefix}_{metric_suffix}"
+        for metric_prefix in _PHASE_METRIC_PREFIXES
+    }
+    ranked_candidates = sorted(
+        (
+            scalar_delta
+            for scalar_delta in scalar_deltas
+            if scalar_delta.metric_name in candidate_metric_names
+            and (
+                abs(scalar_delta.delta_ratio) > 0.0
+                or abs(scalar_delta.delta_value) > 0.0
+            )
+        ),
+        key=lambda scalar_delta: (
+            -abs(scalar_delta.delta_ratio),
+            -abs(scalar_delta.delta_value),
+            scalar_delta.metric_name,
+        ),
+    )
+    if not ranked_candidates:
+        return None
+    return ranked_candidates[0]
 
 
 def _build_scalar_delta(

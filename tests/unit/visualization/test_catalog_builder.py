@@ -29,13 +29,29 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                         "scenario_name": "prefill_seq128",
                         "mode": "prefill",
                         "metric_deltas": {"estimated_cycles": -1024.0},
-                        "compare_summary": {
-                            "baseline_schedule_kind": "single-core",
-                            "candidate_schedule_kind": "dual-core",
-                            "profile_diff_fields": ["core_mode", "num_cores"],
-                            "scalar_deltas": [
-                                {
-                                    "metric_name": "estimated_cycles",
+                            "compare_summary": {
+                                "baseline_schedule_kind": "single-core",
+                                "candidate_schedule_kind": "dual-core",
+                                "profile_diff_fields": ["core_mode", "num_cores"],
+                                "highlighted_scalar_deltas": [
+                                    {
+                                        "metric_name": "estimated_cycles",
+                                        "baseline_value": 4096.0,
+                                        "candidate_value": 3072.0,
+                                        "delta_value": -1024.0,
+                                        "delta_ratio": -0.25,
+                                    },
+                                    {
+                                        "metric_name": "tokens_per_cycle",
+                                        "baseline_value": 0.03125,
+                                        "candidate_value": 0.0416666667,
+                                        "delta_value": 0.0104166667,
+                                        "delta_ratio": 0.3333333344,
+                                    },
+                                ],
+                                "scalar_deltas": [
+                                    {
+                                        "metric_name": "estimated_cycles",
                                     "baseline_value": 4096.0,
                                     "candidate_value": 3072.0,
                                     "delta_value": -1024.0,
@@ -180,6 +196,8 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "compare_summary" in files["catalog/assets/app.js"]
     assert "baseline_schedule_kind" in files["catalog/assets/app.js"]
     assert "profile_diff_fields" in files["catalog/assets/app.js"]
+    assert "highlighted_scalar_deltas" in files["catalog/assets/app.js"]
+    assert "Highlighted Metric Shifts" in files["catalog/assets/app.js"]
     assert "scalar_deltas" in files["catalog/assets/app.js"]
     assert "layer_deltas" in files["catalog/assets/app.js"]
     assert "Workspace Compare" in files["catalog/index.html"]

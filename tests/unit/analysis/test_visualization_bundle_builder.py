@@ -92,6 +92,17 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         "other_cycle_share",
         "tokens_per_critical_path_cycle",
     }
+    assert [
+        scalar.metric_name
+        for scalar in bundle.sweep_view.comparisons[0].compare_summary.highlighted_scalar_deltas
+    ] == [
+        "estimated_cycles",
+        "critical_path_cycles",
+        "tokens_per_critical_path_cycle",
+        "other_cycle_share",
+        "other_byte_share",
+        "projection_bytes_per_cycle",
+    ]
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5

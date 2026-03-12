@@ -90,6 +90,22 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
                                 "baseline_schedule_kind": "single-core",
                                 "candidate_schedule_kind": "dual-core",
                                 "profile_diff_fields": ["core_mode", "num_cores"],
+                                "highlighted_scalar_deltas": [
+                                    {
+                                        "metric_name": "estimated_cycles",
+                                        "baseline_value": 4096.0,
+                                        "candidate_value": 3072.0,
+                                        "delta_value": -1024.0,
+                                        "delta_ratio": -0.25,
+                                    },
+                                    {
+                                        "metric_name": "tokens_per_cycle",
+                                        "baseline_value": 0.03125,
+                                        "candidate_value": 0.0416666667,
+                                        "delta_value": 0.0104166667,
+                                        "delta_ratio": 0.3333333344,
+                                    },
+                                ],
                                 "scalar_deltas": [
                                     {
                                         "metric_name": "estimated_cycles",
@@ -138,6 +154,13 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
     assert artifact.entries[0].sweep_comparisons[0].compare_summary.candidate_schedule_kind == (
         "dual-core"
     )
+    assert [
+        delta.metric_name
+        for delta in artifact.entries[0].sweep_comparisons[0].compare_summary.highlighted_scalar_deltas
+    ] == [
+        "estimated_cycles",
+        "tokens_per_cycle",
+    ]
     assert artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_deltas[0].delta_value == (
         -1024.0
     )

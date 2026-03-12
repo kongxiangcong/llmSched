@@ -455,20 +455,8 @@ function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
   }).join("")}</ul>`;
 }
 
-function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison) {
-  if (!sweepComparison || !sweepComparison.compare_summary) {
-    return buildSharedMetricDeltaRows(baselineEntry, candidateEntry);
-  }
-  const compareSummary = sweepComparison.compare_summary;
-  const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
-  const scalarRows = compareSummary.scalar_deltas || [];
-  if (!scalarRows.length) {
-    return '<p class="empty">No matched Phase D compare summary rows.</p>';
-  }
-  return `
-    <p class="muted">Schedule: ${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}</p>
-    ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
-    <ul class="metric-detail-list">${scalarRows.map((scalarDelta) => `
+function renderScalarDeltaListItems(scalarDeltas) {
+  return (scalarDeltas || []).map((scalarDelta) => `
       <li>
         <span>${scalarDelta.metric_name}</span>
         <div class="metric-detail-values">
@@ -476,7 +464,35 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
           <em>${formatMetricValue(scalarDelta.baseline_value)} -> ${formatMetricValue(scalarDelta.candidate_value)}</em>
         </div>
       </li>
-    `).join("")}</ul>
+    `).join("");
+}
+
+function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison) {
+  if (!sweepComparison || !sweepComparison.compare_summary) {
+    return buildSharedMetricDeltaRows(baselineEntry, candidateEntry);
+  }
+  const compareSummary = sweepComparison.compare_summary;
+  const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
+  const highlightedRows = compareSummary.highlighted_scalar_deltas || [];
+  const scalarRows = compareSummary.scalar_deltas || [];
+  const visibleRows = highlightedRows.length ? highlightedRows : scalarRows;
+  if (!visibleRows.length) {
+    return '<p class="empty">No matched Phase D compare summary rows.</p>';
+  }
+  const fullScalarDetails = highlightedRows.length && scalarRows.length > highlightedRows.length
+    ? `
+      <details class="compare-summary-details">
+        <summary>All Scalar Deltas</summary>
+        <ul class="metric-detail-list">${renderScalarDeltaListItems(scalarRows)}</ul>
+      </details>
+    `
+    : "";
+  return `
+    <p class="muted">Schedule: ${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}</p>
+    ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
+    ${highlightedRows.length ? '<p class="muted">Highlighted Metric Shifts</p>' : ""}
+    <ul class="metric-detail-list">${renderScalarDeltaListItems(visibleRows)}</ul>
+    ${fullScalarDetails}
   `;
 }
 
@@ -586,8 +602,15 @@ function renderSweepComparisonSummary(sweepComparison) {
   if (!sweepComparison) {
     return '<p class="muted">No matched sweep compare summary.</p>';
   }
-  const metricRows = sweepComparison.compare_summary && (sweepComparison.compare_summary.scalar_deltas || []).length
-    ? (sweepComparison.compare_summary.scalar_deltas || []).map((scalarDelta) => [scalarDelta.metric_name, scalarDelta.delta_value])
+  const metricRows = sweepComparison.compare_summary && (
+    (sweepComparison.compare_summary.highlighted_scalar_deltas || []).length
+    || (sweepComparison.compare_summary.scalar_deltas || []).length
+  )
+    ? (
+      (sweepComparison.compare_summary.highlighted_scalar_deltas || []).length
+        ? (sweepComparison.compare_summary.highlighted_scalar_deltas || [])
+        : (sweepComparison.compare_summary.scalar_deltas || [])
+    ).map((scalarDelta) => [scalarDelta.metric_name, scalarDelta.delta_value])
     : Object.entries(sweepComparison.metric_deltas || {});
   if (!metricRows.length) {
     return '<p class="muted">No matched sweep metric deltas.</p>';
