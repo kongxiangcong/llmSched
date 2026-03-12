@@ -92,3 +92,116 @@ def test_visualization_catalog_contract_rejects_duplicate_entry_ids() -> None:
                 ],
             }
         )
+
+
+def test_visualization_catalog_contract_accepts_optional_phase_c_gate_summary() -> None:
+    from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
+
+    artifact = VisualizationCatalogArtifact.model_validate(
+        {
+            "catalog_id": "catalog.phase-c",
+            "title": "Phase C Catalog",
+            "metadata": {
+                "generated_by": "run-visualization-catalog",
+                "entry_count": 1,
+                "default_sort_key": "primary_metric",
+                "phase_c_gate_summary": {
+                    "status": "ready_for_acceptance",
+                    "ready_case_count": 4,
+                    "blocked_case_count": 0,
+                    "planner_blocked_case_count": 0,
+                    "downstream_blocked_case_count": 0,
+                    "missing_case_count": 0,
+                    "duplicate_case_count": 0,
+                },
+            },
+            "entries": [
+                {
+                    "entry_id": "run.prefill.single",
+                    "run_id": "run-prefill-single",
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "schedule_kind": "single-core",
+                    "target_profile_name": "riscv_npu_single_core_v1",
+                    "primary_metric_name": "estimated_cycles",
+                    "primary_metric_value": 4096.0,
+                    "workbench_entry_path": "../run-prefill-single/workbench/index.html",
+                }
+            ],
+        }
+    )
+
+    assert artifact.metadata.phase_c_gate_summary is not None
+    assert artifact.metadata.phase_c_gate_summary.status == "ready_for_acceptance"
+    assert artifact.metadata.phase_c_gate_summary.ready_case_count == 4
+
+
+def test_visualization_catalog_contract_accepts_optional_phase_c_blocked_cases() -> None:
+    from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
+
+    artifact = VisualizationCatalogArtifact.model_validate(
+        {
+            "catalog_id": "catalog.phase-c",
+            "title": "Phase C Catalog",
+            "metadata": {
+                "generated_by": "run-visualization-catalog",
+                "entry_count": 1,
+                "default_sort_key": "primary_metric",
+                "phase_c_blocked_cases": [
+                    {
+                        "case_id": "single-core:prefill",
+                        "run_id": "run-single-prefill",
+                        "workbench_entry_path": "../run-single-prefill/workbench/index.html",
+                        "blocker_kind": "planner",
+                        "planner_closure_status": "in_progress",
+                        "downstream_closure_status": "ready_for_acceptance",
+                        "downstream_missing_consumers": [],
+                        "remaining_gaps": ["planner_closure: overflow region: ping"],
+                    },
+                    {
+                        "case_id": "single-core:decode",
+                        "run_id": "run-single-decode",
+                        "workbench_entry_path": "../run-single-decode/workbench/index.html",
+                        "blocker_kind": "downstream",
+                        "planner_closure_status": "ready_for_acceptance",
+                        "downstream_closure_status": "in_progress",
+                        "downstream_missing_consumers": ["performance_estimation"],
+                        "remaining_gaps": ["required downstream evidence missing"],
+                    },
+                    {
+                        "case_id": "dual-core:prefill",
+                        "run_id": None,
+                        "blocker_kind": "missing_case",
+                        "planner_closure_status": None,
+                        "downstream_closure_status": None,
+                        "downstream_missing_consumers": [],
+                        "remaining_gaps": ["missing canonical case: dual-core:prefill"],
+                    },
+                ],
+            },
+            "entries": [
+                {
+                    "entry_id": "run.prefill.single",
+                    "run_id": "run-prefill-single",
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "schedule_kind": "single-core",
+                    "target_profile_name": "riscv_npu_single_core_v1",
+                    "primary_metric_name": "estimated_cycles",
+                    "primary_metric_value": 4096.0,
+                    "workbench_entry_path": "../run-prefill-single/workbench/index.html",
+                }
+            ],
+        }
+    )
+
+    assert len(artifact.metadata.phase_c_blocked_cases) == 3
+    assert artifact.metadata.phase_c_blocked_cases[0].blocker_kind == "planner"
+    assert artifact.metadata.phase_c_blocked_cases[1].downstream_missing_consumers == [
+        "performance_estimation"
+    ]
+    assert (
+        artifact.metadata.phase_c_blocked_cases[0].workbench_entry_path
+        == "../run-single-prefill/workbench/index.html"
+    )
+    assert artifact.metadata.phase_c_blocked_cases[2].blocker_kind == "missing_case"

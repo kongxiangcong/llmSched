@@ -4,7 +4,10 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from llm_sched.contracts.memory_planner_closure_report import MemoryPlannerAcceptanceStatus
+from llm_sched.contracts.memory_planner_closure_report import (
+    MemoryPlannerAcceptanceStatus,
+    MemoryPlannerConsumerId,
+)
 
 
 PhaseCCaseId = Literal[
@@ -47,6 +50,7 @@ class PhaseCAcceptanceCaseRecord(BaseModel):
     planner_remaining_gaps: list[str] = Field(default_factory=list)
     downstream_closure_status: MemoryPlannerAcceptanceStatus
     downstream_remaining_gaps: list[str] = Field(default_factory=list)
+    downstream_missing_consumers: list[MemoryPlannerConsumerId] = Field(default_factory=list)
     verified_required_consumer_count: int = Field(ge=0)
     required_consumer_count: int = Field(ge=0)
     remaining_gaps: list[str] = Field(default_factory=list)

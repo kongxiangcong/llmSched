@@ -11,7 +11,10 @@ from pydantic import BaseModel, ConfigDict
 from llm_sched.analysis import build_phase_c_acceptance_report
 from llm_sched.config.loader import Diagnostic, load_scenario_profile, load_target_profile
 from llm_sched.contracts.manifest import RunManifest
-from llm_sched.contracts.memory_planner_closure_report import MemoryPlannerClosureReport
+from llm_sched.contracts.memory_planner_closure_report import (
+    MemoryPlannerClosureReport,
+    MemoryPlannerConsumerId,
+)
 from llm_sched.contracts.phase_c_acceptance_report import PhaseCAcceptanceCaseRecord
 from llm_sched.pipeline.memory_planner_closure import run_memory_planner_closure
 
@@ -96,6 +99,7 @@ def _build_case_record(run_root: Path) -> PhaseCAcceptanceCaseRecord:
         planner_remaining_gaps=list(closure_report.planner_closure.remaining_gaps),
         downstream_closure_status=_downstream_closure_status(closure_report),
         downstream_remaining_gaps=_downstream_remaining_gaps(closure_report),
+        downstream_missing_consumers=_downstream_missing_consumers(closure_report),
         verified_required_consumer_count=closure_report.acceptance.verified_required_consumer_count,
         required_consumer_count=closure_report.acceptance.required_consumer_count,
         remaining_gaps=list(closure_report.acceptance.remaining_gaps),
@@ -156,4 +160,14 @@ def _downstream_remaining_gaps(closure_report: MemoryPlannerClosureReport) -> li
         gap
         for gap in closure_report.acceptance.remaining_gaps
         if not gap.startswith("planner_closure: ")
+    ]
+
+
+def _downstream_missing_consumers(
+    closure_report: MemoryPlannerClosureReport,
+) -> list[MemoryPlannerConsumerId]:
+    return [
+        consumer.consumer_id
+        for consumer in closure_report.downstream_consumers
+        if consumer.required_for_acceptance and consumer.status != "verified"
     ]

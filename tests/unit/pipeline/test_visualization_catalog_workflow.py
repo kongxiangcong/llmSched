@@ -177,6 +177,238 @@ def test_run_visualization_catalog_rejects_empty_sources(tmp_path: Path) -> None
     assert "no run roots" in result.diagnostics[0].message.lower()
 
 
+def test_run_visualization_catalog_copies_phase_c_gate_summary_from_workspace_report(
+    tmp_path: Path,
+) -> None:
+    from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
+    from llm_sched.pipeline import run_visualization_catalog
+
+    workspace_root = tmp_path / "workspace-root"
+    runs_root = workspace_root / "runs"
+    run_root = runs_root / "run-single-prefill"
+    _write_packaged_run(
+        run_root,
+        run_id="run-single-prefill",
+        scenario_name="prefill_seq128",
+        mode="prefill",
+        schedule_kind="single-core",
+        target_profile_name="riscv_npu_single_core_v1",
+        primary_metrics={"estimated_cycles": 4096.0},
+    )
+    _write_packaged_run(
+        runs_root / "run-single-decode",
+        run_id="run-single-decode",
+        scenario_name="decode_token1_kv2048",
+        mode="decode",
+        schedule_kind="single-core",
+        target_profile_name="riscv_npu_single_core_v1",
+        primary_metrics={"token_latency_cycles": 512.0},
+    )
+    (workspace_root / "reports").mkdir(parents=True, exist_ok=True)
+    (workspace_root / "reports" / "phase_c_acceptance_report.json").write_text(
+        json.dumps(
+            {
+                "report_name": "phase-c-acceptance.workspace-root",
+                "status": "in_progress",
+                "matrix_coverage": {
+                    "expected_case_ids": [
+                        "single-core:prefill",
+                        "single-core:decode",
+                        "dual-core:prefill",
+                        "dual-core:decode",
+                    ],
+                    "present_case_ids": [
+                        "single-core:prefill",
+                        "single-core:decode",
+                        "dual-core:prefill",
+                    ],
+                    "missing_case_ids": ["dual-core:decode"],
+                    "duplicate_case_ids": [],
+                    "ready_case_count": 3,
+                    "blocked_case_count": 1,
+                    "planner_blocked_case_count": 1,
+                    "downstream_blocked_case_count": 0,
+                },
+                "case_records": [],
+                "issues": [],
+                "remaining_gaps": ["missing canonical case: dual-core:decode"],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_visualization_catalog(
+        tmp_path / "catalog-root",
+        [],
+        workspace_root=workspace_root,
+    )
+
+    assert result.status == "completed"
+    artifact = VisualizationCatalogArtifact.model_validate_json(
+        result.catalog_manifest_path.read_text(encoding="utf-8")
+    )
+    assert artifact.metadata.phase_c_gate_summary is not None
+    assert artifact.metadata.phase_c_gate_summary.status == "in_progress"
+    assert artifact.metadata.phase_c_gate_summary.planner_blocked_case_count == 1
+    assert artifact.metadata.phase_c_gate_summary.missing_case_count == 1
+
+
+def test_run_visualization_catalog_copies_phase_c_blocked_cases_from_workspace_report(
+    tmp_path: Path,
+) -> None:
+    from llm_sched.contracts.visualization_catalog import VisualizationCatalogArtifact
+    from llm_sched.pipeline import run_visualization_catalog
+
+    workspace_root = tmp_path / "workspace-root"
+    runs_root = workspace_root / "runs"
+    run_root = runs_root / "run-single-prefill"
+    _write_packaged_run(
+        run_root,
+        run_id="run-single-prefill",
+        scenario_name="prefill_seq128",
+        mode="prefill",
+        schedule_kind="single-core",
+        target_profile_name="riscv_npu_single_core_v1",
+        primary_metrics={"estimated_cycles": 4096.0},
+    )
+    _write_packaged_run(
+        runs_root / "run-single-decode",
+        run_id="run-single-decode",
+        scenario_name="decode_token1_kv2048",
+        mode="decode",
+        schedule_kind="single-core",
+        target_profile_name="riscv_npu_single_core_v1",
+        primary_metrics={"token_latency_cycles": 512.0},
+    )
+    (workspace_root / "reports").mkdir(parents=True, exist_ok=True)
+    (workspace_root / "reports" / "phase_c_acceptance_report.json").write_text(
+        json.dumps(
+            {
+                "report_name": "phase-c-acceptance.workspace-root",
+                "status": "in_progress",
+                "matrix_coverage": {
+                    "expected_case_ids": [
+                        "single-core:prefill",
+                        "single-core:decode",
+                        "dual-core:prefill",
+                        "dual-core:decode",
+                    ],
+                    "present_case_ids": [
+                        "single-core:prefill",
+                        "single-core:decode",
+                        "dual-core:decode",
+                    ],
+                    "missing_case_ids": ["dual-core:prefill"],
+                    "duplicate_case_ids": [],
+                    "ready_case_count": 1,
+                    "blocked_case_count": 2,
+                    "planner_blocked_case_count": 1,
+                    "downstream_blocked_case_count": 1,
+                },
+                "case_records": [
+                    {
+                        "case_id": "single-core:prefill",
+                        "run_id": "run-single-prefill",
+                        "run_root": "workspace/runs/run-single-prefill",
+                        "scenario_name": "prefill_seq128",
+                        "mode": "prefill",
+                        "schedule_kind": "single-core",
+                        "target_profile_name": "riscv_npu_single_core_v1",
+                        "closure_report_path": "reports/memory_planner_closure_report.json",
+                        "closure_status": "in_progress",
+                        "planner_closure_status": "in_progress",
+                        "planner_remaining_gaps": ["overflow region: ping"],
+                        "downstream_closure_status": "ready_for_acceptance",
+                        "downstream_remaining_gaps": [],
+                        "downstream_missing_consumers": [],
+                        "verified_required_consumer_count": 4,
+                        "required_consumer_count": 4,
+                        "remaining_gaps": ["planner_closure: overflow region: ping"],
+                    },
+                    {
+                        "case_id": "single-core:decode",
+                        "run_id": "run-single-decode",
+                        "run_root": "workspace/runs/run-single-decode",
+                        "scenario_name": "decode_token1_kv2048",
+                        "mode": "decode",
+                        "schedule_kind": "single-core",
+                        "target_profile_name": "riscv_npu_single_core_v1",
+                        "closure_report_path": "reports/memory_planner_closure_report.json",
+                        "closure_status": "in_progress",
+                        "planner_closure_status": "ready_for_acceptance",
+                        "planner_remaining_gaps": [],
+                        "downstream_closure_status": "in_progress",
+                        "downstream_remaining_gaps": ["required downstream evidence missing"],
+                        "downstream_missing_consumers": ["performance_estimation"],
+                        "verified_required_consumer_count": 3,
+                        "required_consumer_count": 4,
+                        "remaining_gaps": ["required downstream evidence missing"],
+                    },
+                    {
+                        "case_id": "dual-core:decode",
+                        "run_id": "run-dual-decode",
+                        "run_root": "workspace/runs/run-dual-decode",
+                        "scenario_name": "decode_token1_kv2048",
+                        "mode": "decode",
+                        "schedule_kind": "dual-core",
+                        "target_profile_name": "riscv_npu_dual_core_v1",
+                        "closure_report_path": "reports/memory_planner_closure_report.json",
+                        "closure_status": "ready_for_acceptance",
+                        "planner_closure_status": "ready_for_acceptance",
+                        "planner_remaining_gaps": [],
+                        "downstream_closure_status": "ready_for_acceptance",
+                        "downstream_remaining_gaps": [],
+                        "downstream_missing_consumers": [],
+                        "verified_required_consumer_count": 4,
+                        "required_consumer_count": 4,
+                        "remaining_gaps": [],
+                    },
+                ],
+                "issues": [],
+                "remaining_gaps": [
+                    "single-core:prefill (run-single-prefill): planner_closure: overflow region: ping",
+                    "single-core:decode (run-single-decode): required downstream evidence missing",
+                    "missing canonical case: dual-core:prefill",
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_visualization_catalog(
+        tmp_path / "catalog-root",
+        [],
+        workspace_root=workspace_root,
+    )
+
+    assert result.status == "completed"
+    artifact = VisualizationCatalogArtifact.model_validate_json(
+        result.catalog_manifest_path.read_text(encoding="utf-8")
+    )
+    assert [case.case_id for case in artifact.metadata.phase_c_blocked_cases] == [
+        "single-core:prefill",
+        "single-core:decode",
+        "dual-core:prefill",
+    ]
+    assert artifact.metadata.phase_c_blocked_cases[0].blocker_kind == "planner"
+    assert artifact.metadata.phase_c_blocked_cases[1].blocker_kind == "downstream"
+    assert artifact.metadata.phase_c_blocked_cases[2].blocker_kind == "missing_case"
+    assert artifact.metadata.phase_c_blocked_cases[1].downstream_missing_consumers == [
+        "performance_estimation"
+    ]
+    assert (
+        artifact.metadata.phase_c_blocked_cases[0].workbench_entry_path
+        == "../../workspace-root/runs/run-single-prefill/workbench/index.html"
+    )
+    assert (
+        artifact.metadata.phase_c_blocked_cases[1].workbench_entry_path
+        == "../../workspace-root/runs/run-single-decode/workbench/index.html"
+    )
+    assert artifact.metadata.phase_c_blocked_cases[2].workbench_entry_path is None
+
+
 def _write_packaged_run(
     run_root: Path,
     *,

@@ -134,7 +134,9 @@ const UI_STATE = {
   timelineQuery: "",
   timelineStage: "all",
   timelineCore: "all",
+  memoryQuery: "",
   coverageQuery: "",
+  coverageFocus: "",
   activeDetailBlockId: null,
   catalogReturnUrl: "",
   requestedPanel: "summary",
@@ -184,7 +186,9 @@ function serializeUiState() {
     timeline_query: UI_STATE.timelineQuery,
     timeline_stage: UI_STATE.timelineStage,
     timeline_core: UI_STATE.timelineCore,
+    memory_query: UI_STATE.memoryQuery,
     coverage_query: UI_STATE.coverageQuery,
+    coverage_focus: UI_STATE.coverageFocus,
     detail_block: UI_STATE.activeDetailBlockId,
     catalog_return: UI_STATE.catalogReturnUrl,
   };
@@ -204,7 +208,9 @@ function hydrateStateFromUrl() {
   UI_STATE.timelineQuery = params.get("timeline_query") || "";
   UI_STATE.timelineStage = params.get("timeline_stage") || "all";
   UI_STATE.timelineCore = params.get("timeline_core") || "all";
+  UI_STATE.memoryQuery = params.get("memory_query") || "";
   UI_STATE.coverageQuery = params.get("coverage_query") || "";
+  UI_STATE.coverageFocus = params.get("coverage_focus") || "";
   UI_STATE.activeDetailBlockId = params.get("detail_block");
   UI_STATE.catalogReturnUrl = params.get("catalog_return") || "";
 }
@@ -243,6 +249,11 @@ function syncControlsFromState() {
   const timelineCoreFilter = document.querySelector("#timeline-core-filter");
   if (timelineCoreFilter) {
     timelineCoreFilter.value = UI_STATE.timelineCore;
+  }
+
+  const memorySearchInput = document.querySelector("#memory-search-input");
+  if (memorySearchInput) {
+    memorySearchInput.value = UI_STATE.memoryQuery;
   }
 
   const coverageSearchInput = document.querySelector("#coverage-search-input");
@@ -339,6 +350,20 @@ function filterCoverageIssues(issues, query) {
   return issues.filter((issue) =>
     [issue.schedule_block_id, issue.requested_opcode, issue.code, issue.message]
       .some((field) => normalizeText(field).includes(normalized))
+  );
+}
+
+function filterMemoryRegions(regions, query) {
+  const normalized = normalizeText(query).trim();
+  if (!normalized) {
+    return regions;
+  }
+  return regions.filter((region) =>
+    [
+      region.region_name,
+      ...Object.keys(region.peak_bytes_by_backing_store || {}),
+      ...Object.keys(region.peak_bytes_by_memory_class || {}),
+    ].some((field) => normalizeText(field).includes(normalized))
   );
 }
 
@@ -460,7 +485,8 @@ function renderCoreOccupancy(bundle) {
 }
 
 function renderMemory(bundle) {
-  const regionRows = (bundle.vmem_view.regions || []).map((region) => `
+  const filteredRegions = filterMemoryRegions(bundle.vmem_view.regions || [], UI_STATE.memoryQuery);
+  const regionRows = filteredRegions.map((region) => `
     <tr>
       <td>${region.region_name}</td>
       <td>${formatNumber(region.capacity_bytes)}</td>
@@ -468,13 +494,13 @@ function renderMemory(bundle) {
       <td>${formatNumber(region.utilization_ratio * 100)}%</td>
     </tr>
   `).join("");
-  const backingStoreRows = (bundle.vmem_view.regions || []).map((region) => `
+  const backingStoreRows = filteredRegions.map((region) => `
     <li>
       <strong>${region.region_name}</strong>
       <span class="muted">${renderBackingStoreSummary(region.peak_bytes_by_backing_store)}</span>
     </li>
   `).join("");
-  const memoryClassRows = (bundle.vmem_view.regions || []).map((region) => `
+  const memoryClassRows = filteredRegions.map((region) => `
     <li>
       <strong>${region.region_name}</strong>
       <span class="muted">${renderMemoryClassSummary(region.peak_bytes_by_memory_class)}</span>
@@ -548,7 +574,7 @@ function renderCoverageEnhanced(bundle) {
   `).join("");
   return `
     <div class="card-grid">
-      <article class="card">
+      <article class="${coverageCardClass("overview")}">
         <h2>Coverage</h2>
         <ul class="metric-list">
           <li><span>Mapped</span><strong>${bundle.coverage_view.mapped_descriptor_count}</strong></li>
@@ -556,7 +582,7 @@ function renderCoverageEnhanced(bundle) {
           <li><span>Matched Issues</span><strong>${filteredIssues.length}</strong></li>
         </ul>
       </article>
-      <article class="card">
+      <article class="${coverageCardClass("packed-descriptor")}" data-coverage-focus-target="packed-descriptor">
         <h2>Packed Descriptor Summary</h2>
         ${renderMetricEntries([
           ["Packed Records", bundle.coverage_view.packed_record_count || 0],
@@ -565,20 +591,39 @@ function renderCoverageEnhanced(bundle) {
           ["Field Placements", packedFieldPlacementCount],
         ])}
       </article>
-      <article class="card">
+      <article class="${coverageCardClass("packed-descriptor")}" data-coverage-focus-target="packed-descriptor">
         <h2>Packed Layout Templates</h2>
         ${renderMetricEntries(packedLayoutEntries, "No packed layout templates.")}
       </article>
-      <article class="card">
+      <article class="${coverageCardClass("packed-descriptor")}" data-coverage-focus-target="packed-descriptor">
         <h2>Packed Field Placements</h2>
         ${renderMetricEntries(packedFieldEntries, "No packed field placements.")}
       </article>
-      <article class="card">
+      <article class="${coverageCardClass("issues")}" data-coverage-focus-target="issues">
         <h2>Coverage Issues</h2>
         <ul class="table-list">${issues || "<li>No issues.</li>"}</ul>
       </article>
     </div>
   `;
+}
+
+function coverageCardClass(focusTarget) {
+  if (!focusTarget || !UI_STATE.coverageFocus) {
+    return "card";
+  }
+  return UI_STATE.coverageFocus === focusTarget ? "card is-focused" : "card";
+}
+
+function scrollCoverageFocusIntoView() {
+  if (!UI_STATE.coverageFocus) {
+    return;
+  }
+  const target = document.querySelector(
+    `#content-coverage [data-coverage-focus-target="${UI_STATE.coverageFocus}"]`
+  );
+  if (target && typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({ block: "start" });
+  }
 }
 
 function renderSweep(bundle) {
@@ -652,7 +697,7 @@ function buildPanelExportData(bundle, panelId) {
         panel: panelId,
         ui_state: state,
         data: {
-          regions: bundle.vmem_view.regions || [],
+          regions: filterMemoryRegions(bundle.vmem_view.regions || [], UI_STATE.memoryQuery),
           kv_formulas: bundle.kv_view.formulas || [],
         },
       };
@@ -811,6 +856,9 @@ function renderIntoShell(bundle, panelId) {
   if (content) {
     content.innerHTML = renderPanel(bundle, panelId);
   }
+  if (panelId === "coverage") {
+    scrollCoverageFocusIntoView();
+  }
   if (panelId === "timeline") {
     bindTimelineRows(bundle);
     refreshTimelineDetail(bundle);
@@ -928,6 +976,14 @@ function bindControls(bundle) {
     timelineCoreFilter.addEventListener("change", (event) => {
       UI_STATE.timelineCore = event.target.value;
       updateTimeline(bundle);
+    });
+  }
+
+  const memorySearchInput = document.querySelector("#memory-search-input");
+  if (memorySearchInput) {
+    memorySearchInput.addEventListener("input", (event) => {
+      UI_STATE.memoryQuery = event.target.value;
+      renderIntoShell(bundle, "memory");
     });
   }
 
@@ -1177,6 +1233,11 @@ def _build_styles_css() -> str:
   box-shadow: 0 16px 40px rgba(16, 32, 51, 0.08);
 }
 
+.card.is-focused {
+  border-color: rgba(28, 181, 224, 0.72);
+  box-shadow: 0 18px 44px rgba(28, 181, 224, 0.18);
+}
+
 .wide-card {
   overflow-x: auto;
 }
@@ -1380,6 +1441,19 @@ def _build_panel_shell(panel: str) -> str:
                 </label>
               </div>
               <div id="content-coverage"></div>
+            </div>
+          </section>"""
+
+    if panel == "memory":
+        return """          <section class="panel-view" id="panel-memory" data-panel="memory">
+            <div class="panel-shell">
+              <div class="panel-tools">
+                <label class="panel-tool" for="memory-search-input">
+                  <span>Memory Search</span>
+                  <input id="memory-search-input" type="search" placeholder="Search region, backing store, memory class">
+                </label>
+              </div>
+              <div id="content-memory"></div>
             </div>
           </section>"""
 

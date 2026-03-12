@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlencode
 
 from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogArtifact,
+    VisualizationCatalogPhaseCBlockedCase,
     VisualizationCatalogEntry,
     VisualizationCatalogMetadata,
+    VisualizationCatalogPhaseCGateSummary,
 )
 
 
@@ -18,6 +21,8 @@ def build_visualization_catalog(
     catalog_id: str,
     title: str,
     entries: list[VisualizationCatalogEntry],
+    phase_c_gate_summary: VisualizationCatalogPhaseCGateSummary | None = None,
+    phase_c_blocked_cases: list[VisualizationCatalogPhaseCBlockedCase] | None = None,
     catalog_root: str | Path,
 ) -> tuple[VisualizationCatalogArtifact, dict[str, str]]:
     catalog_root_path = Path(catalog_root)
@@ -28,6 +33,8 @@ def build_visualization_catalog(
             generated_by="run-visualization-catalog",
             entry_count=len(entries),
             default_sort_key="primary_metric",
+            phase_c_gate_summary=phase_c_gate_summary,
+            phase_c_blocked_cases=list(phase_c_blocked_cases or []),
         ),
         entries=entries,
     )
@@ -56,6 +63,10 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
         else ""
     )
     stat_cards = _build_stat_cards(artifact.entries)
+    phase_c_gate_banner = _build_phase_c_gate_banner(
+        artifact.metadata.phase_c_gate_summary,
+        artifact.metadata.phase_c_blocked_cases,
+    )
     return f"""<!doctype html>
 <html lang="en">
   <head>
@@ -71,6 +82,7 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
         <h1>{artifact.title}</h1>
         <p class="muted">Cross-run index for packaged workbenches</p>
       </header>
+      {phase_c_gate_banner}
       <section class="toolbar">
         <label class="control" for="catalog-search-input">
           <span>Search</span>
@@ -277,10 +289,39 @@ function hydrateCatalogStateFromUrl() {
 }
 
 function buildWorkbenchLink(entry, panel) {
+  return buildWorkbenchHref(entry.workbench_entry_path, panel);
+}
+
+function buildWorkbenchHref(workbenchPath, panel, extraParams = {}) {
   const params = new URLSearchParams();
   params.set("panel", panel);
+  Object.entries(extraParams).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && String(value) !== "") {
+      params.set(key, String(value));
+    }
+  });
   params.set("catalog_return", buildCatalogReturnUrl());
-  return `${entry.workbench_entry_path}?${params.toString()}`;
+  return `${workbenchPath}?${params.toString()}`;
+}
+
+function refreshBlockedCaseWorkbenchLinks() {
+  document.querySelectorAll(".blocked-case-workbench-link").forEach((anchor) => {
+    const workbenchPath = anchor.dataset.workbenchPath;
+    const panel = anchor.dataset.workbenchPanel || "summary";
+    const workbenchMemoryQuery = anchor.dataset.workbenchMemoryQuery || "";
+    const workbenchCoverageFocus = anchor.dataset.workbenchCoverageFocus || "";
+    if (!workbenchPath) {
+      return;
+    }
+    const extraParams = {};
+    if (workbenchMemoryQuery) {
+      extraParams.memory_query = workbenchMemoryQuery;
+    }
+    if (workbenchCoverageFocus) {
+      extraParams.coverage_focus = workbenchCoverageFocus;
+    }
+    anchor.href = buildWorkbenchHref(workbenchPath, panel, extraParams);
+  });
 }
 
 function currentWorkbenchPanel() {
@@ -663,6 +704,7 @@ function bindCatalogFilters() {
     bindCompareToggles(CATALOG_ENTRIES);
     renderCompareTray(CATALOG_ENTRIES);
     renderCompareWorkspace(filtered);
+    refreshBlockedCaseWorkbenchLinks();
   };
   searchInput.addEventListener("input", refresh);
   modeFilter.addEventListener("change", refresh);
@@ -745,6 +787,7 @@ def _build_styles_css() -> str:
 }
 
 .stat-card,
+.phase-c-gate-card,
 .table-card,
 .compare-tray,
 .group-card {
@@ -758,6 +801,20 @@ def _build_styles_css() -> str:
   display: block;
   font-size: 28px;
   margin-top: 6px;
+}
+
+.phase-c-gate-card {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.phase-c-gate-card h2 {
+  margin: 0;
+}
+
+.phase-c-gate-card .metric-list {
+  margin: 0;
 }
 
 .group-nav {
@@ -970,6 +1027,173 @@ def _build_stat_cards(entries: list[VisualizationCatalogEntry]) -> str:
         </article>"""
         for label, value in cards
     )
+
+
+def _build_phase_c_gate_banner(
+    summary: VisualizationCatalogPhaseCGateSummary | None,
+    blocked_cases: list[VisualizationCatalogPhaseCBlockedCase],
+) -> str:
+    if summary is None:
+        return ""
+    blocked_cases_html = _build_phase_c_blocked_cases_table(blocked_cases)
+    return f"""      <section class="phase-c-gate-card">
+        <article class="phase-c-gate-card">
+          <div>
+            <p class="eyebrow">Phase C Gate</p>
+            <h2>Phase C Gate</h2>
+            <p class="muted">Workspace-level canonical matrix readiness from phase_c_acceptance_report.json</p>
+            <p class="muted">status: {summary.status}</p>
+          </div>
+          <ul class="metric-list">
+            <li><span>ready</span><strong>{summary.ready_case_count}</strong></li>
+            <li><span>blocked</span><strong>{summary.blocked_case_count}</strong></li>
+            <li><span>planner_blocked</span><strong>{summary.planner_blocked_case_count}</strong></li>
+            <li><span>downstream_blocked</span><strong>{summary.downstream_blocked_case_count}</strong></li>
+            <li><span>missing</span><strong>{summary.missing_case_count}</strong></li>
+            <li><span>duplicate</span><strong>{summary.duplicate_case_count}</strong></li>
+          </ul>
+          {blocked_cases_html}
+        </article>
+      </section>"""
+
+
+def _build_phase_c_blocked_cases_table(
+    blocked_cases: list[VisualizationCatalogPhaseCBlockedCase],
+) -> str:
+    if not blocked_cases:
+        return ""
+    rows = "\n".join(
+        f"""              <tr>
+                <td>{case.case_id}</td>
+                <td>{case.run_id or "-"}</td>
+                <td>{case.blocker_kind}</td>
+                <td>{case.planner_closure_status or "-"}</td>
+                <td>{case.downstream_closure_status or "-"}</td>
+                <td>{", ".join(case.remaining_gaps) if case.remaining_gaps else "-"}</td>
+                <td>{_build_blocked_case_workbench_link(case)}</td>
+              </tr>"""
+        for case in blocked_cases
+    )
+    return f"""
+          <div>
+            <h3>Blocked Cases</h3>
+            <table class="catalog-table">
+              <thead>
+                <tr>
+                  <th>Case</th>
+                  <th>Run</th>
+                  <th>Blocker</th>
+                  <th>Planner</th>
+                  <th>Downstream</th>
+                  <th>Gaps</th>
+                  <th>Workbench</th>
+                </tr>
+              </thead>
+              <tbody>
+{rows}
+              </tbody>
+            </table>
+          </div>"""
+
+
+def _build_blocked_case_workbench_link(case: VisualizationCatalogPhaseCBlockedCase) -> str:
+    if not case.workbench_entry_path:
+        return "-"
+    panel = _blocked_case_panel(case)
+    if panel is None:
+        return "-"
+    memory_query = _blocked_case_memory_query(case)
+    coverage_focus = _blocked_case_coverage_focus(case)
+    href = _blocked_case_workbench_href(
+        case.workbench_entry_path,
+        panel,
+        memory_query=memory_query,
+        coverage_focus=coverage_focus,
+    )
+    memory_query_attr = (
+        f' data-workbench-memory-query="{memory_query}"' if memory_query else ""
+    )
+    coverage_focus_attr = (
+        f' data-workbench-coverage-focus="{coverage_focus}"' if coverage_focus else ""
+    )
+    return (
+        f'<a class="blocked-case-workbench-link" '
+        f'href="{href}" '
+        f'data-workbench-path="{case.workbench_entry_path}" '
+        f'data-workbench-panel="{panel}"'
+        f'{memory_query_attr}'
+        f'{coverage_focus_attr}>'
+        f'Open {_blocked_case_panel_label(panel)}'
+        "</a>"
+    )
+
+
+def _blocked_case_panel(case: VisualizationCatalogPhaseCBlockedCase) -> str | None:
+    if case.blocker_kind in {"planner", "planner_and_downstream"}:
+        return "memory"
+    if case.blocker_kind == "downstream":
+        return _downstream_blocked_case_panel(case)
+    return None
+
+
+def _blocked_case_memory_query(case: VisualizationCatalogPhaseCBlockedCase) -> str | None:
+    if case.blocker_kind not in {"planner", "planner_and_downstream"}:
+        return None
+    for gap in case.remaining_gaps:
+        match = re.search(r"overflow region:\s*([A-Za-z0-9_.-]+)", gap)
+        if match is not None:
+            return match.group(1)
+    return None
+
+
+def _blocked_case_coverage_focus(case: VisualizationCatalogPhaseCBlockedCase) -> str | None:
+    if case.blocker_kind != "downstream":
+        return None
+    if "descriptor_generation" in case.downstream_missing_consumers:
+        return "packed-descriptor"
+    return None
+
+
+def _blocked_case_workbench_href(
+    workbench_entry_path: str,
+    panel: str,
+    *,
+    memory_query: str | None = None,
+    coverage_focus: str | None = None,
+) -> str:
+    params = {"panel": panel}
+    if memory_query:
+        params["memory_query"] = memory_query
+    if coverage_focus:
+        params["coverage_focus"] = coverage_focus
+    return f"{workbench_entry_path}?{urlencode(params)}"
+
+
+def _blocked_case_panel_label(panel: str) -> str:
+    labels = {
+        "summary": "Summary",
+        "memory": "Memory",
+        "coverage": "Coverage",
+    }
+    return labels[panel]
+
+
+def _downstream_blocked_case_panel(case: VisualizationCatalogPhaseCBlockedCase) -> str:
+    missing_consumers = set(case.downstream_missing_consumers)
+    if not missing_consumers:
+        return "coverage"
+    if missing_consumers & {"visualization_packaging", "visualization_workbench"}:
+        return "memory"
+    if missing_consumers & {"descriptor_generation"}:
+        return "coverage"
+    if missing_consumers & {
+        "tile_planning",
+        "performance_estimation",
+        "prefill_evaluation",
+        "decode_evaluation",
+    }:
+        return "summary"
+    return "coverage"
 
 
 def _build_table_rows(entries: list[VisualizationCatalogEntry]) -> str:

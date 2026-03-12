@@ -83,6 +83,8 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogArtifact,
     VisualizationCatalogEntry,
     VisualizationCatalogMetadata,
+    VisualizationCatalogPhaseCBlockedCase,
+    VisualizationCatalogPhaseCGateSummary,
 )
 from llm_sched.contracts.visualization_workbench import (
     VisualizationWorkbenchArtifact,
@@ -137,6 +139,8 @@ __all__ = [
     "VisualizationCatalogArtifact",
     "VisualizationCatalogEntry",
     "VisualizationCatalogMetadata",
+    "VisualizationCatalogPhaseCBlockedCase",
+    "VisualizationCatalogPhaseCGateSummary",
     "VisualizationWorkbenchArtifact",
     "VisualizationWorkbenchAssetFile",
     "VisualizationWorkbenchMetadata",

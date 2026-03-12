@@ -49,7 +49,7 @@
 | SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation。 | 仍缺 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 summary-grade compare 的更强 compare modes。 |
 
 ## 4. 当前主路径
 
@@ -1448,6 +1448,41 @@ graph TD
 - what still remains:
   - deeper workspace drill-down and richer compare modes beyond the current selected-panel summary-grade navigation
   - richer screenshot/export workflow
+
+## 2026-03-12 SPEC-19 Catalog Phase C Gate Summary Checkpoint
+
+- plan doc: `../plans/2026-03-12-catalog-phase-c-gate-summary.md`
+- static catalog now surfaces workspace-level `Phase C Gate` readiness directly in the header whenever `workspace_root/reports/phase_c_acceptance_report.json` is present.
+- new closure evidence:
+  - `VisualizationCatalogMetadata` now carries an optional `phase_c_gate_summary`
+  - `run-visualization-catalog --workspace-root ...` now copies the canonical matrix status plus ready/blocked/planner/downstream counts into `catalog_manifest.json`
+  - catalog HTML now renders that summary above the existing compare/grouping surfaces, so users can scan `M2 / SPEC-08` readiness without reopening raw JSON
+  - focused catalog contract, builder, workflow, and CLI regressions remain green with the stronger workspace summary surface
+- what this closes:
+  - one `SPEC-19` visibility gap where workspace users had a formal Phase C gate but no direct product surface for it
+  - one case where `phase_c_acceptance_report.json` remained machine-readable only, even though catalog already had the right workspace context
+- what still remains:
+  - deeper workspace drill-down and richer compare modes beyond the current summary-grade surfaces
+  - no need to reopen `SPEC-18` bundle contracts just to show workspace-level Phase C status
+
+## 2026-03-12 SPEC-19 Catalog Phase C Blocked-Case Drill-Down Checkpoint
+
+- plan doc: `../plans/2026-03-12-catalog-phase-c-blocked-case-drilldown.md`
+- static catalog now expands the `Phase C Gate` banner into a compact blocked-case table whenever the workspace-level acceptance report contains non-ready canonical cells.
+- new closure evidence:
+  - `VisualizationCatalogMetadata` now carries optional `phase_c_blocked_cases` records alongside the top-level gate summary
+  - `run-visualization-catalog --workspace-root ...` now copies planner-blocked, downstream-blocked, missing-case, and duplicate-case matrix signals into `catalog_manifest.json`
+  - catalog HTML now lists the blocked canonical case id, run id, blocker kind, planner/downstream closure status, and remaining gaps without reopening raw acceptance JSON
+  - blocked-case rows with a concrete run now also carry a direct packaged-workbench link, with planner-side blockers defaulting to `memory` and downstream blockers selecting `summary`/`memory`/`coverage` from structured required-consumer gaps instead of free-text parsing; `descriptor_generation` now deep-links into the packed-descriptor coverage section via `coverage_focus=packed-descriptor`
+  - those blocked-case links now reuse the same `catalog_return` loop as other catalog drill-down links, so users can jump into workbench inspection and back without losing current workspace filters
+  - planner blocked-case links now also infer `memory_query` from known gap strings such as `overflow region: ping`, so memory-panel drill-down can land on the relevant region immediately
+  - focused catalog contract, builder, workflow, and CLI regressions remain green with the stronger workspace drill-down surface
+- what this closes:
+  - one concrete `SPEC-19` workspace drill-down gap where users could see that the matrix was blocked but not which canonical cells were responsible
+  - one case where planner-side versus downstream-consumer blockers were still machine-readable only, despite catalog already carrying the relevant workspace context
+- what still remains:
+  - richer workspace drill-down beyond the current blocked-case table
+  - compare modes beyond the current summary-grade surfaces
 
 ## 2026-03-11 SPEC-19 Catalog Workbench Return Navigation Checkpoint
 

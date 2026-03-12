@@ -10,9 +10,14 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from llm_sched.config.loader import Diagnostic
+from llm_sched.contracts.phase_c_acceptance_report import PhaseCAcceptanceReport
 from llm_sched.contracts.sweep_report import SweepDeltaReport
 from llm_sched.contracts.visualization_bundle import VisualizationBundle
-from llm_sched.contracts.visualization_catalog import VisualizationCatalogEntry
+from llm_sched.contracts.visualization_catalog import (
+    VisualizationCatalogPhaseCBlockedCase,
+    VisualizationCatalogEntry,
+    VisualizationCatalogPhaseCGateSummary,
+)
 from llm_sched.contracts.visualization_workbench import VisualizationWorkbenchArtifact
 from llm_sched.visualization import build_visualization_catalog
 
@@ -44,10 +49,23 @@ def run_visualization_catalog(
             raise ValueError("no run roots resolved for visualization catalog")
 
         entries = [_build_catalog_entry(catalog_root_path, run_root) for run_root in resolved_run_roots]
+        phase_c_report = _load_phase_c_acceptance_report(
+            Path(workspace_root) if workspace_root is not None else None
+        )
+        workbench_entry_paths_by_run_id = {
+            entry.run_id: entry.workbench_entry_path for entry in entries
+        }
+        phase_c_gate_summary = _load_phase_c_gate_summary(phase_c_report)
+        phase_c_blocked_cases = _load_phase_c_blocked_cases(
+            phase_c_report,
+            workbench_entry_paths_by_run_id,
+        )
         artifact, files = build_visualization_catalog(
             catalog_id=f"catalog.{catalog_root_path.name}",
             title="Visualization Catalog",
             entries=entries,
+            phase_c_gate_summary=phase_c_gate_summary,
+            phase_c_blocked_cases=phase_c_blocked_cases,
             catalog_root=Path("catalog"),
         )
         for relative_path, content in files.items():
@@ -170,3 +188,96 @@ def _discover_run_roots_from_workspace_root(workspace_root: Path) -> list[Path]:
             if child.is_dir() and (child / "workbench" / "workbench_manifest.json").is_file():
                 candidates.append(child)
     return candidates
+
+
+def _load_phase_c_acceptance_report(
+    workspace_root: Path | None,
+) -> PhaseCAcceptanceReport | None:
+    if workspace_root is None:
+        return None
+    report_path = workspace_root / "reports" / "phase_c_acceptance_report.json"
+    if not report_path.is_file():
+        return None
+
+    return PhaseCAcceptanceReport.model_validate_json(report_path.read_text(encoding="utf-8"))
+
+
+def _load_phase_c_gate_summary(
+    report: PhaseCAcceptanceReport | None,
+) -> VisualizationCatalogPhaseCGateSummary | None:
+    if report is None:
+        return None
+    coverage = report.matrix_coverage
+    return VisualizationCatalogPhaseCGateSummary(
+        status=report.status,
+        ready_case_count=coverage.ready_case_count,
+        blocked_case_count=coverage.blocked_case_count,
+        planner_blocked_case_count=coverage.planner_blocked_case_count,
+        downstream_blocked_case_count=coverage.downstream_blocked_case_count,
+        missing_case_count=len(coverage.missing_case_ids),
+        duplicate_case_count=len(coverage.duplicate_case_ids),
+    )
+
+
+def _load_phase_c_blocked_cases(
+    report: PhaseCAcceptanceReport | None,
+    workbench_entry_paths_by_run_id: dict[str, str],
+) -> list[VisualizationCatalogPhaseCBlockedCase]:
+    if report is None:
+        return []
+
+    blocked_cases: list[VisualizationCatalogPhaseCBlockedCase] = []
+    for record in report.case_records:
+        if record.closure_status == "ready_for_acceptance":
+            continue
+        blocked_cases.append(
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id=record.case_id,
+                run_id=record.run_id,
+                workbench_entry_path=workbench_entry_paths_by_run_id.get(record.run_id),
+                blocker_kind=_phase_c_blocker_kind(record),
+                planner_closure_status=record.planner_closure_status,
+                downstream_closure_status=record.downstream_closure_status,
+                downstream_missing_consumers=list(record.downstream_missing_consumers),
+                remaining_gaps=list(record.remaining_gaps),
+            )
+        )
+
+    for case_id in report.matrix_coverage.missing_case_ids:
+        blocked_cases.append(
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id=case_id,
+                run_id=None,
+                blocker_kind="missing_case",
+                planner_closure_status=None,
+                downstream_closure_status=None,
+                downstream_missing_consumers=[],
+                remaining_gaps=[f"missing canonical case: {case_id}"],
+            )
+        )
+
+    for case_id in report.matrix_coverage.duplicate_case_ids:
+        blocked_cases.append(
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id=case_id,
+                run_id=None,
+                blocker_kind="duplicate_case",
+                planner_closure_status=None,
+                downstream_closure_status=None,
+                downstream_missing_consumers=[],
+                remaining_gaps=[f"duplicate canonical case: {case_id}"],
+            )
+        )
+    return blocked_cases
+
+
+def _phase_c_blocker_kind(record) -> str:
+    planner_blocked = record.planner_closure_status != "ready_for_acceptance"
+    downstream_blocked = record.downstream_closure_status != "ready_for_acceptance"
+    if planner_blocked and downstream_blocked:
+        return "planner_and_downstream"
+    if planner_blocked:
+        return "planner"
+    if downstream_blocked:
+        return "downstream"
+    return "downstream"

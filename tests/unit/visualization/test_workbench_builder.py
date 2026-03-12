@@ -27,6 +27,7 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "timeline-stage-filter" in files["workbench/index.html"]
     assert "timeline-core-filter" in files["workbench/index.html"]
     assert "timeline-detail-panel" in files["workbench/index.html"]
+    assert "memory-search-input" in files["workbench/index.html"]
     assert "coverage-search-input" in files["workbench/index.html"]
     assert "copy-view-link-button" in files["workbench/index.html"]
     assert "download-view-json-button" in files["workbench/index.html"]
@@ -52,6 +53,7 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "URLSearchParams(window.location.search)" in files["workbench/assets/app.js"]
     assert "function hydrateStateFromUrl" in files["workbench/assets/app.js"]
     assert "catalog_return" in files["workbench/assets/app.js"]
+    assert "memory_query" in files["workbench/assets/app.js"]
     assert "coverage_query" in files["workbench/assets/app.js"]
     assert "detail_block" in files["workbench/assets/app.js"]
     assert "timeline_stage" in files["workbench/assets/app.js"]
@@ -113,6 +115,21 @@ def test_build_visualization_workbench_renders_vmem_memory_class_mix_in_memory_p
     assert "Region Memory Class Mix" in files["workbench/assets/app.js"]
     assert "peak_bytes_by_memory_class" in files["workbench/assets/app.js"]
     assert "Top Region Memory Classes" in files["workbench/assets/app.js"]
+
+
+def test_build_visualization_workbench_supports_coverage_focus_deep_links() -> None:
+    from llm_sched.visualization import build_visualization_workbench
+
+    _artifact, files = build_visualization_workbench(
+        _bundle(include_sweep=False),
+        bundle_relative_path="../reports/visualization_bundle.json",
+        workbench_root=Path("workbench"),
+    )
+
+    assert "coverage_focus" in files["workbench/assets/app.js"]
+    assert "function scrollCoverageFocusIntoView" in files["workbench/assets/app.js"]
+    assert 'data-coverage-focus-target="packed-descriptor"' in files["workbench/assets/app.js"]
+    assert "is-focused" in files["workbench/assets/styles.css"]
 
 
 def _bundle(*, include_sweep: bool) -> object:

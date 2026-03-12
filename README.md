@@ -132,6 +132,9 @@ python -m pytest tests/smoke -m milestone_matrix -q
 - `SPEC-19` catalog compare 现也已有 shared summary-metric compare：静态 catalog 直接携带 `metric_values`，不再只看单一 primary metric
 - `SPEC-19` catalog compare 现也已有 selected-panel deep-link navigation：compare tray / workspace 可直接跳到 `summary/timeline/memory/coverage`
 - `SPEC-19` 现也已有 catalog/workbench round-trip navigation：从 compare drill-down 到 workbench 后可直接回到同一 catalog compare/filter 上下文
+- `SPEC-19` static catalog 现在也可在 `workspace_root` 模式下直接显示 `Phase C Gate` 摘要，不必再单独打开 `phase_c_acceptance_report.json`
+- `SPEC-19` static catalog 现在也可直接列出被 planner / downstream / missing / duplicate 挡住的 `Phase C` canonical cases，便于在 workspace 级别快速定位卡点
+- `SPEC-19` static catalog 现在也可从这些 blocked-case 行直接跳到对应 packaged workbench，而且会优先按 structured downstream consumer / planner blocker 默认落到 `summary`、`memory` 或 `coverage` 面板；其中 `descriptor_generation` blocker 会直接落到 coverage 的 packed-descriptor section；这些链接会保留当前 catalog 的 `catalog_return` 上下文，并且 planner blocked case 在能识别到 overflow region 时会直接带 `memory_query` 预过滤到对应 region；只有 missing / duplicate 这类无具体 run 的 case 保持纯摘要
 - `SPEC-10/11` 的 helper-store audit batch 已完成；后续以 acceptance list 维持稳定，不再默认继续宽泛铺开
 - `SPEC-09` 现接受当前 GEMM-like / attention tiling + untiled-helper scheduling 作为 `M2` 收口范围
 - `SPEC-08` 现在也已有 machine-readable closure artifact：`memory_planner_closure_report.json` 会枚举 required/optional downstream consumers 和 remaining gaps

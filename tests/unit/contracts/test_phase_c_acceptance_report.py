@@ -21,6 +21,7 @@ def test_phase_c_acceptance_case_record_requires_matching_case_id() -> None:
                 "planner_remaining_gaps": [],
                 "downstream_closure_status": "ready_for_acceptance",
                 "downstream_remaining_gaps": [],
+                "downstream_missing_consumers": [],
                 "verified_required_consumer_count": 5,
                 "required_consumer_count": 5,
                 "remaining_gaps": [],
@@ -69,6 +70,7 @@ def test_phase_c_acceptance_report_tracks_matrix_coverage_and_issues() -> None:
                     "planner_remaining_gaps": [],
                     "downstream_closure_status": "ready_for_acceptance",
                     "downstream_remaining_gaps": [],
+                    "downstream_missing_consumers": [],
                     "verified_required_consumer_count": 5,
                     "required_consumer_count": 5,
                     "remaining_gaps": [],
@@ -88,14 +90,13 @@ def test_phase_c_acceptance_report_tracks_matrix_coverage_and_issues() -> None:
                         "unresolved address diagnostics remain",
                     ],
                     "downstream_closure_status": "in_progress",
-                    "downstream_remaining_gaps": [
-                        "visualization_packaging consumer evidence is missing",
-                    ],
+                    "downstream_remaining_gaps": ["required downstream evidence missing"],
+                    "downstream_missing_consumers": ["visualization_packaging"],
                     "verified_required_consumer_count": 4,
                     "required_consumer_count": 5,
                     "remaining_gaps": [
                         "planner_closure: unresolved address diagnostics remain",
-                        "visualization_packaging consumer evidence is missing",
+                        "required downstream evidence missing",
                     ],
                 },
             ],
@@ -134,8 +135,7 @@ def test_phase_c_acceptance_report_tracks_matrix_coverage_and_issues() -> None:
         "unresolved address diagnostics remain"
     ]
     assert report.case_records[1].downstream_closure_status == "in_progress"
-    assert report.case_records[1].downstream_remaining_gaps == [
-        "visualization_packaging consumer evidence is missing"
-    ]
+    assert report.case_records[1].downstream_remaining_gaps == ["required downstream evidence missing"]
+    assert report.case_records[1].downstream_missing_consumers == ["visualization_packaging"]
     assert report.issues[2].run_id == "run-decode-dual-a"
     assert "visualization_packaging" in report.remaining_gaps[2]

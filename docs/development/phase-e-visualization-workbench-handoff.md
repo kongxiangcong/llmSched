@@ -1,5 +1,22 @@
 # Phase E Visualization Workbench Handoff
 
+## 2026-03-12 Catalog Phase C Blocked-Case Drill-Down Checkpoint
+
+- New plan: `../plans/2026-03-12-catalog-phase-c-blocked-case-drilldown.md`
+- static catalog now expands `Phase C Gate` into a blocked-case table when `workspace_root/reports/phase_c_acceptance_report.json` reports non-ready canonical cells
+- `catalog_manifest.json` now carries optional `phase_c_blocked_cases`, including case id, blocker kind, planner/downstream closure states, and remaining gaps
+- blocked-case rows with a concrete run now expose a direct packaged-workbench link, with planner-side blockers defaulting to `memory` and downstream blockers selecting `summary`/`memory`/`coverage` from structured required-consumer gaps instead of free-text parsing; `descriptor_generation` links now land on the packed-descriptor coverage section through `coverage_focus=packed-descriptor`
+- those blocked-case links now also preserve `catalog_return`, so workbench drill-down can return to the same catalog context
+- planner blocked-case links now also infer `memory_query` from known overflow-region gaps, so memory inspection can open with the relevant region already filtered
+- focused catalog contract, builder, workflow, and CLI regressions remain green with the stronger workspace drill-down surface
+
+## 2026-03-12 Catalog Phase C Gate Summary Checkpoint
+
+- New plan: `../plans/2026-03-12-catalog-phase-c-gate-summary.md`
+- static catalog now surfaces `Phase C Gate` readiness directly from `workspace_root/reports/phase_c_acceptance_report.json` when that workspace artifact is present
+- `catalog_manifest.json` now carries an optional `phase_c_gate_summary`, including status plus ready/blocked/planner/downstream counts
+- focused catalog contract, builder, workflow, and CLI regressions remain green with the stronger workspace-summary surface
+
 ## 2026-03-12 VMEM Memory-Class Visibility Checkpoint
 
 - New plan: `../plans/2026-03-12-spec-08-visualization-memory-class-visibility.md`

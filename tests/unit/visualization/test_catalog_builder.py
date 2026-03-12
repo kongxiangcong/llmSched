@@ -105,3 +105,156 @@ def test_build_visualization_catalog_supports_empty_entries() -> None:
 
     assert artifact.metadata.entry_count == 0
     assert "No runs have been added" in files["catalog/index.html"]
+
+
+def test_build_visualization_catalog_renders_phase_c_gate_summary_when_present() -> None:
+    from llm_sched.contracts.visualization_catalog import (
+        VisualizationCatalogPhaseCBlockedCase,
+        VisualizationCatalogEntry,
+        VisualizationCatalogPhaseCGateSummary,
+    )
+    from llm_sched.visualization import build_visualization_catalog
+
+    artifact, files = build_visualization_catalog(
+        catalog_id="catalog.phase-c",
+        title="Phase C Catalog",
+        entries=[
+            VisualizationCatalogEntry(
+                entry_id="run.prefill.single",
+                run_id="run-prefill-single",
+                scenario_name="prefill_seq128",
+                mode="prefill",
+                schedule_kind="single-core",
+                target_profile_name="riscv_npu_single_core_v1",
+                primary_metric_name="estimated_cycles",
+                primary_metric_value=4096.0,
+                workbench_entry_path="../run-prefill-single/workbench/index.html",
+            )
+        ],
+        phase_c_gate_summary=VisualizationCatalogPhaseCGateSummary(
+            status="in_progress",
+            ready_case_count=2,
+            blocked_case_count=2,
+            planner_blocked_case_count=1,
+            downstream_blocked_case_count=1,
+            missing_case_count=1,
+            duplicate_case_count=0,
+        ),
+        phase_c_blocked_cases=[
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id="single-core:prefill",
+                run_id="run-prefill-single",
+                workbench_entry_path="../run-prefill-single/workbench/index.html",
+                blocker_kind="planner",
+                planner_closure_status="in_progress",
+                downstream_closure_status="ready_for_acceptance",
+                downstream_missing_consumers=[],
+                remaining_gaps=["planner_closure: overflow region: ping"],
+            ),
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id="single-core:decode",
+                run_id="run-decode-single",
+                workbench_entry_path="../run-decode-single/workbench/index.html",
+                blocker_kind="downstream",
+                planner_closure_status="ready_for_acceptance",
+                downstream_closure_status="in_progress",
+                downstream_missing_consumers=["performance_estimation"],
+                remaining_gaps=["required downstream evidence missing"],
+            ),
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id="dual-core:prefill",
+                run_id=None,
+                blocker_kind="missing_case",
+                planner_closure_status=None,
+                downstream_closure_status=None,
+                downstream_missing_consumers=[],
+                remaining_gaps=["missing canonical case: dual-core:prefill"],
+            ),
+        ],
+        catalog_root=Path("catalog"),
+    )
+
+    assert artifact.metadata.phase_c_gate_summary is not None
+    assert len(artifact.metadata.phase_c_blocked_cases) == 3
+    assert "Phase C Gate" in files["catalog/index.html"]
+    assert "Blocked Cases" in files["catalog/index.html"]
+    assert "single-core:prefill" in files["catalog/index.html"]
+    assert "single-core:decode" in files["catalog/index.html"]
+    assert "dual-core:prefill" in files["catalog/index.html"]
+    assert "missing_case" in files["catalog/index.html"]
+    assert "Open Memory" in files["catalog/index.html"]
+    assert "Open Summary" in files["catalog/index.html"]
+    assert "Open Workbench" not in files["catalog/index.html"]
+    assert "../run-prefill-single/workbench/index.html?panel=memory&memory_query=ping" in files["catalog/index.html"]
+    assert "../run-decode-single/workbench/index.html?panel=summary" in files["catalog/index.html"]
+    assert 'class="blocked-case-workbench-link"' in files["catalog/index.html"]
+    assert 'data-workbench-path="../run-prefill-single/workbench/index.html"' in files["catalog/index.html"]
+    assert 'data-workbench-panel="memory"' in files["catalog/index.html"]
+    assert 'data-workbench-memory-query="ping"' in files["catalog/index.html"]
+    assert 'data-workbench-panel="summary"' in files["catalog/index.html"]
+    assert "planner_blocked" in files["catalog/index.html"]
+    assert "downstream_blocked" in files["catalog/index.html"]
+    assert "status: in_progress" in files["catalog/index.html"]
+    assert "function refreshBlockedCaseWorkbenchLinks" in files["catalog/assets/app.js"]
+    assert 'document.querySelectorAll(".blocked-case-workbench-link")' in files["catalog/assets/app.js"]
+    assert "workbenchMemoryQuery" in files["catalog/assets/app.js"]
+    assert "refreshBlockedCaseWorkbenchLinks();" in files["catalog/assets/app.js"]
+
+
+def test_build_visualization_catalog_renders_descriptor_generation_focus_link() -> None:
+    from llm_sched.contracts.visualization_catalog import (
+        VisualizationCatalogPhaseCBlockedCase,
+        VisualizationCatalogEntry,
+        VisualizationCatalogPhaseCGateSummary,
+    )
+    from llm_sched.visualization import build_visualization_catalog
+
+    _artifact, files = build_visualization_catalog(
+        catalog_id="catalog.phase-c",
+        title="Phase C Catalog",
+        entries=[
+            VisualizationCatalogEntry(
+                entry_id="run.decode.single",
+                run_id="run-decode-single",
+                scenario_name="decode_token1_kv2048",
+                mode="decode",
+                schedule_kind="single-core",
+                target_profile_name="riscv_npu_single_core_v1",
+                primary_metric_name="token_latency_cycles",
+                primary_metric_value=512.0,
+                workbench_entry_path="../run-decode-single/workbench/index.html",
+            )
+        ],
+        phase_c_gate_summary=VisualizationCatalogPhaseCGateSummary(
+            status="in_progress",
+            ready_case_count=0,
+            blocked_case_count=1,
+            planner_blocked_case_count=0,
+            downstream_blocked_case_count=1,
+            missing_case_count=0,
+            duplicate_case_count=0,
+        ),
+        phase_c_blocked_cases=[
+            VisualizationCatalogPhaseCBlockedCase(
+                case_id="single-core:decode",
+                run_id="run-decode-single",
+                workbench_entry_path="../run-decode-single/workbench/index.html",
+                blocker_kind="downstream",
+                planner_closure_status="ready_for_acceptance",
+                downstream_closure_status="in_progress",
+                downstream_missing_consumers=["descriptor_generation"],
+                remaining_gaps=[
+                    "descriptor_generation: descriptor_ir exists but structured address fields lack storage provenance."
+                ],
+            )
+        ],
+        catalog_root=Path("catalog"),
+    )
+
+    assert (
+        "../run-decode-single/workbench/index.html?panel=coverage&coverage_focus=packed-descriptor"
+        in files["catalog/index.html"]
+    )
+    assert 'data-workbench-panel="coverage"' in files["catalog/index.html"]
+    assert 'data-workbench-coverage-focus="packed-descriptor"' in files["catalog/index.html"]
+    assert "workbenchCoverageFocus" in files["catalog/assets/app.js"]

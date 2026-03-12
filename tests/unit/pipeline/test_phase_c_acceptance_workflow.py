@@ -66,6 +66,32 @@ def test_run_phase_c_acceptance_writes_report_for_canonical_workspace_matrix(
     assert all(case.planner_remaining_gaps == [] for case in report.case_records)
     assert all(case.downstream_closure_status == "ready_for_acceptance" for case in report.case_records)
     assert all(case.downstream_remaining_gaps == [] for case in report.case_records)
+    assert all(case.downstream_missing_consumers == [] for case in report.case_records)
+
+
+def test_build_phase_c_case_record_tracks_structured_downstream_missing_consumers(
+    tmp_path: Path,
+    minimal_performance_run_root_factory,
+) -> None:
+    from llm_sched.pipeline import run_visualization_packaging
+    from llm_sched.pipeline.phase_c_acceptance import _build_case_record
+
+    run_root = _prepare_phase_c_run(
+        minimal_performance_run_root_factory,
+        target_run_root=tmp_path / "run-single-decode",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/decode_token1_kv2048.json",
+        visualization_runner=run_visualization_packaging,
+    )
+    (run_root / "reports" / "perf_summary_report.json").unlink()
+
+    case_record = _build_case_record(run_root)
+
+    assert case_record.downstream_closure_status == "in_progress"
+    assert case_record.downstream_missing_consumers == ["performance_estimation"]
+    assert case_record.downstream_remaining_gaps == [
+        "performance_estimation: perf_summary_report artifact is missing."
+    ]
 
 
 def test_run_phase_c_acceptance_rejects_empty_workspace(tmp_path: Path) -> None:
