@@ -6,12 +6,15 @@ from collections import defaultdict
 
 from llm_sched.contracts.sweep_report import (
     SweepComparison,
+    SweepDecodeCompareSummary,
     SweepDeltaReport,
     SweepIssue,
     SweepLayerDelta,
     SweepMacroDelta,
     SweepMetricDelta,
+    SweepPrefillCompareSummary,
     SweepRunRecord,
+    SweepScalarDelta,
 )
 
 
@@ -73,6 +76,16 @@ def build_sweep_delta_report(
                     metric_deltas=_build_metric_deltas(baseline_run, candidate_run),
                     macro_deltas=_build_macro_deltas(baseline_run, candidate_run),
                     layer_deltas=_build_layer_deltas(baseline_run, candidate_run),
+                    prefill_compare=(
+                        _build_prefill_compare_summary(baseline_run, candidate_run)
+                        if mode == "prefill"
+                        else None
+                    ),
+                    decode_compare=(
+                        _build_decode_compare_summary(baseline_run, candidate_run)
+                        if mode == "decode"
+                        else None
+                    ),
                 )
             )
 
@@ -163,3 +176,81 @@ def _build_layer_deltas(
         for layer_id in layer_ids
     ]
     return sorted(deltas, key=lambda delta: (-abs(delta.delta_cycles), delta.layer_id))
+
+
+def _build_scalar_delta(
+    baseline_value: float,
+    candidate_value: float,
+) -> SweepScalarDelta:
+    delta_value = candidate_value - baseline_value
+    delta_ratio = (delta_value / baseline_value) if baseline_value != 0.0 else 0.0
+    return SweepScalarDelta(
+        baseline_value=baseline_value,
+        candidate_value=candidate_value,
+        delta_value=delta_value,
+        delta_ratio=delta_ratio,
+    )
+
+
+def _metric_value(run: SweepRunRecord, metric_name: str) -> float:
+    return float(run.metrics.get(metric_name, 0.0))
+
+
+def _build_prefill_compare_summary(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> SweepPrefillCompareSummary:
+    return SweepPrefillCompareSummary(
+        baseline_schedule_kind=baseline_run.schedule_kind,
+        candidate_schedule_kind=candidate_run.schedule_kind,
+        estimated_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "estimated_cycles"),
+            _metric_value(candidate_run, "estimated_cycles"),
+        ),
+        tokens_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "tokens_per_cycle"),
+            _metric_value(candidate_run, "tokens_per_cycle"),
+        ),
+        cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "cycles_per_token"),
+            _metric_value(candidate_run, "cycles_per_token"),
+        ),
+        bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "bytes_per_cycle"),
+            _metric_value(candidate_run, "bytes_per_cycle"),
+        ),
+        max_region_utilization=_build_scalar_delta(
+            _metric_value(baseline_run, "max_region_utilization"),
+            _metric_value(candidate_run, "max_region_utilization"),
+        ),
+    )
+
+
+def _build_decode_compare_summary(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> SweepDecodeCompareSummary:
+    return SweepDecodeCompareSummary(
+        baseline_schedule_kind=baseline_run.schedule_kind,
+        candidate_schedule_kind=candidate_run.schedule_kind,
+        estimated_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "estimated_cycles"),
+            _metric_value(candidate_run, "estimated_cycles"),
+        ),
+        cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "cycles_per_token"),
+            _metric_value(candidate_run, "cycles_per_token"),
+        ),
+        kv_related_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_related_cycle_share"),
+            _metric_value(candidate_run, "kv_related_cycle_share"),
+        ),
+        kv_related_bytes=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_related_bytes"),
+            _metric_value(candidate_run, "kv_related_bytes"),
+        ),
+        sync_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_cycles"),
+            _metric_value(candidate_run, "sync_cycles"),
+        ),
+    )

@@ -34,6 +34,11 @@ from llm_sched.contracts.packed_descriptor_bundle import (
     PackedDescriptorFieldPlacement,
     PackedDescriptorRecord,
 )
+from llm_sched.contracts.phase_d_compare_report import (
+    PhaseDCompareReport,
+    PhaseDDecodeCompareRow,
+    PhaseDPrefillCompareRow,
+)
 from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfSummaryReport
 from llm_sched.contracts.prefill_report import (
     PrefillEvaluationReport,
@@ -44,6 +49,7 @@ from llm_sched.contracts.prefill_report import (
 )
 from llm_sched.contracts.sweep_report import (
     SweepComparison,
+    SweepDecodeCompareSummary,
     SweepDeltaReport,
     SweepIssue,
     SweepLayerDelta,
@@ -51,7 +57,9 @@ from llm_sched.contracts.sweep_report import (
     SweepMacroDelta,
     SweepMacroPoint,
     SweepMetricDelta,
+    SweepPrefillCompareSummary,
     SweepRunRecord,
+    SweepScalarDelta,
     SweepSpec,
 )
 from llm_sched.contracts.tiling_plan import (
@@ -127,6 +135,7 @@ __all__ = [
     "PrefillMemorySummary",
     "PrefillThroughputSummary",
     "SweepComparison",
+    "SweepDecodeCompareSummary",
     "SweepDeltaReport",
     "SweepIssue",
     "SweepLayerDelta",
@@ -134,7 +143,9 @@ __all__ = [
     "SweepMacroDelta",
     "SweepMacroPoint",
     "SweepMetricDelta",
+    "SweepPrefillCompareSummary",
     "SweepRunRecord",
+    "SweepScalarDelta",
     "SweepSpec",
     "RegionSummary",
     "TileCandidate",
@@ -178,4 +189,7 @@ __all__ = [
     "PackedDescriptorBundle",
     "PackedDescriptorFieldPlacement",
     "PackedDescriptorRecord",
+    "PhaseDCompareReport",
+    "PhaseDDecodeCompareRow",
+    "PhaseDPrefillCompareRow",
 ]

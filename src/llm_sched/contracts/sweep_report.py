@@ -69,6 +69,15 @@ class SweepMetricDelta(BaseModel):
     delta_ratio: float
 
 
+class SweepScalarDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_value: float
+    candidate_value: float
+    delta_value: float
+    delta_ratio: float
+
+
 class SweepMacroDelta(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -90,6 +99,30 @@ class SweepLayerDelta(BaseModel):
     delta_bytes: float
 
 
+class SweepPrefillCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_schedule_kind: Literal["single-core", "dual-core"]
+    candidate_schedule_kind: Literal["single-core", "dual-core"]
+    estimated_cycles: SweepScalarDelta
+    tokens_per_cycle: SweepScalarDelta
+    cycles_per_token: SweepScalarDelta
+    bytes_per_cycle: SweepScalarDelta
+    max_region_utilization: SweepScalarDelta
+
+
+class SweepDecodeCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_schedule_kind: Literal["single-core", "dual-core"]
+    candidate_schedule_kind: Literal["single-core", "dual-core"]
+    estimated_cycles: SweepScalarDelta
+    cycles_per_token: SweepScalarDelta
+    kv_related_cycle_share: SweepScalarDelta
+    kv_related_bytes: SweepScalarDelta
+    sync_cycles: SweepScalarDelta
+
+
 class SweepComparison(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -101,6 +134,8 @@ class SweepComparison(BaseModel):
     metric_deltas: list[SweepMetricDelta] = Field(default_factory=list)
     macro_deltas: list[SweepMacroDelta] = Field(default_factory=list)
     layer_deltas: list[SweepLayerDelta] = Field(default_factory=list)
+    prefill_compare: SweepPrefillCompareSummary | None = None
+    decode_compare: SweepDecodeCompareSummary | None = None
 
 
 class SweepIssue(BaseModel):

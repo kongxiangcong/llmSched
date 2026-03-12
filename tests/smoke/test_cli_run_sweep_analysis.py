@@ -65,6 +65,15 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report["completed_run_count"] == 2
     assert report["failed_run_count"] == 0
     assert len(report["comparisons"]) == 1
+    assert report["comparisons"][0]["prefill_compare"] is not None
+    assert report["comparisons"][0]["decode_compare"] is None
+    estimated_cycles_delta = next(
+        delta for delta in report["comparisons"][0]["metric_deltas"] if delta["metric_name"] == "estimated_cycles"
+    )
+    assert (
+        report["comparisons"][0]["prefill_compare"]["estimated_cycles"]["delta_value"]
+        == estimated_cycles_delta["delta_value"]
+    )
 
 
 def test_run_sweep_analysis_rejects_invalid_baseline_without_traceback(tmp_path: Path) -> None:

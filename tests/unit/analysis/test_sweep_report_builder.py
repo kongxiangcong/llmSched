@@ -1,3 +1,5 @@
+import pytest
+
 from llm_sched.contracts.sweep_report import SweepMacroPoint, SweepRunRecord
 
 
@@ -70,6 +72,24 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert [delta.layer_id for delta in prefill_comparison.layer_deltas] == [0, 1]
     assert prefill_comparison.layer_deltas[0].delta_cycles == -1024.0
     assert prefill_comparison.layer_deltas[0].delta_bytes == -32768.0
+    assert prefill_comparison.prefill_compare is not None
+    assert prefill_comparison.decode_compare is None
+    assert prefill_comparison.prefill_compare.estimated_cycles.delta_value == -1024.0
+    assert prefill_comparison.prefill_compare.tokens_per_cycle.delta_value == (
+        (128.0 / 3072.0) - (128.0 / 4096.0)
+    )
+    assert prefill_comparison.prefill_compare.max_region_utilization.delta_value == pytest.approx(-0.25)
+
+    decode_comparison = next(
+        comparison for comparison in report.comparisons if comparison.scenario_name == "decode_token1_kv2048"
+    )
+    assert decode_comparison.prefill_compare is None
+    assert decode_comparison.decode_compare is not None
+    assert decode_comparison.decode_compare.estimated_cycles.delta_value == -400.0
+    assert decode_comparison.decode_compare.kv_related_cycle_share.delta_value == pytest.approx(
+        (700.0 / 2800.0) - (900.0 / 3200.0)
+    )
+    assert decode_comparison.decode_compare.sync_cycles.delta_value == -40.0
 
 
 def test_build_sweep_delta_report_surfaces_failures_and_missing_baselines() -> None:
@@ -115,6 +135,7 @@ def _completed_prefill_run(
                 "tokens_per_cycle": 128.0 / estimated_cycles,
                 "cycles_per_token": estimated_cycles / 128.0,
                 "bytes_per_cycle": 64.0,
+                "max_region_utilization": 0.75 if schedule_kind == "single-core" else 0.5,
             },
             "macro_hotspots": [
                 {"macro_op": "WDQ_GEMM", "estimated_cycles": wdq_cycles, "total_bytes": 131072.0},
@@ -149,6 +170,7 @@ def _completed_decode_run(
                 "cycles_per_token": estimated_cycles,
                 "kv_related_cycle_share": kvload_cycles / estimated_cycles,
                 "kv_related_bytes": 96000.0,
+                "sync_cycles": 120.0 if schedule_kind == "single-core" else 80.0,
             },
             "macro_hotspots": [
                 {"macro_op": "KVLOAD", "estimated_cycles": kvload_cycles, "total_bytes": 64000.0},

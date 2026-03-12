@@ -2,6 +2,7 @@
 
 from llm_sched.analysis.memory_planner_closure_builder import build_memory_planner_closure_report
 from llm_sched.analysis.phase_c_acceptance_report_builder import build_phase_c_acceptance_report
+from llm_sched.analysis.phase_d_compare_report_builder import build_phase_d_compare_report
 from llm_sched.analysis.decode_report_builder import build_decode_evaluation_report
 from llm_sched.analysis.descriptor_estimator import (
     build_perf_summary_report,
@@ -15,6 +16,7 @@ from llm_sched.analysis.visualization_bundle_builder import build_visualization_
 __all__ = [
     "build_memory_planner_closure_report",
     "build_phase_c_acceptance_report",
+    "build_phase_d_compare_report",
     "build_decode_evaluation_report",
     "build_prefill_evaluation_report",
     "build_perf_summary_report",

@@ -22,6 +22,7 @@ from llm_sched.pipeline import run_dual_core_scheduling as execute_dual_core_sch
 from llm_sched.pipeline import run_memory_planner_closure as execute_memory_planner_closure
 from llm_sched.pipeline import run_memory_planning as execute_memory_planning
 from llm_sched.pipeline import run_phase_c_acceptance as execute_phase_c_acceptance
+from llm_sched.pipeline import run_phase_d_compare as execute_phase_d_compare
 from llm_sched.pipeline import run_performance_estimation as execute_performance_estimation
 from llm_sched.pipeline import run_prefill_evaluation as execute_prefill_evaluation
 from llm_sched.pipeline import run_single_core_scheduling as execute_single_core_scheduling
@@ -328,6 +329,21 @@ def run_sweep_analysis(
 
     typer.echo(f"Sweep analysis completed at {sweep_root}")
     typer.echo("Artifacts updated under runs/ and reports/, including sweep_delta_report.json.")
+
+
+@app.command("run-phase-d-compare")
+def run_phase_d_compare(
+    sweep_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+) -> None:
+    """Emit a standalone Phase D compare artifact from an existing sweep report."""
+    result = execute_phase_d_compare(sweep_root)
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "phase d compare failed"
+        typer.echo(f"Phase D compare: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"Phase D compare completed at {sweep_root}")
+    typer.echo("Artifacts updated under reports/, including phase_d_compare_report.json.")
 
 
 @app.command("run-visualization-packaging")

@@ -21,6 +21,10 @@ from llm_sched.pipeline.phase_c_acceptance import (
     PhaseCAcceptanceResult,
     run_phase_c_acceptance,
 )
+from llm_sched.pipeline.phase_d_compare import (
+    PhaseDCompareResult,
+    run_phase_d_compare,
+)
 from llm_sched.pipeline.memory_planning import MemoryPlanningResult, run_memory_planning
 from llm_sched.pipeline.performance_estimation import (
     PerformanceEstimationResult,
@@ -56,6 +60,7 @@ __all__ = [
     "FrontendAnalysisResult",
     "MemoryPlannerClosureResult",
     "PhaseCAcceptanceResult",
+    "PhaseDCompareResult",
     "MemoryPlanningResult",
     "PerformanceEstimationResult",
     "PrefillEvaluationResult",
@@ -71,6 +76,7 @@ __all__ = [
     "run_frontend_analysis",
     "run_memory_planner_closure",
     "run_phase_c_acceptance",
+    "run_phase_d_compare",
     "run_memory_planning",
     "run_performance_estimation",
     "run_prefill_evaluation",

@@ -98,6 +98,41 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "delta_bytes": -32768.0,
                         }
                     ],
+                    "prefill_compare": {
+                        "baseline_schedule_kind": "single-core",
+                        "candidate_schedule_kind": "dual-core",
+                        "estimated_cycles": {
+                            "baseline_value": 4096.0,
+                            "candidate_value": 3072.0,
+                            "delta_value": -1024.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "tokens_per_cycle": {
+                            "baseline_value": 0.03125,
+                            "candidate_value": 0.0416666667,
+                            "delta_value": 0.0104166667,
+                            "delta_ratio": 0.3333333344,
+                        },
+                        "cycles_per_token": {
+                            "baseline_value": 32.0,
+                            "candidate_value": 24.0,
+                            "delta_value": -8.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "bytes_per_cycle": {
+                            "baseline_value": 64.0,
+                            "candidate_value": 64.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "max_region_utilization": {
+                            "baseline_value": 0.75,
+                            "candidate_value": 0.5,
+                            "delta_value": -0.25,
+                            "delta_ratio": -0.3333333333,
+                        },
+                    },
+                    "decode_compare": None,
                 }
             ],
             "issues": [
@@ -115,4 +150,8 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.comparisons[0].metric_deltas[0].delta_ratio == -0.25
     assert report.run_records[0].layer_breakdown[0].layer_id == 0
     assert report.comparisons[0].layer_deltas[0].delta_bytes == -32768.0
+    assert report.comparisons[0].prefill_compare is not None
+    assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == -1024.0
+    assert report.comparisons[0].prefill_compare.max_region_utilization.delta_value == -0.25
+    assert report.comparisons[0].decode_compare is None
     assert report.issues[0].code == "run_failed"
