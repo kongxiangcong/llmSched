@@ -33,30 +33,40 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                         "total_bytes": 50000.0,
                         "cycles_per_token": 1100.0,
                         "bytes_per_token": 50000.0,
+                        "occupied_slots": 640.0,
+                        "occupied_slots_per_token": 640.0,
                     },
                     "kv_io": {
                         "estimated_cycles": 1100.0,
                         "total_bytes": 96000.0,
                         "cycles_per_token": 1100.0,
                         "bytes_per_token": 96000.0,
+                        "occupied_slots": 960.0,
+                        "occupied_slots_per_token": 960.0,
                     },
                     "attention": {
                         "estimated_cycles": 700.0,
                         "total_bytes": 26000.0,
                         "cycles_per_token": 700.0,
                         "bytes_per_token": 26000.0,
+                        "occupied_slots": 700.0,
+                        "occupied_slots_per_token": 700.0,
                     },
                     "sync": {
                         "estimated_cycles": 120.0,
                         "total_bytes": 4000.0,
                         "cycles_per_token": 120.0,
                         "bytes_per_token": 4000.0,
+                        "occupied_slots": 0.0,
+                        "occupied_slots_per_token": 0.0,
                     },
                     "other": {
                         "estimated_cycles": 100.0,
                         "total_bytes": 4000.0,
                         "cycles_per_token": 100.0,
                         "bytes_per_token": 4000.0,
+                        "occupied_slots": 180.0,
+                        "occupied_slots_per_token": 180.0,
                     },
                 },
             },
@@ -125,6 +135,8 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.token_latency.attention_bytes == 26000.0
     assert report.token_latency.phase_attribution["kv_io"].cycles_per_token == 1100.0
     assert report.token_latency.phase_attribution["sync"].bytes_per_token == 4000.0
+    assert report.token_latency.phase_attribution["kv_io"].occupied_slots == 960.0
+    assert report.token_latency.phase_attribution["other"].occupied_slots_per_token == 180.0
     assert report.kv_summary.kv_len == 2048
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

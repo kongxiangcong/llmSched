@@ -46,6 +46,8 @@ def test_run_prefill_evaluation_writes_report_for_single_core(
     assert report["throughput"]["estimated_cycles"] > 0.0
     assert report["throughput"]["phase_attribution"]["projection"]["cycles_per_token"] > 0.0
     assert report["throughput"]["phase_attribution"]["attention"]["bytes_per_token"] >= 0.0
+    assert report["throughput"]["phase_attribution"]["projection"]["occupied_slots"] > 0.0
+    assert report["throughput"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
 
 
 def test_run_prefill_evaluation_rejects_decode_without_traceback(

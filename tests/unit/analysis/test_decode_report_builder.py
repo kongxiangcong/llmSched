@@ -35,6 +35,8 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.token_latency.other_bytes == pytest.approx(4000.0)
     assert report.token_latency.phase_attribution["projection"].cycles_per_token == pytest.approx(980.0)
     assert report.token_latency.phase_attribution["kv_io"].bytes_per_token == pytest.approx(99000.0)
+    assert report.token_latency.phase_attribution["kv_io"].occupied_slots == pytest.approx(960.0)
+    assert report.token_latency.phase_attribution["other"].occupied_slots_per_token == pytest.approx(180.0)
     assert report.kv_summary.kv_len == 2048
     assert report.kv_summary.kv_formula_count == 2
     assert report.kv_summary.unresolved_address_count == 1
@@ -159,30 +161,40 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "total_bytes": 47000.0,
                     "cycles_per_token": 980.0,
                     "bytes_per_token": 47000.0,
+                    "occupied_slots": 640.0,
+                    "occupied_slots_per_token": 640.0,
                 },
                 "kv_io": {
                     "estimated_cycles": 960.0,
                     "total_bytes": 99000.0,
                     "cycles_per_token": 960.0,
                     "bytes_per_token": 99000.0,
+                    "occupied_slots": 960.0,
+                    "occupied_slots_per_token": 960.0,
                 },
                 "attention": {
                     "estimated_cycles": 820.0,
                     "total_bytes": 26000.0,
                     "cycles_per_token": 820.0,
                     "bytes_per_token": 26000.0,
+                    "occupied_slots": 700.0,
+                    "occupied_slots_per_token": 700.0,
                 },
                 "sync": {
                     "estimated_cycles": 120.0,
                     "total_bytes": 4000.0,
                     "cycles_per_token": 120.0,
                     "bytes_per_token": 4000.0,
+                    "occupied_slots": 0.0,
+                    "occupied_slots_per_token": 0.0,
                 },
                 "other": {
                     "estimated_cycles": 240.0,
                     "total_bytes": 4000.0,
                     "cycles_per_token": 240.0,
                     "bytes_per_token": 4000.0,
+                    "occupied_slots": 180.0,
+                    "occupied_slots_per_token": 180.0,
                 },
             },
             "per_macro_cycles": {

@@ -2063,3 +2063,22 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-13 Phase Occupied Slots Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-13-phase-occupied-slots.md`
+- `SPEC-13` phase attribution now carries schedule-aware `occupied_slots` semantics in parallel with descriptor-estimated cycles/bytes, so downstream consumers can see how much schedule time each phase actually occupies without inventing a new compare or UI contract.
+- this slice stays on the existing `ScheduleIR -> PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport` chain and keeps the current phase taxonomy unchanged.
+- new closure evidence:
+  - `PerfPhaseSummary` now carries `occupied_slots` and `occupied_slots_per_token` with compatibility-friendly zero defaults
+  - performance estimation now aggregates phase occupied slots as the per-core union of schedule intervals for blocks attributed to each phase, avoiding raw-sum double counting on the same core
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer structured phase surface automatically through their existing canonical `phase_attribution` handoff
+  - focused contract/builder/workflow verification remains green (`22 passed`), and performance/prefill/decode CLI smoke now asserts the occupied-slot JSON fields end to end (`6 passed`)
+- what this closes:
+  - one `SPEC-13` deeper-cycle gap where phase attribution still described only work cycles/bytes and could not express schedule occupancy by phase
+  - one schedule-semantics gap where downstream consumers had no canonical per-phase view of occupied schedule time below the top-line `critical_path_cycles`
+  - one implementation-risk gap where same-core overlapping blocks inside a phase could have been double-counted without a tested union-based occupied-slot model
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase, occupied-slot, and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

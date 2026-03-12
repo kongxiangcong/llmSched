@@ -247,14 +247,18 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["projection"].total_bytes == 32768.0
     assert report.phase_attribution["projection"].cycles_per_token == 48.0 / 128.0
     assert report.phase_attribution["projection"].bytes_per_token == 32768.0 / 128.0
+    assert report.phase_attribution["projection"].occupied_slots == 32.0
+    assert report.phase_attribution["projection"].occupied_slots_per_token == 32.0 / 128.0
     assert report.phase_attribution["sync"].estimated_cycles == 18.0
     assert report.phase_attribution["sync"].total_bytes == 0.0
     assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
+    assert report.phase_attribution["sync"].occupied_slots == 0.0
     assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
     assert report.phase_attribution["attention"].estimated_cycles == 0.0
     assert report.phase_attribution["other"].estimated_cycles == 8.0
     assert report.phase_attribution["other"].total_bytes == 16384.0
     assert report.phase_attribution["other"].bytes_per_token == 16384.0 / 128.0
+    assert report.phase_attribution["other"].occupied_slots == 12.0
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {
@@ -369,6 +373,76 @@ def test_build_perf_summary_report_uses_union_busy_slots_instead_of_sum() -> Non
     assert report.schedule_stage_slot_totals == {"compute": 20, "dma_in": 10, "prepare": 8}
     assert report.totals["critical_path_cycles"] == 30.0
     assert report.vmem_region_peak_bytes["ping"] == 20480
+
+
+def test_build_perf_summary_report_uses_union_semantics_for_phase_occupied_slots() -> None:
+    from llm_sched.analysis.descriptor_estimator import build_perf_summary_report
+    from llm_sched.contracts.isa_coverage_report import ISACoverageReport
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.ir.descriptor_ir import DescriptorIR
+    from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
+
+    report = build_perf_summary_report(
+        run_id="run-spec13-phase-occupied",
+        descriptor_ir=DescriptorIR(ir_version="phase-a.v1", graph_id="spec13-phase-occupied", descriptors=[]),
+        analysis_ir=AnalysisIR(ir_version="phase-a.v1", graph_id="spec13-phase-occupied", records=[]),
+        coverage_report=ISACoverageReport(
+            graph_id="spec13-phase-occupied",
+            schedule_kind="single-core",
+            mapped_descriptor_count=0,
+            unmapped_block_count=0,
+            opcode_counts={},
+            gap_counts={},
+            issues=[],
+        ),
+        scenario=_prefill_scenario_fixture(),
+        schedule_ir=ScheduleIR(
+            ir_version="phase-a.v1",
+            graph_id="spec13-phase-occupied",
+            core_mode="single-core",
+            blocks=[
+                ScheduleBlock(
+                    block_id="sched.proj.a",
+                    core_id=0,
+                    node_id="nig.node.proj.a",
+                    macro_op="WDQ_GEMM",
+                    stage="compute",
+                    tiling_candidate_id="cand.proj.a",
+                    resource_set=["WDQ", "MXU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=10,
+                    duration_slots=20,
+                    order_key=0,
+                    audit_ref=AuditRef(schedule_block_ids=["sched.proj.a"]),
+                ),
+                ScheduleBlock(
+                    block_id="sched.proj.b",
+                    core_id=0,
+                    node_id="nig.node.proj.b",
+                    macro_op="WDQ_GEMM",
+                    stage="prepare",
+                    tiling_candidate_id="cand.proj.b",
+                    resource_set=["VPU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=15,
+                    duration_slots=10,
+                    order_key=1,
+                    audit_ref=AuditRef(schedule_block_ids=["sched.proj.b"]),
+                ),
+            ],
+        ),
+        memory_plan=_memory_plan_fixture(),
+    )
+
+    assert report.phase_attribution["projection"].occupied_slots == 20.0
+    assert report.phase_attribution["projection"].occupied_slots_per_token == 20.0 / 128.0
+    assert report.phase_attribution["other"].occupied_slots == 0.0
 
 
 def test_build_perf_summary_report_propagates_peak_bytes_by_backing_store() -> None:

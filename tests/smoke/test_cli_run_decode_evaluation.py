@@ -46,6 +46,8 @@ def test_run_decode_evaluation_writes_report_for_single_core(
     assert report["token_latency"]["estimated_cycles"] > 0.0
     assert report["token_latency"]["phase_attribution"]["projection"]["cycles_per_token"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["kv_io"]["bytes_per_token"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["projection"]["occupied_slots"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
 
 
 def test_run_decode_evaluation_rejects_prefill_without_traceback(

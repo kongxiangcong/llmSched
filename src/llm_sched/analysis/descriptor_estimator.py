@@ -195,6 +195,7 @@ def build_perf_summary_report(
         estimated_cycles=float(totals["estimated_cycles"]),
     )
     total_tokens = _total_tokens_for_scenario(scenario)
+    phase_occupied_slots = _summarize_phase_occupied_slots(schedule_ir)
 
     return PerfSummaryReport(
         run_id=run_id,
@@ -219,6 +220,7 @@ def build_perf_summary_report(
         phase_attribution=_build_phase_attribution(
             phase_cycles,
             phase_bytes,
+            phase_occupied_slots=phase_occupied_slots,
             total_tokens=total_tokens,
         ),
         per_macro_cycles=dict(per_macro_cycles),
@@ -316,21 +318,14 @@ def _classify_record_phase(descriptor: DescriptorRecord | None) -> str:
         return "other"
     stage = str(descriptor.ctrl_fields.get("stage", "compute"))
     macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
-    if stage == "transfer":
-        return "other"
-    if macro in _KV_IO_MACROS:
-        return "kv_io"
-    if macro in _ATTENTION_MACROS:
-        return "attention"
-    if macro in _PROJECTION_MACROS:
-        return "projection"
-    return "other"
+    return _classify_phase(stage=stage, macro=macro)
 
 
 def _build_phase_attribution(
     phase_cycles: Counter[str],
     phase_bytes: Counter[str],
     *,
+    phase_occupied_slots: dict[str, float],
     total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
     return {
@@ -343,6 +338,10 @@ def _build_phase_attribution(
             bytes_per_token=(
                 float(phase_bytes.get(phase_name, 0.0)) / float(total_tokens)
             ) if total_tokens > 0 else 0.0,
+            occupied_slots=float(phase_occupied_slots.get(phase_name, 0.0)),
+            occupied_slots_per_token=(
+                float(phase_occupied_slots.get(phase_name, 0.0)) / float(total_tokens)
+            ) if total_tokens > 0 else 0.0,
         )
         for phase_name in _PERF_PHASE_ORDER
     }
@@ -352,6 +351,40 @@ def _total_tokens_for_scenario(scenario: ScenarioProfile | None) -> int:
     if scenario is None:
         return 0
     return int(max(0, scenario.batch * scenario.seq_len))
+
+
+def _summarize_phase_occupied_slots(schedule_ir: ScheduleIR | None) -> dict[str, float]:
+    if schedule_ir is None:
+        return {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+
+    intervals_by_phase_and_core: defaultdict[tuple[str, str], list[tuple[int, int]]] = defaultdict(list)
+    for block in schedule_ir.blocks:
+        phase_name = _classify_phase(
+            stage=str(block.stage or "compute"),
+            macro=str(block.macro_op or ""),
+        )
+        block_start = max(0, block.issue_slot)
+        block_end = block_start + max(0, block.duration_slots)
+        if block_end <= block_start:
+            continue
+        intervals_by_phase_and_core[(phase_name, str(block.core_id))].append((block_start, block_end))
+
+    totals = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+    for (phase_name, _core_key), intervals in intervals_by_phase_and_core.items():
+        totals[phase_name] += float(_merged_interval_length(intervals))
+    return totals
+
+
+def _classify_phase(*, stage: str, macro: str) -> str:
+    if stage == "transfer":
+        return "other"
+    if macro in _KV_IO_MACROS:
+        return "kv_io"
+    if macro in _ATTENTION_MACROS:
+        return "attention"
+    if macro in _PROJECTION_MACROS:
+        return "projection"
+    return "other"
 
 
 def _address_spaces_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> list[str]:
