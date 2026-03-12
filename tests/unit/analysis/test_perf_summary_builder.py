@@ -249,16 +249,22 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["projection"].bytes_per_token == 32768.0 / 128.0
     assert report.phase_attribution["projection"].occupied_slots == 32.0
     assert report.phase_attribution["projection"].occupied_slots_per_token == 32.0 / 128.0
+    assert report.phase_attribution["projection"].read_bytes_by_address_space == {"DDR": 8192.0}
+    assert report.phase_attribution["projection"].write_bytes_by_address_space == {}
     assert report.phase_attribution["sync"].estimated_cycles == 18.0
     assert report.phase_attribution["sync"].total_bytes == 0.0
     assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
     assert report.phase_attribution["sync"].occupied_slots == 0.0
+    assert report.phase_attribution["sync"].read_bytes_by_address_space == {}
+    assert report.phase_attribution["sync"].write_bytes_by_address_space == {}
     assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
     assert report.phase_attribution["attention"].estimated_cycles == 0.0
     assert report.phase_attribution["other"].estimated_cycles == 8.0
     assert report.phase_attribution["other"].total_bytes == 16384.0
     assert report.phase_attribution["other"].bytes_per_token == 16384.0 / 128.0
     assert report.phase_attribution["other"].occupied_slots == 12.0
+    assert report.phase_attribution["other"].read_bytes_by_address_space == {"VMEM": 8192.0}
+    assert report.phase_attribution["other"].write_bytes_by_address_space == {"VMEM": 8192.0}
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {

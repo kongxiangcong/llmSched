@@ -80,6 +80,8 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert summary_report.phase_attribution["other"].bytes_per_token >= 0.0
     assert summary_report.phase_attribution["other"].occupied_slots >= 0.0
     assert summary_report.phase_attribution["other"].occupied_slots_per_token >= 0.0
+    assert isinstance(summary_report.phase_attribution["other"].read_bytes_by_address_space, dict)
+    assert isinstance(summary_report.phase_attribution["other"].write_bytes_by_address_space, dict)
     assert summary_report.per_node_cycles
     assert summary_report.per_node_bytes
     assert summary_report.per_layer_cycles

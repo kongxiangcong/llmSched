@@ -109,6 +109,12 @@ def build_perf_summary_report(
     issues: list[PerfBottleneckIssue] = []
     data_movement_read_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
     data_movement_write_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
+    phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
     totals = {
         "estimated_cycles": 0.0,
         "total_bytes": 0.0,
@@ -147,10 +153,11 @@ def build_perf_summary_report(
 
         descriptor = descriptor_by_subject.get(record.subject_id)
         attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
-        for phase_name, estimated_cycles in attributed_cycles.items():
-            phase_cycles[phase_name] += estimated_cycles
-        for phase_name, total_bytes in attributed_bytes.items():
-            phase_bytes[phase_name] += total_bytes
+        record_phase_name = _classify_record_phase(descriptor)
+        for phase_key, estimated_cycles in attributed_cycles.items():
+            phase_cycles[phase_key] += estimated_cycles
+        for phase_key, total_bytes in attributed_bytes.items():
+            phase_bytes[phase_key] += total_bytes
 
         layer_key = layer_by_subject.get(record.subject_id)
         if layer_key is None and descriptor is not None:
@@ -171,6 +178,13 @@ def build_perf_summary_report(
             record.metrics,
             data_movement_read_bytes_by_address_space,
             data_movement_write_bytes_by_address_space,
+        )
+        _accumulate_phase_data_movement_breakdown(
+            record_phase_name,
+            descriptor,
+            record.metrics,
+            phase_read_bytes_by_address_space,
+            phase_write_bytes_by_address_space,
         )
 
     if schedule_ir is not None:
@@ -221,6 +235,8 @@ def build_perf_summary_report(
             phase_cycles,
             phase_bytes,
             phase_occupied_slots=phase_occupied_slots,
+            phase_read_bytes_by_address_space=phase_read_bytes_by_address_space,
+            phase_write_bytes_by_address_space=phase_write_bytes_by_address_space,
             total_tokens=total_tokens,
         ),
         per_macro_cycles=dict(per_macro_cycles),
@@ -242,6 +258,30 @@ def _critical_path_cycles(*, schedule_makespan_slots: int, estimated_cycles: flo
 
 
 def _accumulate_data_movement_breakdown(
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    read_totals: defaultdict[str, float],
+    write_totals: defaultdict[str, float],
+) -> None:
+    _accumulate_address_space_breakdown(descriptor, metrics, read_totals, write_totals)
+
+
+def _accumulate_phase_data_movement_breakdown(
+    phase_name: str,
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    phase_read_totals: defaultdict[str, defaultdict[str, float]],
+    phase_write_totals: defaultdict[str, defaultdict[str, float]],
+) -> None:
+    _accumulate_address_space_breakdown(
+        descriptor,
+        metrics,
+        phase_read_totals[phase_name],
+        phase_write_totals[phase_name],
+    )
+
+
+def _accumulate_address_space_breakdown(
     descriptor: DescriptorRecord,
     metrics: dict[str, float],
     read_totals: defaultdict[str, float],
@@ -326,6 +366,8 @@ def _build_phase_attribution(
     phase_bytes: Counter[str],
     *,
     phase_occupied_slots: dict[str, float],
+    phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
+    phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
     return {
@@ -342,6 +384,12 @@ def _build_phase_attribution(
             occupied_slots_per_token=(
                 float(phase_occupied_slots.get(phase_name, 0.0)) / float(total_tokens)
             ) if total_tokens > 0 else 0.0,
+            read_bytes_by_address_space=dict(
+                sorted(phase_read_bytes_by_address_space.get(phase_name, {}).items())
+            ),
+            write_bytes_by_address_space=dict(
+                sorted(phase_write_bytes_by_address_space.get(phase_name, {}).items())
+            ),
         )
         for phase_name in _PERF_PHASE_ORDER
     }

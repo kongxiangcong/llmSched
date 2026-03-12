@@ -37,6 +37,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "bytes_per_token": 512.0,
                         "occupied_slots": 1024.0,
                         "occupied_slots_per_token": 8.0,
+                        "read_bytes_by_address_space": {"DDR": 49152.0},
+                        "write_bytes_by_address_space": {"VMEM": 16384.0},
                     },
                     "kv_io": {
                         "estimated_cycles": 0.0,
@@ -45,6 +47,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "bytes_per_token": 0.0,
                         "occupied_slots": 0.0,
                         "occupied_slots_per_token": 0.0,
+                        "read_bytes_by_address_space": {},
+                        "write_bytes_by_address_space": {},
                     },
                     "attention": {
                         "estimated_cycles": 2048.0,
@@ -53,6 +57,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "bytes_per_token": 1280.0,
                         "occupied_slots": 1536.0,
                         "occupied_slots_per_token": 12.0,
+                        "read_bytes_by_address_space": {"DDR": 81920.0, "VMEM": 32768.0},
+                        "write_bytes_by_address_space": {"VMEM": 49152.0},
                     },
                     "sync": {
                         "estimated_cycles": 0.0,
@@ -61,6 +67,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "bytes_per_token": 0.0,
                         "occupied_slots": 0.0,
                         "occupied_slots_per_token": 0.0,
+                        "read_bytes_by_address_space": {},
+                        "write_bytes_by_address_space": {},
                     },
                     "other": {
                         "estimated_cycles": 512.0,
@@ -69,6 +77,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "bytes_per_token": 256.0,
                         "occupied_slots": 512.0,
                         "occupied_slots_per_token": 4.0,
+                        "read_bytes_by_address_space": {"VMEM": 16384.0},
+                        "write_bytes_by_address_space": {"VMEM": 16384.0},
                     },
                 },
             },
@@ -141,6 +151,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.throughput.phase_attribution["attention"].bytes_per_token == 1280.0
     assert report.throughput.phase_attribution["projection"].occupied_slots == 1024.0
     assert report.throughput.phase_attribution["other"].occupied_slots_per_token == 4.0
+    assert report.throughput.phase_attribution["projection"].read_bytes_by_address_space["DDR"] == 49152.0
+    assert report.throughput.phase_attribution["attention"].write_bytes_by_address_space["VMEM"] == 49152.0
     assert report.memory_summary.max_region_utilization == 0.75
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

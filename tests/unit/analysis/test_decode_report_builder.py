@@ -37,6 +37,15 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.token_latency.phase_attribution["kv_io"].bytes_per_token == pytest.approx(99000.0)
     assert report.token_latency.phase_attribution["kv_io"].occupied_slots == pytest.approx(960.0)
     assert report.token_latency.phase_attribution["other"].occupied_slots_per_token == pytest.approx(180.0)
+    assert report.token_latency.phase_attribution["projection"].read_bytes_by_address_space == {
+        "DDR": 32000.0,
+        "VMEM": 8000.0,
+    }
+    assert report.token_latency.phase_attribution["kv_io"].write_bytes_by_address_space == {"DDR": 32000.0}
+    assert report.token_latency.phase_attribution["other"].write_bytes_by_address_space == {
+        "DDR": 16000.0,
+        "VMEM": 4000.0,
+    }
     assert report.kv_summary.kv_len == 2048
     assert report.kv_summary.kv_formula_count == 2
     assert report.kv_summary.unresolved_address_count == 1
@@ -163,6 +172,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 47000.0,
                     "occupied_slots": 640.0,
                     "occupied_slots_per_token": 640.0,
+                    "read_bytes_by_address_space": {"DDR": 32000.0, "VMEM": 8000.0},
+                    "write_bytes_by_address_space": {"VMEM": 10000.0},
                 },
                 "kv_io": {
                     "estimated_cycles": 960.0,
@@ -171,6 +182,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 99000.0,
                     "occupied_slots": 960.0,
                     "occupied_slots_per_token": 960.0,
+                    "read_bytes_by_address_space": {"DDR": 64000.0},
+                    "write_bytes_by_address_space": {"DDR": 32000.0},
                 },
                 "attention": {
                     "estimated_cycles": 820.0,
@@ -179,6 +192,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 26000.0,
                     "occupied_slots": 700.0,
                     "occupied_slots_per_token": 700.0,
+                    "read_bytes_by_address_space": {"DDR": 16000.0, "VMEM": 8000.0},
+                    "write_bytes_by_address_space": {"VMEM": 2000.0},
                 },
                 "sync": {
                     "estimated_cycles": 120.0,
@@ -187,6 +202,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 4000.0,
                     "occupied_slots": 0.0,
                     "occupied_slots_per_token": 0.0,
+                    "read_bytes_by_address_space": {},
+                    "write_bytes_by_address_space": {},
                 },
                 "other": {
                     "estimated_cycles": 240.0,
@@ -195,6 +212,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 4000.0,
                     "occupied_slots": 180.0,
                     "occupied_slots_per_token": 180.0,
+                    "read_bytes_by_address_space": {"VMEM": 4000.0},
+                    "write_bytes_by_address_space": {"DDR": 16000.0, "VMEM": 4000.0},
                 },
             },
             "per_macro_cycles": {
