@@ -2160,3 +2160,22 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase, cycle-component, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-13 Phase Schedule Compression Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-13-phase-schedule-compression.md`
+- `SPEC-13` phase attribution now carries per-phase `schedule_compression_cycles`, `schedule_compression_ratio`, and `schedule_overhang_cycles`, so downstream consumers can inspect how much modeled non-sync phase work compresses under the current schedule span versus how much schedule span exceeds that modeled work.
+- this slice stays on the existing `DescriptorIR/AnalysisIR -> PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport` chain and derives schedule-fitting metrics directly from current `compute_cycles + memory_cycles` against `occupied_slots` instead of opening a second estimator or compare workflow.
+- new closure evidence:
+  - `PerfPhaseSummary` now carries `schedule_compression_cycles`, `schedule_compression_ratio`, and `schedule_overhang_cycles` with compatibility-friendly zero defaults
+  - performance estimation now computes phase-local compression as `max(non_sync_cycles - occupied_slots, 0)` and phase-local overhang as `max(occupied_slots - non_sync_cycles, 0)` from the canonical phase cycle-component and occupied-slot surfaces
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer structured phase surface automatically through their existing canonical `phase_attribution` handoff
+  - focused contract/builder/workflow verification remains green (`22 passed`), and performance/prefill/decode CLI smoke now asserts the new JSON fields end to end (`6 passed`)
+- what this closes:
+  - one `SPEC-13` deeper-cycle gap where phase attribution still exposed cycle components and occupied slots separately but lacked a canonical phase-level fitting signal that compared them
+  - one `SPEC-13 -> SPEC-14/15` handoff gap where top-level reports preserved the raw ingredients for schedule fitting but not the structured compression/overhang interpretation
+  - one future-consumer gap where later compare or visualization surfaces would otherwise have needed to recompute phase schedule-fit metrics from ad hoc field combinations
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase, cycle-component, schedule-compression, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

@@ -53,6 +53,9 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert perf_report["phase_attribution"]["projection"]["compute_cycles"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["memory_cycles"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["sync_cycles"] >= 0.0
+    assert perf_report["phase_attribution"]["projection"]["schedule_compression_cycles"] >= 0.0
+    assert perf_report["phase_attribution"]["projection"]["schedule_compression_ratio"] >= 0.0
+    assert perf_report["phase_attribution"]["projection"]["schedule_overhang_cycles"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["occupied_slots"] >= 0.0
     assert perf_report["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
     assert isinstance(perf_report["phase_attribution"]["projection"]["read_bytes_by_address_space"], dict)

@@ -36,6 +36,9 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.token_latency.phase_attribution["projection"].compute_cycles == pytest.approx(900.0)
     assert report.token_latency.phase_attribution["kv_io"].memory_cycles == pytest.approx(960.0)
     assert report.token_latency.phase_attribution["sync"].sync_cycles == pytest.approx(120.0)
+    assert report.token_latency.phase_attribution["projection"].schedule_compression_cycles == pytest.approx(340.0)
+    assert report.token_latency.phase_attribution["attention"].schedule_compression_ratio == pytest.approx(120.0 / 820.0)
+    assert report.token_latency.phase_attribution["other"].schedule_overhang_cycles == pytest.approx(0.0)
     assert report.token_latency.phase_attribution["projection"].cycles_per_token == pytest.approx(980.0)
     assert report.token_latency.phase_attribution["kv_io"].bytes_per_token == pytest.approx(99000.0)
     assert report.token_latency.phase_attribution["kv_io"].occupied_slots == pytest.approx(960.0)
@@ -195,6 +198,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 900.0,
                     "memory_cycles": 80.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 340.0,
+                    "schedule_compression_ratio": 340.0 / 980.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 47000.0,
                     "cycles_per_token": 980.0,
                     "bytes_per_token": 47000.0,
@@ -212,6 +218,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 0.0,
                     "memory_cycles": 960.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 0.0,
+                    "schedule_compression_ratio": 0.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 99000.0,
                     "cycles_per_token": 960.0,
                     "bytes_per_token": 99000.0,
@@ -229,6 +238,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 700.0,
                     "memory_cycles": 120.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 120.0,
+                    "schedule_compression_ratio": 120.0 / 820.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 26000.0,
                     "cycles_per_token": 820.0,
                     "bytes_per_token": 26000.0,
@@ -246,6 +258,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 120.0,
+                    "schedule_compression_cycles": 0.0,
+                    "schedule_compression_ratio": 0.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 4000.0,
                     "cycles_per_token": 120.0,
                     "bytes_per_token": 4000.0,
@@ -263,6 +278,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 120.0,
                     "memory_cycles": 120.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 60.0,
+                    "schedule_compression_ratio": 0.25,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 4000.0,
                     "cycles_per_token": 240.0,
                     "bytes_per_token": 4000.0,

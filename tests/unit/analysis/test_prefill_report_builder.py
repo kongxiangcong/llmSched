@@ -41,6 +41,9 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.throughput.phase_attribution["projection"].compute_cycles == pytest.approx(1536.0)
     assert report.throughput.phase_attribution["attention"].memory_cycles == pytest.approx(512.0)
     assert report.throughput.phase_attribution["other"].sync_cycles == pytest.approx(0.0)
+    assert report.throughput.phase_attribution["projection"].schedule_compression_cycles == pytest.approx(512.0)
+    assert report.throughput.phase_attribution["attention"].schedule_compression_ratio == pytest.approx(0.25)
+    assert report.throughput.phase_attribution["other"].schedule_overhang_cycles == pytest.approx(0.0)
     assert report.throughput.phase_attribution["projection"].cycles_per_token == pytest.approx(12.0)
     assert report.throughput.phase_attribution["attention"].bytes_per_token == pytest.approx(1280.0)
     assert report.throughput.phase_attribution["projection"].occupied_slots == pytest.approx(1024.0)
@@ -189,6 +192,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 1536.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 512.0,
+                    "schedule_compression_ratio": 512.0 / 1536.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 65536.0,
                     "cycles_per_token": 12.0,
                     "bytes_per_token": 512.0,
@@ -206,6 +212,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 0.0,
+                    "schedule_compression_ratio": 0.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 0.0,
                     "cycles_per_token": 0.0,
                     "bytes_per_token": 0.0,
@@ -223,6 +232,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 1536.0,
                     "memory_cycles": 512.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 512.0,
+                    "schedule_compression_ratio": 0.25,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 163840.0,
                     "cycles_per_token": 16.0,
                     "bytes_per_token": 1280.0,
@@ -240,6 +252,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 0.0,
+                    "schedule_compression_ratio": 0.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 0.0,
                     "cycles_per_token": 0.0,
                     "bytes_per_token": 0.0,
@@ -257,6 +272,9 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "compute_cycles": 256.0,
                     "memory_cycles": 256.0,
                     "sync_cycles": 0.0,
+                    "schedule_compression_cycles": 0.0,
+                    "schedule_compression_ratio": 0.0,
+                    "schedule_overhang_cycles": 0.0,
                     "total_bytes": 32768.0,
                     "cycles_per_token": 4.0,
                     "bytes_per_token": 256.0,

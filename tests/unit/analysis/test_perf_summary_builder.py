@@ -247,6 +247,9 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["projection"].compute_cycles == 48.0
     assert report.phase_attribution["projection"].memory_cycles == 0.0
     assert report.phase_attribution["projection"].sync_cycles == 0.0
+    assert report.phase_attribution["projection"].schedule_compression_cycles == 16.0
+    assert report.phase_attribution["projection"].schedule_compression_ratio == 16.0 / 48.0
+    assert report.phase_attribution["projection"].schedule_overhang_cycles == 0.0
     assert report.phase_attribution["projection"].total_bytes == 32768.0
     assert report.phase_attribution["projection"].cycles_per_token == 48.0 / 128.0
     assert report.phase_attribution["projection"].bytes_per_token == 32768.0 / 128.0
@@ -264,6 +267,9 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["sync"].compute_cycles == 0.0
     assert report.phase_attribution["sync"].memory_cycles == 0.0
     assert report.phase_attribution["sync"].sync_cycles == 18.0
+    assert report.phase_attribution["sync"].schedule_compression_cycles == 0.0
+    assert report.phase_attribution["sync"].schedule_compression_ratio == 0.0
+    assert report.phase_attribution["sync"].schedule_overhang_cycles == 0.0
     assert report.phase_attribution["sync"].total_bytes == 0.0
     assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
     assert report.phase_attribution["sync"].occupied_slots == 0.0
@@ -279,6 +285,9 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["other"].compute_cycles == 0.0
     assert report.phase_attribution["other"].memory_cycles == 8.0
     assert report.phase_attribution["other"].sync_cycles == 0.0
+    assert report.phase_attribution["other"].schedule_compression_cycles == 0.0
+    assert report.phase_attribution["other"].schedule_compression_ratio == 0.0
+    assert report.phase_attribution["other"].schedule_overhang_cycles == 4.0
     assert report.phase_attribution["other"].total_bytes == 16384.0
     assert report.phase_attribution["other"].bytes_per_token == 16384.0 / 128.0
     assert report.phase_attribution["other"].occupied_slots == 12.0

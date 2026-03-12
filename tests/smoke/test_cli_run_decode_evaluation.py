@@ -49,6 +49,9 @@ def test_run_decode_evaluation_writes_report_for_single_core(
     assert report["token_latency"]["phase_attribution"]["kv_io"]["compute_cycles"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["kv_io"]["memory_cycles"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["kv_io"]["sync_cycles"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["kv_io"]["schedule_compression_cycles"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["kv_io"]["schedule_compression_ratio"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["kv_io"]["schedule_overhang_cycles"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["projection"]["occupied_slots"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["read_bytes_by_address_space"], dict)

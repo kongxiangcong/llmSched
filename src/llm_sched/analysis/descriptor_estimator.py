@@ -541,23 +541,35 @@ def _build_phase_attribution(
     phase_write_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]],
     total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
-    return {
-        phase_name: PerfPhaseSummary(
-            estimated_cycles=float(phase_cycles.get(phase_name, 0.0)),
-            compute_cycles=float(phase_compute_cycles.get(phase_name, 0.0)),
-            memory_cycles=float(phase_memory_cycles.get(phase_name, 0.0)),
-            sync_cycles=float(phase_sync_component_cycles.get(phase_name, 0.0)),
-            total_bytes=float(phase_bytes.get(phase_name, 0.0)),
-            cycles_per_token=(
-                float(phase_cycles.get(phase_name, 0.0)) / float(total_tokens)
-            ) if total_tokens > 0 else 0.0,
-            bytes_per_token=(
-                float(phase_bytes.get(phase_name, 0.0)) / float(total_tokens)
-            ) if total_tokens > 0 else 0.0,
-            occupied_slots=float(phase_occupied_slots.get(phase_name, 0.0)),
-            occupied_slots_per_token=(
-                float(phase_occupied_slots.get(phase_name, 0.0)) / float(total_tokens)
-            ) if total_tokens > 0 else 0.0,
+    summaries: dict[str, PerfPhaseSummary] = {}
+    for phase_name in _PERF_PHASE_ORDER:
+        estimated_cycles = float(phase_cycles.get(phase_name, 0.0))
+        compute_cycles = float(phase_compute_cycles.get(phase_name, 0.0))
+        memory_cycles = float(phase_memory_cycles.get(phase_name, 0.0))
+        sync_cycles = float(phase_sync_component_cycles.get(phase_name, 0.0))
+        total_bytes = float(phase_bytes.get(phase_name, 0.0))
+        occupied_slots = float(phase_occupied_slots.get(phase_name, 0.0))
+        (
+            schedule_compression_cycles,
+            schedule_compression_ratio,
+            schedule_overhang_cycles,
+        ) = _schedule_fit_metrics(
+            non_sync_cycles=compute_cycles + memory_cycles,
+            occupied_slots=occupied_slots,
+        )
+        summaries[phase_name] = PerfPhaseSummary(
+            estimated_cycles=estimated_cycles,
+            compute_cycles=compute_cycles,
+            memory_cycles=memory_cycles,
+            sync_cycles=sync_cycles,
+            schedule_compression_cycles=schedule_compression_cycles,
+            schedule_compression_ratio=schedule_compression_ratio,
+            schedule_overhang_cycles=schedule_overhang_cycles,
+            total_bytes=total_bytes,
+            cycles_per_token=(estimated_cycles / float(total_tokens)) if total_tokens > 0 else 0.0,
+            bytes_per_token=(total_bytes / float(total_tokens)) if total_tokens > 0 else 0.0,
+            occupied_slots=occupied_slots,
+            occupied_slots_per_token=(occupied_slots / float(total_tokens)) if total_tokens > 0 else 0.0,
             read_bytes_by_address_space=dict(
                 sorted(phase_read_bytes_by_address_space.get(phase_name, {}).items())
             ),
@@ -577,8 +589,22 @@ def _build_phase_attribution(
                 sorted(phase_write_bytes_by_memory_class.get(phase_name, {}).items())
             ),
         )
-        for phase_name in _PERF_PHASE_ORDER
-    }
+    return summaries
+
+
+def _schedule_fit_metrics(*, non_sync_cycles: float, occupied_slots: float) -> tuple[float, float, float]:
+    schedule_compression_cycles = max(0.0, non_sync_cycles - occupied_slots)
+    schedule_overhang_cycles = max(0.0, occupied_slots - non_sync_cycles)
+    schedule_compression_ratio = (
+        schedule_compression_cycles / non_sync_cycles
+        if non_sync_cycles > 0.0
+        else 0.0
+    )
+    return (
+        float(schedule_compression_cycles),
+        float(schedule_compression_ratio),
+        float(schedule_overhang_cycles),
+    )
 
 
 def _total_tokens_for_scenario(scenario: ScenarioProfile | None) -> int:
