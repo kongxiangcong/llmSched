@@ -4,8 +4,8 @@ RISC-V + NPU architecture-evaluation compiler for Gemma3-like workloads.
 
 当前主线阶段：
 - `M1` 已完成
-- `M2` 进行中
-- 当前重点是 `SPEC-10/11` 的 schedule-fidelity hardening，而不是回到 frontend 继续开新 foundation
+- `M2` 已完成
+- 当前重点转到 `SPEC-13/14/15/16` 的 `M3` 收口，以及 `SPEC-19` 的产品化 hardening，而不是继续把 `Phase C` 当成未收口 foundation
 
 核心 CLI 流水线：
 
@@ -40,6 +40,10 @@ python -m pytest -q
 - `python -m pytest tests/smoke -q --durations=30` -> `71 passed in 37m52s`
 - `python -m pytest -q --durations=30` -> `363 passed in 50m39s`
 - full gate 现在已经可以跑完，但仍然不适合默认开发循环
+
+当前里程碑验证（2026-03-12）：
+- `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 68 deselected in 12m49s`
+- `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 68 deselected in 15m00s`
 
 ### 1. Fast Local Default
 
@@ -118,8 +122,9 @@ python -m pytest tests/smoke -m milestone_matrix -q
 ## Current Direction
 
 当前最有价值的下一批工作：
-- 继续收口 `M2`
-- 优先做 `SPEC-08` 的 planner closure + downstream reuse
+- `M2` 当前正式 gate 已稳定为绿，不再作为默认主线 blocker
+- 优先转向 `M3`：先做 `SPEC-13/14/15/16` 的评估闭环收口
+- 如果继续做 UI，优先 `SPEC-19` 的 deeper workspace drill-down / richer compare drill-down / richer screenshot/export workflow
 - `SPEC-08 -> SPEC-13` 现已有一条真实 downstream reuse：`PerfSummaryReport` 直接带 `peak_bytes_by_backing_store`
 - `SPEC-08 -> SPEC-13` 现也已有一条真实 downstream reuse：`PerfSummaryReport` 直接带 per-region `peak_bytes_by_memory_class`
 - `SPEC-08 -> SPEC-12` 现也已有一条真实 downstream reuse：`DescriptorIR.address_fields` 直接带 `storage_binding_id/backing_store`

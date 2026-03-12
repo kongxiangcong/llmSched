@@ -58,6 +58,22 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                     "total_bytes": 64000.0,
                 }
             ],
+            "node_hotspots": [
+                {
+                    "node_id": "nig.node.kvload.0",
+                    "estimated_cycles": 900.0,
+                    "cycle_share": 0.28846153846153844,
+                    "total_bytes": 64000.0,
+                }
+            ],
+            "layer_breakdown": [
+                {
+                    "layer_id": 0,
+                    "estimated_cycles": 2000.0,
+                    "cycle_share": 0.6410256410256411,
+                    "total_bytes": 114000.0,
+                }
+            ],
         }
     )
 
@@ -70,3 +86,5 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class["KV_CACHE"] == 12288
     assert report.isa_summary.gap_counts["opcode_not_supported"] == 1
     assert report.macro_hotspots[0].macro_op == "KVLOAD"
+    assert report.node_hotspots[0].node_id == "nig.node.kvload.0"
+    assert report.layer_breakdown[0].layer_id == 0

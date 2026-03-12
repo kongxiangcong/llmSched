@@ -176,7 +176,10 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                 issue_slot=10,
                 duration_slots=32,
                 order_key=0,
-                audit_ref=AuditRef(schedule_block_ids=["sched.block.0"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.0"],
+                    source_ids=["onnx::/model/layers.0/self_attn/q_proj/MatMul_output_0"],
+                ),
             ),
             ScheduleBlock(
                 block_id="sched.transfer.0",
@@ -197,7 +200,10 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                 transfer_bytes=16384,
                 sync_cost_cycles=18,
                 order_key=1,
-                audit_ref=AuditRef(schedule_block_ids=["sched.transfer.0"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.transfer.0"],
+                    source_ids=["onnx::/model/layers.1/self_attn/q_proj/MatMul_output_0"],
+                ),
             ),
         ],
     )
@@ -236,6 +242,22 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     }
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
+    assert report.per_node_cycles == {
+        "nig.node.linear.0": 48.0,
+        "nig.node.linear.1": 26.0,
+    }
+    assert report.per_node_bytes == {
+        "nig.node.linear.0": 32768.0,
+        "nig.node.linear.1": 16384.0,
+    }
+    assert report.per_layer_cycles == {
+        "0": 48.0,
+        "1": 26.0,
+    }
+    assert report.per_layer_bytes == {
+        "0": 32768.0,
+        "1": 16384.0,
+    }
     assert report.bottleneck_counts == {
         "compute-bound": 1,
         "sync-bound": 1,
@@ -364,6 +386,170 @@ def test_build_perf_summary_report_propagates_peak_bytes_by_backing_store() -> N
         "pong": {"ACTIVATION": 12288},
         "weight": {"WEIGHT": 16384},
     }
+
+
+def test_build_perf_summary_report_aggregates_multiple_blocks_into_node_totals() -> None:
+    from llm_sched.analysis.descriptor_estimator import build_perf_summary_report
+    from llm_sched.contracts.isa_coverage_report import ISACoverageReport
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.ir.descriptor_ir import DescriptorIR, DescriptorPackingProfile, DescriptorRecord
+    from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
+
+    descriptor_ir = DescriptorIR(
+        ir_version="phase-a.v1",
+        graph_id="spec13-node-aggregate",
+        descriptors=[
+            DescriptorRecord(
+                descriptor_id="desc.a",
+                schedule_block_id="sched.block.a",
+                opcode="WDQ_GEMM",
+                core_id=0,
+                encoding_bits=512,
+                ctrl_fields={"macro_op": "WDQ_GEMM", "stage": "compute"},
+                packing_profile=DescriptorPackingProfile(
+                    stage_family="compute",
+                    opcode_family="tensor_compute",
+                    layout_template="wdq_compute_v1",
+                    field_groups=["ctrl", "shape"],
+                    required_ctrl_fields=["stage", "macro_op"],
+                    required_shape_axes=["m", "n", "k"],
+                    required_addr_roles=[],
+                    required_dma_fields=[],
+                    field_widths={"opcode": 16, "control": 16, "shape": 16},
+                ),
+                shape_pack={"m": 32, "n": 64, "k": 64},
+                addr_fields={},
+                address_fields=[],
+                dma_fields={},
+                audit_ref=AuditRef(schedule_block_ids=["sched.block.a"]),
+            ),
+            DescriptorRecord(
+                descriptor_id="desc.b",
+                schedule_block_id="sched.block.b",
+                opcode="WDQ_GEMM",
+                core_id=0,
+                encoding_bits=512,
+                ctrl_fields={"macro_op": "WDQ_GEMM", "stage": "compute"},
+                packing_profile=DescriptorPackingProfile(
+                    stage_family="compute",
+                    opcode_family="tensor_compute",
+                    layout_template="wdq_compute_v1",
+                    field_groups=["ctrl", "shape"],
+                    required_ctrl_fields=["stage", "macro_op"],
+                    required_shape_axes=["m", "n", "k"],
+                    required_addr_roles=[],
+                    required_dma_fields=[],
+                    field_widths={"opcode": 16, "control": 16, "shape": 16},
+                ),
+                shape_pack={"m": 32, "n": 64, "k": 64},
+                addr_fields={},
+                address_fields=[],
+                dma_fields={},
+                audit_ref=AuditRef(schedule_block_ids=["sched.block.b"]),
+            ),
+        ],
+    )
+
+    report = build_perf_summary_report(
+        run_id="run-spec13-node-aggregate",
+        descriptor_ir=descriptor_ir,
+        analysis_ir=AnalysisIR(
+            ir_version="phase-a.v1",
+            graph_id="spec13-node-aggregate",
+            records=[
+                AnalysisRecord(
+                    record_id="analysis.record.a",
+                    subject_id="sched.block.a",
+                    metrics={
+                        "read_bytes": 1024.0,
+                        "write_bytes": 512.0,
+                        "total_bytes": 1536.0,
+                        "estimated_cycles": 20.0,
+                        "sync_cycles": 0.0,
+                        "bandwidth_pressure": 51.2,
+                    },
+                    tags=["descriptor-analysis", "compute-bound"],
+                    audit_ref=AuditRef(schedule_block_ids=["sched.block.a"], descriptor_ids=["desc.a"]),
+                ),
+                AnalysisRecord(
+                    record_id="analysis.record.b",
+                    subject_id="sched.block.b",
+                    metrics={
+                        "read_bytes": 2048.0,
+                        "write_bytes": 1024.0,
+                        "total_bytes": 3072.0,
+                        "estimated_cycles": 28.0,
+                        "sync_cycles": 0.0,
+                        "bandwidth_pressure": 73.1,
+                    },
+                    tags=["descriptor-analysis", "compute-bound"],
+                    audit_ref=AuditRef(schedule_block_ids=["sched.block.b"], descriptor_ids=["desc.b"]),
+                ),
+            ],
+        ),
+        coverage_report=ISACoverageReport(
+            graph_id="spec13-node-aggregate",
+            schedule_kind="single-core",
+            mapped_descriptor_count=2,
+            unmapped_block_count=0,
+            opcode_counts={"WDQ_GEMM": 2},
+            gap_counts={},
+            issues=[],
+        ),
+        schedule_ir=ScheduleIR(
+            ir_version="phase-a.v1",
+            graph_id="spec13-node-aggregate",
+            core_mode="single-core",
+            blocks=[
+                ScheduleBlock(
+                    block_id="sched.block.a",
+                    core_id=0,
+                    node_id="nig.node.shared",
+                    macro_op="WDQ_GEMM",
+                    stage="compute",
+                    tiling_candidate_id="cand.a",
+                    resource_set=["WDQ", "MXU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=0,
+                    duration_slots=20,
+                    order_key=0,
+                    audit_ref=AuditRef(
+                        schedule_block_ids=["sched.block.a"],
+                        source_ids=["onnx::/model/layers.3/mlp/gemm"],
+                    ),
+                ),
+                ScheduleBlock(
+                    block_id="sched.block.b",
+                    core_id=0,
+                    node_id="nig.node.shared",
+                    macro_op="WDQ_GEMM",
+                    stage="compute",
+                    tiling_candidate_id="cand.b",
+                    resource_set=["WDQ", "MXU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=["sched.block.a"],
+                    issue_slot=20,
+                    duration_slots=28,
+                    order_key=1,
+                    audit_ref=AuditRef(
+                        schedule_block_ids=["sched.block.b"],
+                        source_ids=["onnx::/model/layers.3/mlp/rmsnorm_gemm"],
+                    ),
+                ),
+            ],
+        ),
+        memory_plan=_memory_plan_fixture(),
+    )
+
+    assert report.per_node_cycles == {"nig.node.shared": 48.0}
+    assert report.per_node_bytes == {"nig.node.shared": 4608.0}
+    assert report.per_layer_cycles == {"3": 48.0}
+    assert report.per_layer_bytes == {"3": 4608.0}
 
 
 def _memory_plan_fixture():

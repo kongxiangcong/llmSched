@@ -379,7 +379,10 @@ def _minimal_single_core_descriptor_ir(graph_id: str):
                     },
                 ),
                 shape_pack={"m": 48, "n": 128, "k": 128},
-                audit_ref=AuditRef(schedule_block_ids=["sched.block.compute"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.compute"],
+                    source_ids=["onnx::/model/layers.0/self_attn/q_proj/MatMul_output_0"],
+                ),
             )
         ],
     )
@@ -590,7 +593,10 @@ def _minimal_dual_core_descriptor_ir(graph_id: str):
                     dst_core_id=1,
                     transfer_bytes=16384,
                 ),
-                audit_ref=AuditRef(schedule_block_ids=["sched.transfer.0"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.transfer.0"],
+                    source_ids=["onnx::/model/layers.0/self_attn/kv_cache_transfer"],
+                ),
             ),
         ],
     )
@@ -648,7 +654,10 @@ def _minimal_single_core_schedule_ir(graph_id: str):
                 issue_slot=0,
                 duration_slots=32,
                 order_key=0,
-                audit_ref=AuditRef(schedule_block_ids=["sched.block.compute"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.compute"],
+                    source_ids=["onnx::/model/layers.0/self_attn/q_proj/MatMul_output_0"],
+                ),
             )
         ],
     )
@@ -699,7 +708,10 @@ def _minimal_dual_core_schedule_ir(graph_id: str):
                 transfer_bytes=16384,
                 sync_cost_cycles=4,
                 order_key=1,
-                audit_ref=AuditRef(schedule_block_ids=["sched.transfer.0"]),
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.transfer.0"],
+                    source_ids=["onnx::/model/layers.0/self_attn/kv_cache_transfer"],
+                ),
             ),
         ],
     )

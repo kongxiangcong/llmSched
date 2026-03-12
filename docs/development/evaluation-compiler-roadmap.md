@@ -17,7 +17,7 @@
 | --- | --- | --- | --- |
 | Phase A | SPEC-01, SPEC-02, SPEC-05, SPEC-06 | `done` | 契约、工件、架构模型、IR 栈都已经稳定落地。 |
 | Phase B | SPEC-03, SPEC-04, SPEC-07 | `done` | import/decomposition/bound-NIG/report/smoke gate 已收口。 |
-| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `in_progress` | `SPEC-08` 已进入 planner-closure 阶段，`SPEC-09` 当前 scope 已接受，`SPEC-10/11` helper-store 审计已收敛到 acceptance list，`SPEC-12` 的 `M2` stop-line 已冻结。 |
+| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `done` | canonical `run-phase-c-gate` 已可稳定通过，且 `tests/smoke -m local_smoke` / `tests/smoke -m milestone_matrix` 均为绿；`SPEC-08` 到 `SPEC-12` 已按当前 accepted scope 收口。 |
 | Phase D | SPEC-13, SPEC-14, SPEC-15, SPEC-16 | `in_progress` | `SPEC-13` 已有 descriptor-driven estimator/workflow/CLI/smoke foundation，`SPEC-14` 已有 prefill top-level foundation，`SPEC-15` 已有 decode top-level foundation，`SPEC-16` 已有 sweep/delta workflow、CLI 和 smoke foundation。 |
 | Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，且 `vmem_view.regions` 已带 per-region backing-store/memory-class attribution；`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation、catalog/workbench round-trip return navigation，以及 memory panel 的 per-region backing-store/memory-class visibility。 |
 
@@ -25,7 +25,7 @@
 
 - Phase A 已完成。
 - Phase B 已完成。
-- 当前关键路径仍是 Phase C 收口，但 Phase D 已正式启动。
+- 当前关键路径已转到 Phase D / `M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
 
 ## 3. Spec 状态矩阵
 
@@ -38,14 +38,14 @@
 | SPEC-05 | 架构语义模型 | A | `done` | 已有 capability model、constraint checker、query API、单核/双核 baseline target。 | 保持 target contract 稳定。 |
 | SPEC-06 | IR 栈与 Lowering 契约 | A | `done` | 五层 IR schema、validator、traceability、JSON roundtrip 已完成。 | 保持 version/invariant 稳定。 |
 | SPEC-07 | 量化/形状/布局绑定 | B | `done` | 已有 bound-NIG contract、quant/layout/memory-class/attention binding、binding report、四象限 smoke matrix。 | 保持 contract 稳定；后续只允许增量扩展。 |
-| SPEC-08 | VMEM/KV/地址规划器 | C | `in_progress` | 已有 `MemoryPlanArtifact`、lifetime reuse、DDR/storage binding surface、fit-aware diagnostics、`SPEC-09` tile-planner 消费，以及 `SPEC-12` 对 `storage_binding_id/backing_store`、`SPEC-13` 对 `peak_bytes_by_backing_store/peak_bytes_by_memory_class`、`SPEC-14/15` 对 hottest-region backing-store/memory-class attribution、`SPEC-18` 对 per-region backing-store/memory-class attribution 的直接消费；现在也已有 `memory_planner_closure_report.json` 统一枚举这些 downstream consumers，且 `phase_c_acceptance_report.json` 已能汇总 canonical `single-core/dual-core x prefill/decode` matrix。 | 剩余是 planner closure、必要的剩余 capacity reasoning，以及只在有具体 consumer 证据时继续扩大 downstream reuse；不再缺 foundation。 |
-| SPEC-09 | Tile 候选规划器 | C | `in_progress` | 已有 `TilingPlanArtifact`、storage-aware ranking、`run-tile-planning` workflow/CLI，以及被 `SPEC-10/11` 直接消费的稳定候选面。 | `M2` 现接受当前 GEMM-like / attention candidate surface + untiled-helper scheduling；只有出现具体 downstream failure 时才重新打开更广 coverage。 |
-| SPEC-10 | 单核映射与调度器 | C | `in_progress` | 已有扩展后的 `ScheduleIR`、interval reservations、duration policy、phased reservations，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | 剩余是冻结 acceptance list 并持续供 `SPEC-12/13` 消费；不再默认继续扩宽搜索或无证据 specialization。 |
-| SPEC-11 | 双核映射与调度器 | C | `in_progress` | 已有 dual-core `ScheduleIR` foundation、transfer/sync overlap、shared-resource contention，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | 剩余是冻结 acceptance list 并持续供 `SPEC-12/13` 消费；不再默认继续扩宽 repartition/search。 |
-| SPEC-12 | 描述符生成与 ISA 覆盖映射 | C | `in_progress` | 已有稳定 `DescriptorIR` / packed stream artifact、summary-grade packed consumer proof、workbench packed-summary visibility，以及 structured `address_fields` 对 `storage_binding_id/backing_store` 的直接复用。 | `M2` stop-line 已冻结为 packed summary consumer proof + workbench summary visibility；per-record drilldown 和更重 ABI hardening 只在具体 consumer 出现时再开。 |
-| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺更深 cycle model、layer-level or token-phase attribution，以及进入 `SPEC-14/15` 的 top-level eval report 收口。 |
-| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution。 | 仍缺 layer-level prefill 视图、单/双核对比输出和与 `SPEC-15/16` 的统一 top-level eval 收口。 |
-| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation，且 `memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation 和与 `SPEC-16/18` 的统一 top-level eval 收口。 |
+| SPEC-08 | VMEM/KV/地址规划器 | C | `done` | 已有 `MemoryPlanArtifact`、lifetime reuse、DDR/storage binding surface、fit-aware diagnostics、`SPEC-09` tile-planner 消费，以及 `SPEC-12` 对 `storage_binding_id/backing_store`、`SPEC-13` 对 `peak_bytes_by_backing_store/peak_bytes_by_memory_class`、`SPEC-14/15` 对 hottest-region backing-store/memory-class attribution、`SPEC-18` 对 per-region backing-store/memory-class attribution 的直接消费；现在也已有 `memory_planner_closure_report.json` 统一枚举这些 downstream consumers，且 `phase_c_acceptance_report.json` 已能汇总 canonical `single-core/dual-core x prefill/decode` matrix。 | 当前 accepted planner/downstream contract 已由 `run-phase-c-gate` 与 milestone smoke 覆盖；只有出现新的 concrete consumer regression 时才 reopening。 |
+| SPEC-09 | Tile 候选规划器 | C | `done` | 已有 `TilingPlanArtifact`、storage-aware ranking、`run-tile-planning` workflow/CLI，以及被 `SPEC-10/11` 直接消费的稳定候选面。 | 当前 GEMM-like / attention candidate surface + untiled-helper scheduling 已由 canonical gate 与 milestone smoke 覆盖；更广 coverage 只在 concrete downstream failure 时 reopening。 |
+| SPEC-10 | 单核映射与调度器 | C | `done` | 已有扩展后的 `ScheduleIR`、interval reservations、duration policy、phased reservations，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 scheduler surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
+| SPEC-11 | 双核映射与调度器 | C | `done` | 已有 dual-core `ScheduleIR` foundation、transfer/sync overlap、shared-resource contention，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 dual-core surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
+| SPEC-12 | 描述符生成与 ISA 覆盖映射 | C | `done` | 已有稳定 `DescriptorIR` / packed stream artifact、summary-grade packed consumer proof、workbench packed-summary visibility，以及 structured `address_fields` 对 `storage_binding_id/backing_store` 的直接复用。 | packed summary consumer proof + workbench summary visibility 已纳入当前 canonical gate；per-record drilldown 和更重 ABI hardening 不再阻塞 `M2`。 |
+| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries。 | 仍缺更深 cycle model、token-phase attribution，以及高于当前 node/layer summary 的 compare-grade 聚合。 |
+| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`。 | 仍缺更细的 layer-level prefill 视图、单/双核对比输出和更强的 top-level eval compare 闭环。 |
+| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation 和更强的 top-level eval compare 闭环。 |
 | SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation。 | 仍缺 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
@@ -57,23 +57,23 @@
 
 1. `Phase A = done`
 2. `Phase B = done`
-3. `Phase C = in_progress`
-   - 当前真正的主门槛是 `M2`
-   - 也就是把 `SPEC-08/09/10/11/12` 从 foundation 推到可稳定交付的闭环
+3. `Phase C = done`
+   - canonical `run-phase-c-gate` 已稳定为 `ready_for_acceptance`
+   - `SPEC-08/09/10/11/12` 已按当前 accepted scope 收口，不再作为默认 blocker
 4. `Phase D = in_progress`
-   - `SPEC-13/14/15/16` 都已有 stable foundation
-   - 但 foundation 不等于 Phase D 已收口
+   - 当前真正的主门槛改为 `M3`
+   - 重点是把 `SPEC-13/14/15/16` 从 stable foundation 推到更完整的评估闭环
 5. `Phase E = in_progress`
    - `SPEC-18/19` 已有 bundle/workbench/catalog/compare foundation
    - 但团队日常使用闭环还没有完成
 
 ### 当前优先顺序
 
-1. 先继续收口 `M2`
-   - `SPEC-08 -> SPEC-09 -> SPEC-10/11 -> SPEC-12`
-2. 在不打断 `M2` 的前提下继续 harden `SPEC-13/14/15/16`
-3. `SPEC-18/19` 继续做产品化 hardening，但不再开新的底层 contract
-4. 避免误把 “foundation 已有” 当成 “phase 已完成”
+1. 先继续收口 `M3`
+   - `SPEC-13 -> SPEC-14/15 -> SPEC-16`
+2. `SPEC-18/19` 继续做产品化 hardening，但不再开新的底层 contract
+3. 保持 `run-phase-c-gate` 绿色，但没有 concrete failing workspace / smoke regression 时不主动重开 `SPEC-08/09/10/11/12`
+4. 避免误把 “Phase C 已完成” 当成 “M3 / M4 也已完成”
 
 ### 正式进入下一阶段的门槛
 
@@ -83,7 +83,7 @@
 | 进入 Phase D | `SPEC-08` 到 `SPEC-12` 全部 `done`，且单核/双核计划和 descriptor/ISA coverage 可稳定输出 |
 | 进入 Phase E | `SPEC-13` 到 `SPEC-16` 全部 `done`，且 prefill/decode 全流程评估结果稳定 |
 
-当前已经有 Phase D 与 Phase E 的 foundation，但项目主门槛仍然是 `Phase C / M2` 收口。
+当前已经正式越过 `Phase C / M2` 门槛，项目主门槛改为 `Phase D / M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
 
 ## 5. 依赖图
 
@@ -163,32 +163,13 @@ graph TD
 | 里程碑 | 对应完成条件 | 状态 | 当前判断 |
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
-| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `in_progress` | `SPEC-09` scope 与 `SPEC-12` stop-line 已明确，`SPEC-10/11` helper-store 审计已完成，`SPEC-08` 也已有 tile/descriptor/perf 三条真实 downstream reuse；剩余主问题已收敛到 planner closure 与最终 acceptance evidence。 |
-| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，`SPEC-16` 已有 sweep/delta foundation；同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、layer-level compare 和更完整的 top-level report 闭环。 |
+| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
+| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`；`SPEC-16` 已有 sweep/delta foundation。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、single-vs-dual compare 和更完整的 top-level report 闭环。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
 
-### P0：收口 `M2`
-
-- `SPEC-08`
-  - 把当前 memory planner foundation 收口成稳定 planner contract
-  - descriptor / perf / top-level eval / visualization bundle 已开始直接消费 `storage_binding_id/backing_store`、`peak_bytes_by_backing_store` 与 backing-store attribution；继续只审计仍在重构 planner 已有信息的窄缺口
-  - 仅在有具体证据时继续补窄范围 capacity reasoning
-- `SPEC-09`
-  - `M2` 现接受当前 GEMM-like / attention candidate surface
-  - untiled-helper scheduling 现作为当前编译器范围内的 accepted closure policy
-  - 只有在出现具体 scheduler / descriptor / perf 消费失败证据时，才重新打开更广的 macro coverage
-- `SPEC-10/11`
-  - 继续保持 evidence-driven closure pass，而不是回到宽泛探索
-  - `RMSNORM.store` / `GEGLU.store` / `ELEM_ADD.store` 的 generic-store audit 已完成
-  - 余下工作应聚焦最终 acceptance list，而不是继续无证据增加 specialization
-- `SPEC-12`
-  - `M2` stop-line 现冻结为 packed summary consumer proof + workbench summary visibility
-  - 没有具体 consumer 要求前，不再默认追加 per-record drilldown
-  - 后续仅保留窄范围 hardening，而不再作为唯一主线
-
-### P1：继续收口 `M3`
+### P0：收口 `M3`
 
 - `SPEC-13`
   - deeper cycle model
@@ -200,11 +181,17 @@ graph TD
   - richer diff mode
   - multi-metric compare，而不只是 baseline summary
 
-### P2：继续 harden `SPEC-19`
+### P1：继续 harden `SPEC-19`
 
 - richer compare drill-down beyond current shared summary-metric deltas
 - deeper workspace drill-down beyond current selected-panel deep links
 - richer screenshot/export workflow
+
+### P2：保持 `Phase C / M2` 绿色
+
+- 持续以 `run-phase-c-gate` 和 milestone smoke 维护 canonical `single-core/dual-core x prefill/decode` matrix
+- 只有在出现 concrete failing workspace、smoke regression 或 downstream consumer failure 时，才重开 `SPEC-08/09/10/11/12`
+- 不再默认重开宏观 coverage、per-record drilldown 或无证据的 generic exploration
 
 ## 8. 风险前置结论
 
@@ -224,17 +211,17 @@ graph TD
 
 ## 9. 下一步方向建议
 
-最合理的下一步不是再开新的 foundation，而是回到当前主门槛：
+最合理的下一步不是再开新的 foundation，而是转到新的主门槛：
 
-1. 优先继续 `Phase C / M2`
-   - 首选方向：`SPEC-08` planner closure + downstream reuse
-   - 原因：`SPEC-09` 的 scope 和 `SPEC-12` 的 stop-line 已明确，`SPEC-10/11` 也已从 broad exploration 收敛到 acceptance list，当前最真实的剩余收口面在 memory artifact 的最终消费闭环
+1. 优先继续 `Phase D / M3`
+   - 首选方向：`SPEC-13` deeper cycle model + clearer bandwidth/VMEM breakdown，然后再推 `SPEC-14/15/16` 的 layer-level compare / richer diff
+   - 原因：当前 repo-local formal gate 已证明 `M2` 在 accepted scope 下是绿的，再默认把主精力放回 `SPEC-08/09/10/11/12` 只会重开一个没有失败证据的已闭环阶段
 2. 如果继续做 UI，只做 `SPEC-19` 的增量 hardening
-   - 首选方向：deeper workspace drill-down + richer compare drill-down
+   - 首选方向：deeper workspace drill-down + richer compare drill-down + richer screenshot/export workflow
    - 不建议再开新的 service/contract
-3. 不建议现在把主要精力放回 frontend
-   - `SPEC-03/04/07` 已是 `done`
-   - 当前瓶颈不在模型导入，而在 mapping / descriptor / estimator 收口
+3. `Phase C` 只做 keep-green 维护
+   - 保持 `run-phase-c-gate` 绿色
+   - 只有 concrete failing workspace / smoke regression 才重开 `SPEC-08/09/10/11/12`
 
 对应 backlog 入口：
 
@@ -1230,6 +1217,19 @@ graph TD
   - `SPEC-08` planner closure and stronger downstream reuse
   - eventual status promotion from `in_progress` to `done` only after that remaining closure evidence exists
 
+## 2026-03-12 Phase C Gate Green Checkpoint
+
+- verification snapshot:
+  - fresh canonical `run-phase-c-gate --report-root <workspace> --workspace-root <workspace>` now returns `status=ready_for_acceptance`
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 68 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 68 deselected`
+- what this closes:
+  - the ambiguity about whether repo-local `M2` still had a concrete blocker under the current accepted Phase C scope
+  - the remaining mismatch between formal gate evidence and top-level `M2 in_progress` status language
+- what still remains:
+  - keep `run-phase-c-gate` green while `SPEC-13/14/15/16` and `SPEC-19` continue evolving
+  - only reopen `SPEC-08/09/10/11/12` when a concrete failing workspace, smoke regression, or downstream consumer failure appears
+
 ## 2026-03-12 SPEC-08 Memory-Planner Closure Report Checkpoint
 
 - plan doc: `../plans/2026-03-12-memory-planner-closure-report.md`
@@ -1556,3 +1556,43 @@ graph TD
   - layer-level breakdown and single-vs-dual compare surfaces
   - deeper cycle fitting above the current summary-grade contract
   - richer sweep and multi-metric compare modes
+
+## 2026-03-12 SPEC-13 -> SPEC-14/15 Node Hotspot Summary Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-13-node-hotspots.md`
+- `SPEC-13` now carries stable per-node cycle/byte summaries, and `SPEC-14` / `SPEC-15` now consume them directly as top-level `node_hotspots`.
+- new closure evidence:
+  - `PerfSummaryReport` now carries `per_node_cycles`
+  - `PerfSummaryReport` now carries `per_node_bytes`
+  - `PrefillEvaluationReport` now carries `node_hotspots`
+  - `DecodeEvaluationReport` now carries `node_hotspots`
+  - focused Phase D unit/workflow verification remains green with the stronger summary contract
+  - `tests/smoke/test_cli_run_performance_estimation.py` and `tests/smoke/test_phase_d_perf_foundation_matrix.py` remain green
+- what this closes:
+  - `SPEC-14/15` can now point back to concrete hot nodes without reopening raw `AnalysisIR` or `ScheduleIR`
+  - later compare/UI layers get a stable node-level summary surface above macro-only hotspot totals
+  - the `SPEC-13 -> SPEC-14/15` handoff is no longer limited to throughput/latency shells plus memory-hotspot summaries
+- what still remains for `M3`:
+  - deeper cycle fitting above the current descriptor-driven estimator
+  - layer-level or token-phase aggregation above the current node-hotspot surface
+  - stronger single-vs-dual and sweep-oriented compare outputs in `SPEC-14/15/16`
+
+## 2026-03-12 SPEC-13 -> SPEC-14/15 Layer Breakdown Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-13-layer-breakdown.md`
+- `SPEC-13` now carries stable per-layer cycle/byte summaries, and `SPEC-14` / `SPEC-15` now consume them directly as top-level `layer_breakdown` rows.
+- new closure evidence:
+  - `PerfSummaryReport` now carries `per_layer_cycles`
+  - `PerfSummaryReport` now carries `per_layer_bytes`
+  - `PrefillEvaluationReport` now carries `layer_breakdown`
+  - `DecodeEvaluationReport` now carries `layer_breakdown`
+  - focused Phase D unit/workflow verification remains green with the stronger summary contract
+  - `tests/smoke/test_cli_run_performance_estimation.py` and `tests/smoke/test_phase_d_perf_foundation_matrix.py` remain green
+- what this closes:
+  - `SPEC-14/15` can now answer which layers dominate the current run without reopening raw IR artifacts
+  - later compare layers get a stable layer-level summary surface above node hotspots
+  - the `SPEC-13 -> SPEC-14/15` handoff now covers macro, node, memory-hotspot, and layer summary surfaces
+- what still remains for `M3`:
+  - deeper cycle fitting above the current descriptor-driven estimator
+  - stronger single-vs-dual compare built on top of the new layer summary surface
+  - richer sweep-oriented and multi-metric compare outputs in `SPEC-16`

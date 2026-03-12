@@ -1,5 +1,13 @@
 # Phase C Memory Planner Handoff
 
+## 2026-03-12 Phase C Gate Green Checkpoint
+
+- fresh canonical `run-phase-c-gate` on a rebuilt `single-core/dual-core x prefill/decode` workspace now returns `ready_for_acceptance`
+- `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 68 deselected`
+- `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 68 deselected`
+- the Phase C mainline is now maintained as a keep-green gate, not as an open planner-closure backlog
+- `SPEC-08/09/10/11/12` should reopen only on concrete failing workspace, smoke regression, or downstream consumer failure
+
 ## 2026-03-12 Planner Closure Gate Checkpoint
 
 - New plan: `../plans/2026-03-12-spec-08-planner-closure-gate.md`

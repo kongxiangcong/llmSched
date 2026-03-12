@@ -56,6 +56,24 @@ class DecodeMacroHotspot(BaseModel):
     total_bytes: float = Field(ge=0.0)
 
 
+class DecodeNodeHotspot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    estimated_cycles: float = Field(ge=0.0)
+    cycle_share: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
+class DecodeLayerBreakdownRow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    estimated_cycles: float = Field(ge=0.0)
+    cycle_share: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
 class DecodeEvaluationReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -71,3 +89,5 @@ class DecodeEvaluationReport(BaseModel):
     memory_hotspot: DecodeMemoryHotspotSummary
     isa_summary: DecodeISASummary
     macro_hotspots: list[DecodeMacroHotspot] = Field(default_factory=list)
+    node_hotspots: list[DecodeNodeHotspot] = Field(default_factory=list)
+    layer_breakdown: list[DecodeLayerBreakdownRow] = Field(default_factory=list)

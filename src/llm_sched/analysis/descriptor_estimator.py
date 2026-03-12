@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from math import ceil
+import re
 
 from llm_sched.arch.capabilities import ArchitectureCapabilities
 from llm_sched.config.scenario_profile import ScenarioProfile
@@ -15,6 +16,11 @@ from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.descriptor_ir import DescriptorIR, DescriptorRecord
 from llm_sched.ir.schedule_ir import ScheduleIR
+
+_LAYER_PATTERNS = (
+    re.compile(r"layers\.(\d+)"),
+    re.compile(r"layers_(\d+)"),
+)
 
 
 def estimate_descriptor_analysis(
@@ -72,8 +78,26 @@ def build_perf_summary_report(
     memory_plan: MemoryPlanArtifact | None = None,
 ) -> PerfSummaryReport:
     descriptor_by_subject = {descriptor.schedule_block_id: descriptor for descriptor in descriptor_ir.descriptors}
+    node_by_subject = (
+        {block.block_id: block.node_id for block in schedule_ir.blocks}
+        if schedule_ir is not None
+        else {}
+    )
+    layer_by_subject = (
+        {
+            block.block_id: layer_key
+            for block in schedule_ir.blocks
+            if (layer_key := _infer_layer_key(block.audit_ref)) is not None
+        }
+        if schedule_ir is not None
+        else {}
+    )
     per_macro_cycles: Counter[str] = Counter()
     per_macro_bytes: Counter[str] = Counter()
+    per_node_cycles: Counter[str] = Counter()
+    per_node_bytes: Counter[str] = Counter()
+    per_layer_cycles: Counter[str] = Counter()
+    per_layer_bytes: Counter[str] = Counter()
     bottleneck_counts: Counter[str] = Counter()
     issues: list[PerfBottleneckIssue] = []
     data_movement_read_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
@@ -109,8 +133,21 @@ def build_perf_summary_report(
         totals["read_bytes"] += record.metrics.get("read_bytes", 0.0)
         totals["write_bytes"] += record.metrics.get("write_bytes", 0.0)
         totals["sync_cycles"] += record.metrics.get("sync_cycles", 0.0)
+        node_id = node_by_subject.get(record.subject_id)
+        if node_id is not None:
+            per_node_cycles[node_id] += record.metrics.get("estimated_cycles", 0.0)
+            per_node_bytes[node_id] += record.metrics.get("total_bytes", 0.0)
 
         descriptor = descriptor_by_subject.get(record.subject_id)
+        layer_key = layer_by_subject.get(record.subject_id)
+        if layer_key is None and descriptor is not None:
+            layer_key = _infer_layer_key(descriptor.audit_ref)
+            if layer_key is not None:
+                layer_by_subject[record.subject_id] = layer_key
+        if layer_key is not None:
+            per_layer_cycles[layer_key] += record.metrics.get("estimated_cycles", 0.0)
+            per_layer_bytes[layer_key] += record.metrics.get("total_bytes", 0.0)
+
         if descriptor is None:
             continue
         macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
@@ -163,6 +200,10 @@ def build_perf_summary_report(
         totals=totals,
         per_macro_cycles=dict(per_macro_cycles),
         per_macro_bytes=dict(per_macro_bytes),
+        per_node_cycles=dict(sorted(per_node_cycles.items())),
+        per_node_bytes=dict(sorted(per_node_bytes.items())),
+        per_layer_cycles=_sorted_layer_totals(per_layer_cycles),
+        per_layer_bytes=_sorted_layer_totals(per_layer_bytes),
         bottleneck_counts=dict(bottleneck_counts),
         isa_gap_counts=dict(coverage_report.gap_counts),
         issues=issues,
@@ -493,3 +534,16 @@ def _dtype_size(dtype: str) -> float:
     if dtype == "int4":
         return 0.5
     return 1.0
+
+
+def _infer_layer_key(audit_ref: AuditRef) -> str | None:
+    for source_id in audit_ref.source_ids:
+        for pattern in _LAYER_PATTERNS:
+            match = pattern.search(source_id)
+            if match is not None:
+                return str(int(match.group(1)))
+    return None
+
+
+def _sorted_layer_totals(counter: Counter[str]) -> dict[str, float]:
+    return dict(sorted(counter.items(), key=lambda item: (int(item[0]), item[0])))

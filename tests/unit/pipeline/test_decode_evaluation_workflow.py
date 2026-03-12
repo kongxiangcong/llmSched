@@ -35,6 +35,10 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
         "ACTIVATION": 32768,
         "KV_CACHE": 8192,
     }
+    assert report.node_hotspots
+    assert report.node_hotspots[0].estimated_cycles > 0.0
+    assert report.layer_breakdown
+    assert report.layer_breakdown[0].estimated_cycles > 0.0
     assert manifest.artifact_index["decode_evaluation_report"] == "reports/decode_evaluation_report.json"
     assert summary.status == "completed"
     assert summary.exit_code == 0

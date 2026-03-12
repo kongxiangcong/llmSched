@@ -25,6 +25,10 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             "totals": {"estimated_cycles": 1024.0, "total_bytes": 65536.0},
             "per_macro_cycles": {"WDQ_GEMM": 768.0, "DMA_TRANSFER": 256.0},
             "per_macro_bytes": {"WDQ_GEMM": 32768.0, "DMA_TRANSFER": 32768.0},
+            "per_node_cycles": {"nig.node.linear.0": 768.0, "nig.node.transfer.0": 256.0},
+            "per_node_bytes": {"nig.node.linear.0": 32768.0, "nig.node.transfer.0": 32768.0},
+            "per_layer_cycles": {"0": 768.0, "1": 256.0},
+            "per_layer_bytes": {"0": 32768.0, "1": 32768.0},
             "bottleneck_counts": {"compute-bound": 3, "sync-bound": 1},
             "isa_gap_counts": {"opcode_not_supported": 2},
             "issues": [
@@ -52,5 +56,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.vmem_region_peak_utilization["ping"] == 0.8
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
+    assert report.per_node_cycles["nig.node.linear.0"] == 768.0
+    assert report.per_node_bytes["nig.node.transfer.0"] == 32768.0
+    assert report.per_layer_cycles["0"] == 768.0
+    assert report.per_layer_bytes["1"] == 32768.0
     assert report.isa_gap_counts["opcode_not_supported"] == 2
     assert report.issues[0].bottleneck == "isa-gap-bound"

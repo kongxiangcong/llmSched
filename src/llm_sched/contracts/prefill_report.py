@@ -52,6 +52,24 @@ class PrefillMacroHotspot(BaseModel):
     total_bytes: float = Field(ge=0.0)
 
 
+class PrefillNodeHotspot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    estimated_cycles: float = Field(ge=0.0)
+    cycle_share: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
+class PrefillLayerBreakdownRow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    estimated_cycles: float = Field(ge=0.0)
+    cycle_share: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
 class PrefillEvaluationReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -67,3 +85,5 @@ class PrefillEvaluationReport(BaseModel):
     memory_hotspot: PrefillMemoryHotspotSummary
     isa_summary: PrefillISASummary
     macro_hotspots: list[PrefillMacroHotspot] = Field(default_factory=list)
+    node_hotspots: list[PrefillNodeHotspot] = Field(default_factory=list)
+    layer_breakdown: list[PrefillLayerBreakdownRow] = Field(default_factory=list)

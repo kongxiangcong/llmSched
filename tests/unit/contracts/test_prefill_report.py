@@ -54,6 +54,22 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                     "total_bytes": 131072.0,
                 }
             ],
+            "node_hotspots": [
+                {
+                    "node_id": "nig.node.linear.0",
+                    "estimated_cycles": 3072.0,
+                    "cycle_share": 0.75,
+                    "total_bytes": 131072.0,
+                }
+            ],
+            "layer_breakdown": [
+                {
+                    "layer_id": 0,
+                    "estimated_cycles": 3072.0,
+                    "cycle_share": 0.75,
+                    "total_bytes": 131072.0,
+                }
+            ],
         }
     )
 
@@ -66,3 +82,5 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class["QUANT_PARAM"] == 8192
     assert report.isa_summary.gap_counts["opcode_not_supported"] == 2
     assert report.macro_hotspots[0].macro_op == "WDQ_GEMM"
+    assert report.node_hotspots[0].node_id == "nig.node.linear.0"
+    assert report.layer_breakdown[0].layer_id == 0

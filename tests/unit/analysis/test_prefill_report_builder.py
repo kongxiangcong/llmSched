@@ -42,6 +42,12 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     }
     assert report.isa_summary.unmapped_block_count == 1
     assert [hotspot.macro_op for hotspot in report.macro_hotspots] == ["WDQ_GEMM", "SDPA", "DMA_LOAD"]
+    assert [hotspot.node_id for hotspot in report.node_hotspots] == [
+        "nig.node.linear.0",
+        "nig.node.sdpa.0",
+        "nig.node.dma_load.0",
+    ]
+    assert [row.layer_id for row in report.layer_breakdown] == [0, 1]
 
 
 def test_build_prefill_evaluation_report_rejects_decode_scenarios() -> None:
@@ -140,6 +146,24 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "WDQ_GEMM": 131072.0,
                 "SDPA": 98304.0,
                 "DMA_LOAD": 32768.0,
+            },
+            "per_node_cycles": {
+                "nig.node.linear.0": 3072.0,
+                "nig.node.sdpa.0": 768.0,
+                "nig.node.dma_load.0": 256.0,
+            },
+            "per_node_bytes": {
+                "nig.node.linear.0": 131072.0,
+                "nig.node.sdpa.0": 98304.0,
+                "nig.node.dma_load.0": 32768.0,
+            },
+            "per_layer_cycles": {
+                "0": 3072.0,
+                "1": 1024.0,
+            },
+            "per_layer_bytes": {
+                "0": 131072.0,
+                "1": 131072.0,
             },
             "bottleneck_counts": {"compute-bound": 16, "memory-bound": 4},
             "isa_gap_counts": {"opcode_not_supported": 1},

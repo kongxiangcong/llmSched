@@ -72,6 +72,10 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     else:
         assert summary_report.vmem_region_peak_bytes_by_memory_class["weight"]["WEIGHT"] > 0
     assert summary_report.totals["estimated_cycles"] > 0.0
+    assert summary_report.per_node_cycles
+    assert summary_report.per_node_bytes
+    assert summary_report.per_layer_cycles
+    assert summary_report.per_layer_bytes
     assert sum(summary_report.per_core_busy_slots.values()) > 0
     if schedule_kind == "dual-core":
         assert summary_report.schedule_transfer_slots > 0

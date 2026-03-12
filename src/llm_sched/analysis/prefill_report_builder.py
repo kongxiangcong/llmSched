@@ -9,9 +9,11 @@ from llm_sched.contracts.perf_report import PerfSummaryReport
 from llm_sched.contracts.prefill_report import (
     PrefillEvaluationReport,
     PrefillISASummary,
+    PrefillLayerBreakdownRow,
     PrefillMacroHotspot,
     PrefillMemoryHotspotSummary,
     PrefillMemorySummary,
+    PrefillNodeHotspot,
     PrefillThroughputSummary,
 )
 
@@ -66,6 +68,12 @@ def build_prefill_evaluation_report(
             gap_counts=dict(coverage_report.gap_counts),
         ),
         macro_hotspots=_build_macro_hotspots(perf_summary, total_cycles),
+        node_hotspots=_build_node_hotspots(perf_summary, total_cycles),
+        layer_breakdown=_build_layer_breakdown(
+            perf_summary,
+            total_cycles,
+            enabled=scenario.reporting.include_layer_breakdown,
+        ),
     )
 
 
@@ -105,6 +113,50 @@ def _build_macro_hotspots(
             )
         )
     return hotspots
+
+
+def _build_node_hotspots(
+    perf_summary: PerfSummaryReport,
+    total_cycles: float,
+) -> list[PrefillNodeHotspot]:
+    hotspots: list[PrefillNodeHotspot] = []
+    for node_id, estimated_cycles in sorted(
+        perf_summary.per_node_cycles.items(),
+        key=lambda item: (-float(item[1]), item[0]),
+    ):
+        hotspots.append(
+            PrefillNodeHotspot(
+                node_id=node_id,
+                estimated_cycles=float(estimated_cycles),
+                cycle_share=(float(estimated_cycles) / total_cycles) if total_cycles > 0.0 else 0.0,
+                total_bytes=float(perf_summary.per_node_bytes.get(node_id, 0.0)),
+            )
+        )
+    return hotspots
+
+
+def _build_layer_breakdown(
+    perf_summary: PerfSummaryReport,
+    total_cycles: float,
+    *,
+    enabled: bool,
+) -> list[PrefillLayerBreakdownRow]:
+    if not enabled:
+        return []
+    rows: list[PrefillLayerBreakdownRow] = []
+    for layer_key, estimated_cycles in sorted(
+        perf_summary.per_layer_cycles.items(),
+        key=lambda item: (-float(item[1]), int(item[0])),
+    ):
+        rows.append(
+            PrefillLayerBreakdownRow(
+                layer_id=int(layer_key),
+                estimated_cycles=float(estimated_cycles),
+                cycle_share=(float(estimated_cycles) / total_cycles) if total_cycles > 0.0 else 0.0,
+                total_bytes=float(perf_summary.per_layer_bytes.get(layer_key, 0.0)),
+            )
+        )
+    return rows
 
 
 def _build_memory_hotspot(

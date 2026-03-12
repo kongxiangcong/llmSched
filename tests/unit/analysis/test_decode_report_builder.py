@@ -44,6 +44,12 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
         "KVLOAD",
         "SDPA_DECODE",
     ]
+    assert [hotspot.node_id for hotspot in report.node_hotspots][:3] == [
+        "nig.node.proj.0",
+        "nig.node.kvload.0",
+        "nig.node.sdpa_decode.0",
+    ]
+    assert [row.layer_id for row in report.layer_breakdown] == [0, 1]
 
 
 def test_build_decode_evaluation_report_rejects_prefill_scenarios() -> None:
@@ -146,6 +152,28 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "SDPA_DECODE": 40000.0,
                 "KVSTORE": 32000.0,
                 "ELEM_ADD": 4000.0,
+            },
+            "per_node_cycles": {
+                "nig.node.proj.0": 1100.0,
+                "nig.node.kvload.0": 900.0,
+                "nig.node.sdpa_decode.0": 700.0,
+                "nig.node.kvstore.0": 200.0,
+                "nig.node.elem_add.0": 100.0,
+            },
+            "per_node_bytes": {
+                "nig.node.proj.0": 50000.0,
+                "nig.node.kvload.0": 64000.0,
+                "nig.node.sdpa_decode.0": 40000.0,
+                "nig.node.kvstore.0": 32000.0,
+                "nig.node.elem_add.0": 4000.0,
+            },
+            "per_layer_cycles": {
+                "0": 2000.0,
+                "1": 1120.0,
+            },
+            "per_layer_bytes": {
+                "0": 114000.0,
+                "1": 66000.0,
             },
             "bottleneck_counts": {"compute-bound": 8, "memory-bound": 6, "sync-bound": 2},
             "isa_gap_counts": {"opcode_not_supported": 1},
