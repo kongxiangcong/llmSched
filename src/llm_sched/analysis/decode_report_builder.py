@@ -34,15 +34,27 @@ def build_decode_evaluation_report(
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
     total_tokens = scenario.batch * scenario.seq_len
-    projection_cycles = _sum_cycles(perf_summary, PROJECTION_MACROS)
-    kv_io_cycles = _sum_cycles(perf_summary, KV_IO_MACROS)
-    attention_cycles = _sum_cycles(perf_summary, ATTENTION_MACROS)
-    sync_cycles = float(perf_summary.totals.get("sync_cycles", 0.0))
-    other_cycles = max(
-        0.0,
-        total_cycles - projection_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+    projection_cycles = _phase_cycles(perf_summary, "projection")
+    kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
+    attention_cycles = _phase_cycles(perf_summary, "attention")
+    sync_cycles = _phase_cycles(
+        perf_summary,
+        "sync",
+        fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
     )
-    kv_related_bytes = _sum_bytes(perf_summary, KV_IO_MACROS)
+    other_cycles = _phase_cycles(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            total_cycles - projection_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+        ),
+    )
+    kv_related_bytes = _phase_bytes(
+        perf_summary,
+        "kv_io",
+        fallback=_sum_bytes(perf_summary, KV_IO_MACROS),
+    )
 
     return DecodeEvaluationReport(
         run_id=run_id,
@@ -92,6 +104,38 @@ def _sum_cycles(perf_summary: PerfSummaryReport, macros: set[str]) -> float:
 
 def _sum_bytes(perf_summary: PerfSummaryReport, macros: set[str]) -> float:
     return float(sum(perf_summary.per_macro_bytes.get(macro, 0.0) for macro in macros))
+
+
+def _phase_cycles(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float | None = None,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        return float(phase_summary.estimated_cycles)
+    if fallback is not None:
+        return float(fallback)
+    if phase_name == "projection":
+        return _sum_cycles(perf_summary, PROJECTION_MACROS)
+    if phase_name == "kv_io":
+        return _sum_cycles(perf_summary, KV_IO_MACROS)
+    if phase_name == "attention":
+        return _sum_cycles(perf_summary, ATTENTION_MACROS)
+    return 0.0
+
+
+def _phase_bytes(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float = 0.0,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        return float(phase_summary.total_bytes)
+    return float(fallback)
 
 
 def _build_macro_hotspots(

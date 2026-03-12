@@ -11,7 +11,7 @@ from llm_sched.config.scenario_profile import ScenarioProfile
 from llm_sched.config.target_profile import TargetProfile
 from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
-from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfSummaryReport
+from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfPhaseSummary, PerfSummaryReport
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.descriptor_ir import DescriptorIR, DescriptorRecord
@@ -21,6 +21,10 @@ _LAYER_PATTERNS = (
     re.compile(r"layers\.(\d+)"),
     re.compile(r"layers_(\d+)"),
 )
+_PERF_PHASE_ORDER = ("projection", "kv_io", "attention", "sync", "other")
+_PROJECTION_MACROS = frozenset({"GEMM", "WDQ_GEMM", "RMSNORM_GEMM"})
+_KV_IO_MACROS = frozenset({"KVLOAD", "KVSTORE"})
+_ATTENTION_MACROS = frozenset({"SDPA_DECODE", "SDPA", "ROPE", "ATTENTION_MASK_PREP"})
 
 
 def estimate_descriptor_analysis(
@@ -94,6 +98,8 @@ def build_perf_summary_report(
     )
     per_macro_cycles: Counter[str] = Counter()
     per_macro_bytes: Counter[str] = Counter()
+    phase_cycles: Counter[str] = Counter()
+    phase_bytes: Counter[str] = Counter()
     per_node_cycles: Counter[str] = Counter()
     per_node_bytes: Counter[str] = Counter()
     per_layer_cycles: Counter[str] = Counter()
@@ -139,6 +145,12 @@ def build_perf_summary_report(
             per_node_bytes[node_id] += record.metrics.get("total_bytes", 0.0)
 
         descriptor = descriptor_by_subject.get(record.subject_id)
+        attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
+        for phase_name, estimated_cycles in attributed_cycles.items():
+            phase_cycles[phase_name] += estimated_cycles
+        for phase_name, total_bytes in attributed_bytes.items():
+            phase_bytes[phase_name] += total_bytes
+
         layer_key = layer_by_subject.get(record.subject_id)
         if layer_key is None and descriptor is not None:
             layer_key = _infer_layer_key(descriptor.audit_ref)
@@ -198,6 +210,7 @@ def build_perf_summary_report(
         vmem_region_capacity_bytes=vmem_region_capacity_bytes,
         vmem_region_peak_utilization=vmem_region_peak_utilization,
         totals=totals,
+        phase_attribution=_build_phase_attribution(phase_cycles, phase_bytes),
         per_macro_cycles=dict(per_macro_cycles),
         per_macro_bytes=dict(per_macro_bytes),
         per_node_cycles=dict(sorted(per_node_cycles.items())),
@@ -262,6 +275,53 @@ def _summarize_vmem_regions(
         capacity_bytes,
         peak_utilization,
     )
+
+
+def _phase_contribution_for_record(
+    descriptor: DescriptorRecord | None,
+    metrics: dict[str, float],
+) -> tuple[dict[str, float], dict[str, float]]:
+    estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
+    sync_cycles = min(float(metrics.get("sync_cycles", 0.0)), estimated_cycles)
+    non_sync_cycles = max(0.0, estimated_cycles - sync_cycles)
+    total_bytes = float(metrics.get("total_bytes", 0.0))
+
+    cycles = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+    bytes_by_phase = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+    phase_name = _classify_record_phase(descriptor)
+    cycles[phase_name] = non_sync_cycles
+    bytes_by_phase[phase_name] = total_bytes
+    cycles["sync"] = sync_cycles
+    return cycles, bytes_by_phase
+
+
+def _classify_record_phase(descriptor: DescriptorRecord | None) -> str:
+    if descriptor is None:
+        return "other"
+    stage = str(descriptor.ctrl_fields.get("stage", "compute"))
+    macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
+    if stage == "transfer":
+        return "other"
+    if macro in _KV_IO_MACROS:
+        return "kv_io"
+    if macro in _ATTENTION_MACROS:
+        return "attention"
+    if macro in _PROJECTION_MACROS:
+        return "projection"
+    return "other"
+
+
+def _build_phase_attribution(
+    phase_cycles: Counter[str],
+    phase_bytes: Counter[str],
+) -> dict[str, PerfPhaseSummary]:
+    return {
+        phase_name: PerfPhaseSummary(
+            estimated_cycles=float(phase_cycles.get(phase_name, 0.0)),
+            total_bytes=float(phase_bytes.get(phase_name, 0.0)),
+        )
+        for phase_name in _PERF_PHASE_ORDER
+    }
 
 
 def _address_spaces_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> list[str]:

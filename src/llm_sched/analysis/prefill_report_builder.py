@@ -33,11 +33,7 @@ def build_prefill_evaluation_report(
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
     total_bytes = float(perf_summary.totals.get("total_bytes", 0.0))
     total_tokens = scenario.batch * scenario.seq_len
-    mxu_cycles = sum(
-        cycles
-        for macro_op, cycles in perf_summary.per_macro_cycles.items()
-        if macro_op in MXU_HEAVY_MACROS
-    )
+    mxu_cycles = _projection_cycles(perf_summary)
 
     return PrefillEvaluationReport(
         run_id=run_id,
@@ -74,6 +70,19 @@ def build_prefill_evaluation_report(
             total_cycles,
             enabled=scenario.reporting.include_layer_breakdown,
         ),
+    )
+
+
+def _projection_cycles(perf_summary: PerfSummaryReport) -> float:
+    phase_summary = perf_summary.phase_attribution.get("projection")
+    if phase_summary is not None:
+        return float(phase_summary.estimated_cycles)
+    return float(
+        sum(
+            cycles
+            for macro_op, cycles in perf_summary.per_macro_cycles.items()
+            if macro_op in MXU_HEAVY_MACROS
+        )
     )
 
 

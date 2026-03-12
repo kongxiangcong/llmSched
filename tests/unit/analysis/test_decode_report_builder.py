@@ -21,12 +21,16 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.sdpa_decode_present is True
     assert report.token_latency.total_tokens == 1
     assert report.token_latency.cycles_per_token == pytest.approx(3120.0)
-    assert report.token_latency.kv_io_cycles == pytest.approx(1100.0)
+    assert report.token_latency.projection_cycles == pytest.approx(980.0)
+    assert report.token_latency.kv_io_cycles == pytest.approx(960.0)
+    assert report.token_latency.attention_cycles == pytest.approx(820.0)
+    assert report.token_latency.sync_cycles == pytest.approx(120.0)
+    assert report.token_latency.other_cycles == pytest.approx(240.0)
     assert report.kv_summary.kv_len == 2048
     assert report.kv_summary.kv_formula_count == 2
     assert report.kv_summary.unresolved_address_count == 1
-    assert report.kv_summary.kv_related_cycle_share == pytest.approx(1100.0 / 3120.0)
-    assert report.kv_summary.kv_related_bytes == pytest.approx(96000.0)
+    assert report.kv_summary.kv_related_cycle_share == pytest.approx(960.0 / 3120.0)
+    assert report.kv_summary.kv_related_bytes == pytest.approx(99000.0)
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.read_bytes_by_address_space == {"DDR": 128000.0, "VMEM": 32000.0}
     assert report.memory_hotspot.write_bytes_by_address_space == {"DDR": 48000.0, "VMEM": 16000.0}
@@ -138,6 +142,13 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "read_bytes": 120000.0,
                 "write_bytes": 60000.0,
                 "sync_cycles": 120.0,
+            },
+            "phase_attribution": {
+                "projection": {"estimated_cycles": 980.0, "total_bytes": 47000.0},
+                "kv_io": {"estimated_cycles": 960.0, "total_bytes": 99000.0},
+                "attention": {"estimated_cycles": 820.0, "total_bytes": 26000.0},
+                "sync": {"estimated_cycles": 120.0, "total_bytes": 4000.0},
+                "other": {"estimated_cycles": 240.0, "total_bytes": 4000.0},
             },
             "per_macro_cycles": {
                 "WDQ_GEMM": 1100.0,

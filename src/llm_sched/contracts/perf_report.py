@@ -11,6 +11,13 @@ class PerfBottleneckIssue(BaseModel):
     message: str
 
 
+class PerfPhaseSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    estimated_cycles: float = Field(ge=0.0)
+    total_bytes: float = Field(ge=0.0)
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -31,6 +38,7 @@ class PerfSummaryReport(BaseModel):
     vmem_region_capacity_bytes: dict[str, int] = Field(default_factory=dict)
     vmem_region_peak_utilization: dict[str, float] = Field(default_factory=dict)
     totals: dict[str, float] = Field(default_factory=dict)
+    phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
     per_macro_cycles: dict[str, float] = Field(default_factory=dict)
     per_macro_bytes: dict[str, float] = Field(default_factory=dict)
     per_node_cycles: dict[str, float] = Field(default_factory=dict)

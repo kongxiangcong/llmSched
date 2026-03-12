@@ -39,7 +39,7 @@ from llm_sched.contracts.phase_d_compare_report import (
     PhaseDDecodeCompareRow,
     PhaseDPrefillCompareRow,
 )
-from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfSummaryReport
+from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfPhaseSummary, PerfSummaryReport
 from llm_sched.contracts.prefill_report import (
     PrefillEvaluationReport,
     PrefillISASummary,
@@ -132,6 +132,7 @@ __all__ = [
     "MemoryPlanArtifact",
     "PlannedAllocation",
     "PerfBottleneckIssue",
+    "PerfPhaseSummary",
     "PerfSummaryReport",
     "PrefillEvaluationReport",
     "PrefillISASummary",

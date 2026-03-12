@@ -23,6 +23,13 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             "vmem_region_capacity_bytes": {"ping": 30720, "pong": 30720},
             "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
             "totals": {"estimated_cycles": 1024.0, "total_bytes": 65536.0},
+            "phase_attribution": {
+                "projection": {"estimated_cycles": 768.0, "total_bytes": 32768.0},
+                "sync": {"estimated_cycles": 256.0, "total_bytes": 32768.0},
+                "kv_io": {"estimated_cycles": 0.0, "total_bytes": 0.0},
+                "attention": {"estimated_cycles": 0.0, "total_bytes": 0.0},
+                "other": {"estimated_cycles": 0.0, "total_bytes": 0.0},
+            },
             "per_macro_cycles": {"WDQ_GEMM": 768.0, "DMA_TRANSFER": 256.0},
             "per_macro_bytes": {"WDQ_GEMM": 32768.0, "DMA_TRANSFER": 32768.0},
             "per_node_cycles": {"nig.node.linear.0": 768.0, "nig.node.transfer.0": 256.0},
@@ -55,6 +62,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.vmem_region_capacity_bytes["pong"] == 30720
     assert report.vmem_region_peak_utilization["ping"] == 0.8
     assert report.totals["estimated_cycles"] == 1024.0
+    assert report.phase_attribution["projection"].estimated_cycles == 768.0
+    assert report.phase_attribution["sync"].total_bytes == 32768.0
     assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
     assert report.per_node_cycles["nig.node.linear.0"] == 768.0
     assert report.per_node_bytes["nig.node.transfer.0"] == 32768.0

@@ -23,7 +23,7 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     )
 
     assert report.schedule_kind == "single-core"
-    assert report.mxu_dominant is True
+    assert report.mxu_dominant is False
     assert report.throughput.total_tokens == 128
     assert report.throughput.tokens_per_cycle == pytest.approx(128 / 4096.0)
     assert report.memory_summary.max_region_utilization == pytest.approx(0.75)
@@ -136,6 +136,13 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "read_bytes": 196608.0,
                 "write_bytes": 65536.0,
                 "sync_cycles": 0.0,
+            },
+            "phase_attribution": {
+                "projection": {"estimated_cycles": 1536.0, "total_bytes": 65536.0},
+                "kv_io": {"estimated_cycles": 0.0, "total_bytes": 0.0},
+                "attention": {"estimated_cycles": 2048.0, "total_bytes": 163840.0},
+                "sync": {"estimated_cycles": 0.0, "total_bytes": 0.0},
+                "other": {"estimated_cycles": 512.0, "total_bytes": 32768.0},
             },
             "per_macro_cycles": {
                 "WDQ_GEMM": 3072.0,

@@ -240,6 +240,14 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
         "write_bytes": 20480.0,
         "sync_cycles": 18.0,
     }
+    assert report.phase_attribution["projection"].estimated_cycles == 48.0
+    assert report.phase_attribution["projection"].total_bytes == 32768.0
+    assert report.phase_attribution["sync"].estimated_cycles == 18.0
+    assert report.phase_attribution["sync"].total_bytes == 0.0
+    assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
+    assert report.phase_attribution["attention"].estimated_cycles == 0.0
+    assert report.phase_attribution["other"].estimated_cycles == 8.0
+    assert report.phase_attribution["other"].total_bytes == 16384.0
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {
