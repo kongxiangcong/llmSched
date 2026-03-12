@@ -139,6 +139,15 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.other_byte_share.delta_value == pytest.approx(
         (16384.0 / 196608.0) - (32768.0 / 262144.0)
     )
+    assert prefill_comparison.prefill_compare.projection_bytes_per_cycle.delta_value == pytest.approx(
+        (49152.0 / 1024.0) - (65536.0 / 1536.0)
+    )
+    assert prefill_comparison.prefill_compare.kv_io_bytes_per_cycle.delta_value == 0.0
+    assert prefill_comparison.prefill_compare.attention_bytes_per_cycle.delta_value == pytest.approx(
+        (131072.0 / 1792.0) - (163840.0 / 2048.0)
+    )
+    assert prefill_comparison.prefill_compare.sync_bytes_per_cycle.delta_value == 0.0
+    assert prefill_comparison.prefill_compare.other_bytes_per_cycle.delta_value == 0.0
     assert prefill_comparison.prefill_compare.projection_cycle_share.delta_value == pytest.approx(
         (1024.0 / 3072.0) - (1536.0 / 4096.0)
     )
@@ -188,6 +197,21 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     )
     assert decode_comparison.decode_compare.other_byte_share.delta_value == pytest.approx(
         (8000.0 / 176000.0) - (16000.0 / 192000.0)
+    )
+    assert decode_comparison.decode_compare.projection_bytes_per_cycle.delta_value == pytest.approx(
+        (36000.0 / 780.0) - (48000.0 / 980.0)
+    )
+    assert decode_comparison.decode_compare.kv_io_bytes_per_cycle.delta_value == pytest.approx(
+        (96000.0 / 700.0) - (96000.0 / 900.0)
+    )
+    assert decode_comparison.decode_compare.attention_bytes_per_cycle.delta_value == pytest.approx(
+        (32000.0 / 900.0) - (24000.0 / 820.0)
+    )
+    assert decode_comparison.decode_compare.sync_bytes_per_cycle.delta_value == pytest.approx(
+        (4000.0 / 80.0) - (8000.0 / 120.0)
+    )
+    assert decode_comparison.decode_compare.other_bytes_per_cycle.delta_value == pytest.approx(
+        (8000.0 / 240.0) - (16000.0 / 280.0)
     )
     assert decode_comparison.decode_compare.critical_path_cycles_per_token.delta_value == -640.0
     assert decode_comparison.decode_compare.projection_cycle_share.delta_value == pytest.approx(
@@ -272,6 +296,14 @@ def _completed_prefill_run(
                 "sync_byte_share": 0.0,
                 "other_byte_share": (32768.0 if schedule_kind == "single-core" else 16384.0)
                 / (262144.0 if schedule_kind == "single-core" else 196608.0),
+                "projection_bytes_per_cycle": (65536.0 if schedule_kind == "single-core" else 49152.0)
+                / (1536.0 if schedule_kind == "single-core" else 1024.0),
+                "kv_io_bytes_per_cycle": 0.0,
+                "attention_bytes_per_cycle": (163840.0 if schedule_kind == "single-core" else 131072.0)
+                / (2048.0 if schedule_kind == "single-core" else 1792.0),
+                "sync_bytes_per_cycle": 0.0,
+                "other_bytes_per_cycle": (32768.0 if schedule_kind == "single-core" else 16384.0)
+                / (512.0 if schedule_kind == "single-core" else 256.0),
                 "projection_cycle_share": (1536.0 if schedule_kind == "single-core" else 1024.0)
                 / estimated_cycles,
                 "kv_io_cycle_share": 0.0,
@@ -329,6 +361,11 @@ def _completed_decode_run(
                 "kv_io_byte_share": 96000.0 / (192000.0 if schedule_kind == "single-core" else 176000.0),
                 "attention_byte_share": (24000.0 if schedule_kind == "single-core" else 32000.0)
                 / (192000.0 if schedule_kind == "single-core" else 176000.0),
+                "projection_bytes_per_cycle": (48000.0 if schedule_kind == "single-core" else 36000.0)
+                / (980.0 if schedule_kind == "single-core" else 780.0),
+                "kv_io_bytes_per_cycle": 96000.0 / kvload_cycles,
+                "attention_bytes_per_cycle": (24000.0 if schedule_kind == "single-core" else 32000.0)
+                / (820.0 if schedule_kind == "single-core" else 900.0),
                 "projection_cycle_share": (980.0 if schedule_kind == "single-core" else 780.0)
                 / estimated_cycles,
                 "kv_io_cycle_share": kvload_cycles / estimated_cycles,
@@ -348,6 +385,10 @@ def _completed_decode_run(
                 / (192000.0 if schedule_kind == "single-core" else 176000.0),
                 "other_byte_share": (16000.0 if schedule_kind == "single-core" else 8000.0)
                 / (192000.0 if schedule_kind == "single-core" else 176000.0),
+                "sync_bytes_per_cycle": (8000.0 if schedule_kind == "single-core" else 4000.0)
+                / (120.0 if schedule_kind == "single-core" else 80.0),
+                "other_bytes_per_cycle": (16000.0 if schedule_kind == "single-core" else 8000.0)
+                / (280.0 if schedule_kind == "single-core" else 240.0),
                 "sync_cycle_share": (120.0 if schedule_kind == "single-core" else 80.0)
                 / estimated_cycles,
                 "other_cycle_share": (280.0 if schedule_kind == "single-core" else 240.0)

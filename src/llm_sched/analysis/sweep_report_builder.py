@@ -259,6 +259,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "projection_byte_share"),
             _metric_value(candidate_run, "projection_byte_share"),
         ),
+        projection_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_bytes_per_cycle"),
+            _metric_value(candidate_run, "projection_bytes_per_cycle"),
+        ),
         projection_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycle_share"),
             _metric_value(candidate_run, "projection_cycle_share"),
@@ -274,6 +278,10 @@ def _build_prefill_compare_summary(
         kv_io_byte_share=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_byte_share"),
             _metric_value(candidate_run, "kv_io_byte_share"),
+        ),
+        kv_io_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_bytes_per_cycle"),
+            _metric_value(candidate_run, "kv_io_bytes_per_cycle"),
         ),
         kv_io_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycle_share"),
@@ -291,6 +299,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "attention_byte_share"),
             _metric_value(candidate_run, "attention_byte_share"),
         ),
+        attention_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_bytes_per_cycle"),
+            _metric_value(candidate_run, "attention_bytes_per_cycle"),
+        ),
         attention_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycle_share"),
             _metric_value(candidate_run, "attention_cycle_share"),
@@ -307,6 +319,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "sync_byte_share"),
             _metric_value(candidate_run, "sync_byte_share"),
         ),
+        sync_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_bytes_per_cycle"),
+            _metric_value(candidate_run, "sync_bytes_per_cycle"),
+        ),
         sync_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "sync_cycle_share"),
             _metric_value(candidate_run, "sync_cycle_share"),
@@ -322,6 +338,10 @@ def _build_prefill_compare_summary(
         other_byte_share=_build_scalar_delta(
             _metric_value(baseline_run, "other_byte_share"),
             _metric_value(candidate_run, "other_byte_share"),
+        ),
+        other_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "other_bytes_per_cycle"),
+            _metric_value(candidate_run, "other_bytes_per_cycle"),
         ),
         other_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycle_share"),
@@ -377,6 +397,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "projection_byte_share"),
             _metric_value(candidate_run, "projection_byte_share"),
         ),
+        projection_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_bytes_per_cycle"),
+            _metric_value(candidate_run, "projection_bytes_per_cycle"),
+        ),
         projection_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycle_share"),
             _metric_value(candidate_run, "projection_cycle_share"),
@@ -393,6 +417,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "kv_io_byte_share"),
             _metric_value(candidate_run, "kv_io_byte_share"),
         ),
+        kv_io_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_bytes_per_cycle"),
+            _metric_value(candidate_run, "kv_io_bytes_per_cycle"),
+        ),
         kv_io_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycle_share"),
             _metric_value(candidate_run, "kv_io_cycle_share"),
@@ -408,6 +436,10 @@ def _build_decode_compare_summary(
         attention_byte_share=_build_scalar_delta(
             _metric_value(baseline_run, "attention_byte_share"),
             _metric_value(candidate_run, "attention_byte_share"),
+        ),
+        attention_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_bytes_per_cycle"),
+            _metric_value(candidate_run, "attention_bytes_per_cycle"),
         ),
         attention_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycle_share"),
@@ -441,6 +473,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "sync_byte_share"),
             _metric_value(candidate_run, "sync_byte_share"),
         ),
+        sync_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_bytes_per_cycle"),
+            _metric_value(candidate_run, "sync_bytes_per_cycle"),
+        ),
         sync_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "sync_cycle_share"),
             _metric_value(candidate_run, "sync_cycle_share"),
@@ -456,6 +492,10 @@ def _build_decode_compare_summary(
         other_byte_share=_build_scalar_delta(
             _metric_value(baseline_run, "other_byte_share"),
             _metric_value(candidate_run, "other_byte_share"),
+        ),
+        other_bytes_per_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "other_bytes_per_cycle"),
+            _metric_value(candidate_run, "other_bytes_per_cycle"),
         ),
         other_cycle_share=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycle_share"),

@@ -2004,3 +2004,23 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-16 Phase-Bytes-Per-Cycle Compare Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-16-phase-bytes-per-cycle-compare.md`
+- `SPEC-16` compare now preserves per-phase `bytes_per_cycle` rows in parallel with the existing phase-cycle, phase-share, phase-byte, and byte-share rows, so downstream compare surfaces can show byte-pressure efficiency changes per phase without reopening raw perf artifacts.
+- `SPEC-18/19` visualization compare summaries surface the same per-phase `bytes_per_cycle` rows through the existing `scalar_deltas` path; no new compare workflow or UI state model was introduced.
+- new closure evidence:
+  - sweep analysis now computes `projection/kv_io/attention/sync/other_bytes_per_cycle` from the existing phase-byte and phase-cycle top-line surfaces and stores them in `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve per-phase `bytes_per_cycle` deltas with compatibility-friendly zero defaults for older artifacts
+  - `PhaseDPrefillCompareRow` and `PhaseDDecodeCompareRow` forward the same rows directly, keeping standalone `PhaseDCompareReport` aligned with sweep compare
+  - visualization compare summaries now append `projection_bytes_per_cycle`, `kv_io_bytes_per_cycle`, `attention_bytes_per_cycle`, `sync_bytes_per_cycle`, and `other_bytes_per_cycle` alongside the existing phase-byte and byte-share rows
+  - focused unit/workflow verification remains green (`19 passed`), and compare-facing CLI smoke for `run-phase-d-compare` plus `run-visualization-packaging` remains green (`4 passed`)
+- what this closes:
+  - one `SPEC-16` richer-normalization gap where phase-byte and phase-cycle deltas still could not show byte-pressure efficiency changes within each phase
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where existing phase-byte and phase-cycle surfaces still lacked a combined efficiency metric once they entered sweep compare
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer per-phase byte-density questions
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

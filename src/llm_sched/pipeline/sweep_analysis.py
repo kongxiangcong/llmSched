@@ -54,6 +54,12 @@ def _phase_byte_share(phase_bytes: float, total_phase_bytes: float) -> float:
     return float(phase_bytes) / float(total_phase_bytes)
 
 
+def _phase_bytes_per_cycle(phase_bytes: float, phase_cycles: float) -> float:
+    if phase_cycles <= 0.0:
+        return 0.0
+    return float(phase_bytes) / float(phase_cycles)
+
+
 def run_sweep_analysis(
     sweep_spec_path: str | Path,
     sweep_root: str | Path,
@@ -190,6 +196,10 @@ def _execute_run_root(
                     report.throughput.projection_bytes,
                     total_phase_bytes,
                 ),
+                "projection_bytes_per_cycle": _phase_bytes_per_cycle(
+                    report.throughput.projection_bytes,
+                    report.throughput.projection_cycles,
+                ),
                 "projection_cycle_share": _phase_cycle_share(
                     report.throughput.projection_cycles,
                     estimated_cycles,
@@ -199,6 +209,10 @@ def _execute_run_root(
                 "kv_io_byte_share": _phase_byte_share(
                     report.throughput.kv_io_bytes,
                     total_phase_bytes,
+                ),
+                "kv_io_bytes_per_cycle": _phase_bytes_per_cycle(
+                    report.throughput.kv_io_bytes,
+                    report.throughput.kv_io_cycles,
                 ),
                 "kv_io_cycle_share": _phase_cycle_share(
                     report.throughput.kv_io_cycles,
@@ -210,6 +224,10 @@ def _execute_run_root(
                     report.throughput.attention_bytes,
                     total_phase_bytes,
                 ),
+                "attention_bytes_per_cycle": _phase_bytes_per_cycle(
+                    report.throughput.attention_bytes,
+                    report.throughput.attention_cycles,
+                ),
                 "attention_cycle_share": _phase_cycle_share(
                     report.throughput.attention_cycles,
                     estimated_cycles,
@@ -220,6 +238,10 @@ def _execute_run_root(
                     report.throughput.sync_bytes,
                     total_phase_bytes,
                 ),
+                "sync_bytes_per_cycle": _phase_bytes_per_cycle(
+                    report.throughput.sync_bytes,
+                    report.throughput.sync_cycles,
+                ),
                 "sync_cycle_share": _phase_cycle_share(
                     report.throughput.sync_cycles,
                     estimated_cycles,
@@ -229,6 +251,10 @@ def _execute_run_root(
                 "other_byte_share": _phase_byte_share(
                     report.throughput.other_bytes,
                     total_phase_bytes,
+                ),
+                "other_bytes_per_cycle": _phase_bytes_per_cycle(
+                    report.throughput.other_bytes,
+                    report.throughput.other_cycles,
                 ),
                 "other_cycle_share": _phase_cycle_share(
                     report.throughput.other_cycles,
@@ -288,6 +314,10 @@ def _execute_run_root(
                 report.token_latency.projection_bytes,
                 total_phase_bytes,
             ),
+            "projection_bytes_per_cycle": _phase_bytes_per_cycle(
+                report.token_latency.projection_bytes,
+                report.token_latency.projection_cycles,
+            ),
             "projection_cycle_share": _phase_cycle_share(
                 report.token_latency.projection_cycles,
                 estimated_cycles,
@@ -298,6 +328,10 @@ def _execute_run_root(
                 report.token_latency.kv_io_bytes,
                 total_phase_bytes,
             ),
+            "kv_io_bytes_per_cycle": _phase_bytes_per_cycle(
+                report.token_latency.kv_io_bytes,
+                report.token_latency.kv_io_cycles,
+            ),
             "kv_io_cycle_share": _phase_cycle_share(
                 report.token_latency.kv_io_cycles,
                 estimated_cycles,
@@ -307,6 +341,10 @@ def _execute_run_root(
             "attention_byte_share": _phase_byte_share(
                 report.token_latency.attention_bytes,
                 total_phase_bytes,
+            ),
+            "attention_bytes_per_cycle": _phase_bytes_per_cycle(
+                report.token_latency.attention_bytes,
+                report.token_latency.attention_cycles,
             ),
             "attention_cycle_share": _phase_cycle_share(
                 report.token_latency.attention_cycles,
@@ -322,6 +360,10 @@ def _execute_run_root(
                 report.token_latency.sync_bytes,
                 total_phase_bytes,
             ),
+            "sync_bytes_per_cycle": _phase_bytes_per_cycle(
+                report.token_latency.sync_bytes,
+                report.token_latency.sync_cycles,
+            ),
             "sync_cycle_share": _phase_cycle_share(
                 report.token_latency.sync_cycles,
                 estimated_cycles,
@@ -331,6 +373,10 @@ def _execute_run_root(
             "other_byte_share": _phase_byte_share(
                 report.token_latency.other_bytes,
                 total_phase_bytes,
+            ),
+            "other_bytes_per_cycle": _phase_bytes_per_cycle(
+                report.token_latency.other_bytes,
+                report.token_latency.other_cycles,
             ),
             "other_cycle_share": _phase_cycle_share(
                 report.token_latency.other_cycles,
