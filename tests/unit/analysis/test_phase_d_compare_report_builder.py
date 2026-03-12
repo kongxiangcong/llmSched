@@ -21,6 +21,7 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
     assert report.prefill_compares[0].projection_bytes.delta_value == -16384.0
     assert report.prefill_compares[0].attention_bytes.delta_value == -32768.0
+    assert report.prefill_compares[0].attention_byte_share.delta_value == pytest.approx(0.0416666667)
     assert report.prefill_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0416666667)
     assert report.prefill_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0833333333)
     assert report.prefill_compares[0].layer_delta_count == 2
@@ -29,6 +30,7 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.decode_compares[0].projection_cycles.delta_value == -200.0
     assert report.decode_compares[0].projection_bytes.delta_value == -12000.0
     assert report.decode_compares[0].attention_bytes.delta_value == 8000.0
+    assert report.decode_compares[0].kv_io_byte_share.delta_value == pytest.approx(0.0454545455)
     assert report.decode_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0276785714)
     assert report.decode_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0651785714)
     assert report.decode_compares[0].kv_related_cycle_share.delta_value < 0.0
@@ -100,6 +102,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -16384.0,
                             "delta_ratio": -0.25,
                         },
+                        "projection_byte_share": {
+                            "baseline_value": 0.25,
+                            "candidate_value": 0.25,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
                         "projection_cycle_share": {
                             "baseline_value": 0.375,
                             "candidate_value": 0.3333333333,
@@ -113,6 +121,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": 0.0,
                         },
                         "kv_io_bytes": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "kv_io_byte_share": {
                             "baseline_value": 0.0,
                             "candidate_value": 0.0,
                             "delta_value": 0.0,
@@ -136,6 +150,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -32768.0,
                             "delta_ratio": -0.2,
                         },
+                        "attention_byte_share": {
+                            "baseline_value": 0.625,
+                            "candidate_value": 0.6666666667,
+                            "delta_value": 0.0416666667,
+                            "delta_ratio": 0.0666666667,
+                        },
                         "attention_cycle_share": {
                             "baseline_value": 0.5,
                             "candidate_value": 0.5833333333,
@@ -149,6 +169,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": 0.0,
                         },
                         "sync_bytes": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "sync_byte_share": {
                             "baseline_value": 0.0,
                             "candidate_value": 0.0,
                             "delta_value": 0.0,
@@ -171,6 +197,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "candidate_value": 16384.0,
                             "delta_value": -16384.0,
                             "delta_ratio": -0.5,
+                        },
+                        "other_byte_share": {
+                            "baseline_value": 0.125,
+                            "candidate_value": 0.0833333333,
+                            "delta_value": -0.0416666667,
+                            "delta_ratio": -0.3333333333,
                         },
                         "other_cycle_share": {
                             "baseline_value": 0.125,
@@ -267,6 +299,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -12000.0,
                             "delta_ratio": -0.25,
                         },
+                        "projection_byte_share": {
+                            "baseline_value": 0.25,
+                            "candidate_value": 0.2045454545,
+                            "delta_value": -0.0454545455,
+                            "delta_ratio": -0.1818181818,
+                        },
                         "projection_cycle_share": {
                             "baseline_value": 0.30625,
                             "candidate_value": 0.2785714286,
@@ -284,6 +322,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "candidate_value": 96000.0,
                             "delta_value": 0.0,
                             "delta_ratio": 0.0,
+                        },
+                        "kv_io_byte_share": {
+                            "baseline_value": 0.5,
+                            "candidate_value": 0.5454545455,
+                            "delta_value": 0.0454545455,
+                            "delta_ratio": 0.0909090909,
                         },
                         "kv_io_cycle_share": {
                             "baseline_value": 0.28125,
@@ -303,6 +347,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": 8000.0,
                             "delta_ratio": 0.3333333333,
                         },
+                        "attention_byte_share": {
+                            "baseline_value": 0.125,
+                            "candidate_value": 0.1818181818,
+                            "delta_value": 0.0568181818,
+                            "delta_ratio": 0.4545454545,
+                        },
                         "attention_cycle_share": {
                             "baseline_value": 0.25625,
                             "candidate_value": 0.3214285714,
@@ -320,6 +370,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "candidate_value": 8000.0,
                             "delta_value": -8000.0,
                             "delta_ratio": -0.5,
+                        },
+                        "other_byte_share": {
+                            "baseline_value": 0.0833333333,
+                            "candidate_value": 0.0454545455,
+                            "delta_value": -0.0378787879,
+                            "delta_ratio": -0.4545454545,
                         },
                         "other_cycle_share": {
                             "baseline_value": 0.0875,
@@ -362,6 +418,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "candidate_value": 4000.0,
                             "delta_value": -4000.0,
                             "delta_ratio": -0.5,
+                        },
+                        "sync_byte_share": {
+                            "baseline_value": 0.0416666667,
+                            "candidate_value": 0.0227272727,
+                            "delta_value": -0.0189393939,
+                            "delta_ratio": -0.4545454545,
                         },
                         "sync_cycle_share": {
                             "baseline_value": 0.0375,

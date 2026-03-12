@@ -1984,3 +1984,23 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-layer contract, especially richer normalization or byte-share-style compare
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-16 Phase-Byte-Share Compare Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-16-phase-byte-share-compare.md`
+- `SPEC-16` compare now preserves normalized phase byte-share rows in parallel with the existing phase-cycle, phase-share, and absolute phase-byte rows, so downstream compare surfaces can show which phase became more or less dominant in byte pressure without reopening raw perf artifacts.
+- `SPEC-18/19` visualization compare summaries surface the same byte-share rows through the existing `scalar_deltas` path; no new compare workflow or UI state model was introduced.
+- new closure evidence:
+  - sweep analysis now computes `projection/kv_io/attention/sync/other_byte_share` from the existing phase-byte top-line surfaces and stores them in `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve byte-share deltas with compatibility-friendly zero defaults for older artifacts
+  - `PhaseDPrefillCompareRow` and `PhaseDDecodeCompareRow` forward the same byte-share compare rows directly, keeping standalone `PhaseDCompareReport` aligned with sweep compare
+  - visualization compare summaries now append `projection_byte_share`, `kv_io_byte_share`, `attention_byte_share`, `sync_byte_share`, and `other_byte_share` alongside the existing phase-byte and phase-share rows
+  - focused unit/workflow verification remains green (`19 passed`), and compare-facing CLI smoke for `run-phase-d-compare` plus `run-visualization-packaging` remains green (`4 passed`)
+- what this closes:
+  - one `SPEC-16` richer-normalization gap where phase-byte deltas still could not tell whether a phase became more or less dominant in total byte pressure
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where phase-byte surfaces still lost normalized semantics when entering sweep compare
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer byte-share-aware phase questions
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

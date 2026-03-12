@@ -47,6 +47,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -16384.0,
                         "delta_ratio": -0.25,
                     },
+                    "projection_byte_share": {
+                        "baseline_value": 0.25,
+                        "candidate_value": 0.25,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
                     "projection_cycle_share": {
                         "baseline_value": 0.375,
                         "candidate_value": 0.3333333333,
@@ -60,6 +66,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_ratio": 0.0,
                     },
                     "kv_io_bytes": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_byte_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -83,6 +95,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -32768.0,
                         "delta_ratio": -0.2,
                     },
+                    "attention_byte_share": {
+                        "baseline_value": 0.625,
+                        "candidate_value": 0.6666666667,
+                        "delta_value": 0.0416666667,
+                        "delta_ratio": 0.0666666667,
+                    },
                     "attention_cycle_share": {
                         "baseline_value": 0.5,
                         "candidate_value": 0.5833333333,
@@ -96,6 +114,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_ratio": 0.0,
                     },
                     "sync_bytes": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_byte_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -118,6 +142,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 16384.0,
                         "delta_value": -16384.0,
                         "delta_ratio": -0.5,
+                    },
+                    "other_byte_share": {
+                        "baseline_value": 0.125,
+                        "candidate_value": 0.0833333333,
+                        "delta_value": -0.0416666667,
+                        "delta_ratio": -0.3333333333,
                     },
                     "other_cycle_share": {
                         "baseline_value": 0.125,
@@ -190,6 +220,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -12000.0,
                         "delta_ratio": -0.25,
                     },
+                    "projection_byte_share": {
+                        "baseline_value": 0.25,
+                        "candidate_value": 0.2045454545,
+                        "delta_value": -0.0454545455,
+                        "delta_ratio": -0.1818181818,
+                    },
                     "projection_cycle_share": {
                         "baseline_value": 0.30625,
                         "candidate_value": 0.2785714286,
@@ -207,6 +243,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 96000.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
+                    },
+                    "kv_io_byte_share": {
+                        "baseline_value": 0.5,
+                        "candidate_value": 0.5454545455,
+                        "delta_value": 0.0454545455,
+                        "delta_ratio": 0.0909090909,
                     },
                     "kv_io_cycle_share": {
                         "baseline_value": 0.28125,
@@ -226,6 +268,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": 8000.0,
                         "delta_ratio": 0.3333333333,
                     },
+                    "attention_byte_share": {
+                        "baseline_value": 0.125,
+                        "candidate_value": 0.1818181818,
+                        "delta_value": 0.0568181818,
+                        "delta_ratio": 0.4545454545,
+                    },
                     "attention_cycle_share": {
                         "baseline_value": 0.25625,
                         "candidate_value": 0.3214285714,
@@ -243,6 +291,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 8000.0,
                         "delta_value": -8000.0,
                         "delta_ratio": -0.5,
+                    },
+                    "other_byte_share": {
+                        "baseline_value": 0.0833333333,
+                        "candidate_value": 0.0454545455,
+                        "delta_value": -0.0378787879,
+                        "delta_ratio": -0.4545454545,
                     },
                     "other_cycle_share": {
                         "baseline_value": 0.0875,
@@ -286,6 +340,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -4000.0,
                         "delta_ratio": -0.5,
                     },
+                    "sync_byte_share": {
+                        "baseline_value": 0.0416666667,
+                        "candidate_value": 0.0227272727,
+                        "delta_value": -0.0189393939,
+                        "delta_ratio": -0.4545454545,
+                    },
                     "sync_cycle_share": {
                         "baseline_value": 0.0375,
                         "candidate_value": 0.0285714286,
@@ -311,13 +371,16 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
     assert report.prefill_compares[0].projection_bytes.delta_value == -16384.0
+    assert report.prefill_compares[0].attention_byte_share.delta_value == pytest.approx(0.0416666667)
     assert report.prefill_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0416666667)
     assert report.prefill_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0833333333)
     assert report.decode_compares[0].sync_cycles.delta_value == -40.0
     assert report.decode_compares[0].sync_bytes.delta_value == -4000.0
+    assert report.decode_compares[0].sync_byte_share.delta_value == pytest.approx(-0.0189393939)
     assert report.decode_compares[0].sync_cycle_share.delta_value == pytest.approx(-0.0089285714)
     assert report.decode_compares[0].projection_cycles.delta_value == -200.0
     assert report.decode_compares[0].projection_bytes.delta_value == -12000.0
+    assert report.decode_compares[0].kv_io_byte_share.delta_value == pytest.approx(0.0454545455)
     assert report.decode_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0276785714)
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
     assert report.issues[0].code == "run_failed"
@@ -406,8 +469,10 @@ def test_phase_d_compare_report_accepts_legacy_rows_without_critical_path_fields
     assert report.prefill_compares[0].critical_path_cycles.delta_value == 0.0
     assert report.prefill_compares[0].projection_cycles.delta_value == 0.0
     assert report.prefill_compares[0].projection_bytes.delta_value == 0.0
+    assert report.prefill_compares[0].projection_byte_share.delta_value == 0.0
     assert report.prefill_compares[0].projection_cycle_share.delta_value == 0.0
     assert report.prefill_compares[0].attention_cycles.delta_value == 0.0
     assert report.prefill_compares[0].attention_bytes.delta_value == 0.0
+    assert report.prefill_compares[0].attention_byte_share.delta_value == 0.0
     assert report.prefill_compares[0].attention_cycle_share.delta_value == 0.0
     assert report.prefill_compares[0].tokens_per_critical_path_cycle.delta_value == 0.0

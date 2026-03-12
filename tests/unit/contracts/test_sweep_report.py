@@ -129,6 +129,12 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "delta_value": -1280.0,
                             "delta_ratio": -0.3571428571,
                         },
+                        "attention_byte_share": {
+                            "baseline_value": 0.625,
+                            "candidate_value": 0.6666666667,
+                            "delta_value": 0.0416666667,
+                            "delta_ratio": 0.0666666667,
+                        },
                         "tokens_per_cycle": {
                             "baseline_value": 0.03125,
                             "candidate_value": 0.0416666667,
@@ -184,6 +190,9 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == -1024.0
     assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value == -1280.0
+    assert report.comparisons[0].prefill_compare.attention_byte_share.delta_value == pytest.approx(
+        0.0416666667
+    )
     assert report.comparisons[0].prefill_compare.max_region_utilization.delta_value == -0.25
     assert report.comparisons[0].decode_compare is None
     assert report.issues[0].code == "run_failed"
@@ -251,4 +260,5 @@ def test_sweep_delta_report_accepts_legacy_compare_summary_without_critical_path
     compare = report.comparisons[0].prefill_compare
     assert compare is not None
     assert compare.critical_path_cycles.delta_value == 0.0
+    assert compare.attention_byte_share.delta_value == 0.0
     assert compare.tokens_per_critical_path_cycle.delta_value == 0.0

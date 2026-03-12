@@ -56,17 +56,22 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         "critical_path_cycles_per_token",
         "projection_cycles",
         "projection_bytes",
+        "projection_byte_share",
         "projection_cycle_share",
         "kv_io_cycles",
         "kv_io_bytes",
+        "kv_io_byte_share",
         "kv_io_cycle_share",
         "attention_cycles",
         "attention_bytes",
+        "attention_byte_share",
         "attention_cycle_share",
         "other_cycles",
         "other_bytes",
+        "other_byte_share",
         "other_cycle_share",
         "sync_bytes",
+        "sync_byte_share",
         "sync_cycle_share",
     }
     assert metric_names.count("sync_cycles") == 1
@@ -188,6 +193,12 @@ def _phase_d_compare_report():
                         "delta_value": -2048.0,
                         "delta_ratio": -0.25,
                     },
+                    "projection_byte_share": {
+                        "baseline_value": 0.2580645161,
+                        "candidate_value": 0.2307692308,
+                        "delta_value": -0.0272952854,
+                        "delta_ratio": -0.1057692308,
+                    },
                     "projection_cycle_share": {
                         "baseline_value": 0.2604166667,
                         "candidate_value": 0.25,
@@ -205,6 +216,12 @@ def _phase_d_compare_report():
                         "candidate_value": 12288.0,
                         "delta_value": -4096.0,
                         "delta_ratio": -0.25,
+                    },
+                    "kv_io_byte_share": {
+                        "baseline_value": 0.5161290323,
+                        "candidate_value": 0.4615384615,
+                        "delta_value": -0.0545905708,
+                        "delta_ratio": -0.1057692308,
                     },
                     "kv_io_cycle_share": {
                         "baseline_value": 0.3333333333,
@@ -224,6 +241,12 @@ def _phase_d_compare_report():
                         "delta_value": 2048.0,
                         "delta_ratio": 0.5,
                     },
+                    "attention_byte_share": {
+                        "baseline_value": 0.1290322581,
+                        "candidate_value": 0.2307692308,
+                        "delta_value": 0.1017369727,
+                        "delta_ratio": 0.7884615385,
+                    },
                     "attention_cycle_share": {
                         "baseline_value": 0.2083333333,
                         "candidate_value": 0.25,
@@ -241,6 +264,12 @@ def _phase_d_compare_report():
                         "candidate_value": 1024.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
+                    },
+                    "other_byte_share": {
+                        "baseline_value": 0.0322580645,
+                        "candidate_value": 0.0384615385,
+                        "delta_value": 0.006203474,
+                        "delta_ratio": 0.1923076923,
                     },
                     "other_cycle_share": {
                         "baseline_value": 0.0625,
@@ -283,6 +312,12 @@ def _phase_d_compare_report():
                         "candidate_value": 1024.0,
                         "delta_value": -1024.0,
                         "delta_ratio": -0.5,
+                    },
+                    "sync_byte_share": {
+                        "baseline_value": 0.064516129,
+                        "candidate_value": 0.0384615385,
+                        "delta_value": -0.0260545905,
+                        "delta_ratio": -0.4038461539,
                     },
                     "sync_cycle_share": {
                         "baseline_value": 0.0833333333,
