@@ -189,6 +189,25 @@ class VisualizationSweepLayerDeltaView(BaseModel):
     delta_bytes: float
 
 
+class VisualizationSweepCompareScalarDeltaView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    metric_name: str
+    baseline_value: float
+    candidate_value: float
+    delta_value: float
+    delta_ratio: float
+
+
+class VisualizationSweepCompareSummaryView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_schedule_kind: Literal["single-core", "dual-core"]
+    candidate_schedule_kind: Literal["single-core", "dual-core"]
+    profile_diff_fields: list[str] = Field(default_factory=list)
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
+
+
 class VisualizationSweepComparisonView(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -196,6 +215,7 @@ class VisualizationSweepComparisonView(BaseModel):
     scenario_name: str
     mode: Literal["prefill", "decode"]
     metric_deltas: dict[str, float] = Field(default_factory=dict)
+    compare_summary: VisualizationSweepCompareSummaryView | None = None
     layer_deltas: list[VisualizationSweepLayerDeltaView] = Field(default_factory=list)
 
 

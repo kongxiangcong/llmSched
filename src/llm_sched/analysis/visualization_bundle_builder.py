@@ -12,8 +12,13 @@ from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.packed_descriptor_bundle import PackedDescriptorBundle
+from llm_sched.contracts.phase_d_compare_report import (
+    PhaseDCompareReport,
+    PhaseDDecodeCompareRow,
+    PhaseDPrefillCompareRow,
+)
 from llm_sched.contracts.prefill_report import PrefillEvaluationReport
-from llm_sched.contracts.sweep_report import SweepDeltaReport
+from llm_sched.contracts.sweep_report import SweepDeltaReport, SweepScalarDelta
 from llm_sched.contracts.visualization_bundle import (
     VisualizationBundle,
     VisualizationBundleMetadata,
@@ -25,6 +30,8 @@ from llm_sched.contracts.visualization_bundle import (
     VisualizationKVFormulaView,
     VisualizationKVView,
     VisualizationReportSummary,
+    VisualizationSweepCompareScalarDeltaView,
+    VisualizationSweepCompareSummaryView,
     VisualizationSweepComparisonView,
     VisualizationSweepLayerDeltaView,
     VisualizationSweepView,
@@ -52,11 +59,13 @@ def build_visualization_bundle(
     packed_descriptor_bundle: PackedDescriptorBundle,
     prefill_report: PrefillEvaluationReport | None,
     decode_report: DecodeEvaluationReport | None,
+    phase_d_compare_report: PhaseDCompareReport | None,
     sweep_report: SweepDeltaReport | None,
     sweep_root: str | Path | None,
 ) -> VisualizationBundle:
     report_kind, report_summary = _build_report_summary(prefill_report, decode_report)
     sweep_view = _build_sweep_view(
+        phase_d_compare_report,
         sweep_report,
         scenario_name=scenario_profile.scenario_name,
         mode=scenario_profile.mode,
@@ -298,50 +307,198 @@ def _build_coverage_view(
 
 
 def _build_sweep_view(
+    phase_d_compare_report: PhaseDCompareReport | None,
     sweep_report: SweepDeltaReport | None,
     *,
     scenario_name: str,
     mode: str,
     target_profile_name: str,
 ) -> VisualizationSweepView | None:
-    if sweep_report is None:
+    if sweep_report is None and phase_d_compare_report is None:
         return None
 
-    comparisons = [
-        VisualizationSweepComparisonView(
-            candidate_target_profile_name=comparison.candidate_target_profile_name,
-            scenario_name=comparison.scenario_name,
-            mode=comparison.mode,
-            metric_deltas={
-                metric_delta.metric_name: metric_delta.delta_value for metric_delta in comparison.metric_deltas
-            },
-            layer_deltas=[
-                VisualizationSweepLayerDeltaView(
-                    layer_id=layer_delta.layer_id,
-                    baseline_cycles=layer_delta.baseline_cycles,
-                    candidate_cycles=layer_delta.candidate_cycles,
-                    delta_cycles=layer_delta.delta_cycles,
-                    baseline_bytes=layer_delta.baseline_bytes,
-                    candidate_bytes=layer_delta.candidate_bytes,
-                    delta_bytes=layer_delta.delta_bytes,
+    layer_deltas_by_key = _build_sweep_layer_delta_lookup(sweep_report)
+    comparisons: list[VisualizationSweepComparisonView] = []
+    seen_keys: set[tuple[str, str, str, str]] = set()
+
+    if phase_d_compare_report is not None:
+        phase_compare_rows = (
+            phase_d_compare_report.prefill_compares
+            if mode == "prefill"
+            else phase_d_compare_report.decode_compares
+        )
+        for compare_row in phase_compare_rows:
+            if compare_row.scenario_name != scenario_name:
+                continue
+            if not _matches_target_profile(
+                compare_row.baseline_target_profile_name,
+                compare_row.candidate_target_profile_name,
+                target_profile_name,
+            ):
+                continue
+            comparison_key = _build_sweep_compare_key(
+                scenario_name=compare_row.scenario_name,
+                mode=mode,
+                baseline_target_profile_name=compare_row.baseline_target_profile_name,
+                candidate_target_profile_name=compare_row.candidate_target_profile_name,
+            )
+            compare_summary = _build_compare_summary(compare_row)
+            comparisons.append(
+                VisualizationSweepComparisonView(
+                    candidate_target_profile_name=compare_row.candidate_target_profile_name,
+                    scenario_name=compare_row.scenario_name,
+                    mode=mode,
+                    metric_deltas={
+                        scalar_delta.metric_name: scalar_delta.delta_value
+                        for scalar_delta in compare_summary.scalar_deltas
+                    },
+                    compare_summary=compare_summary,
+                    layer_deltas=layer_deltas_by_key.get(comparison_key, []),
                 )
-                for layer_delta in comparison.layer_deltas
-            ],
-        )
-        for comparison in sweep_report.comparisons
-        if comparison.scenario_name == scenario_name
-        and comparison.mode == mode
-        and (
-            comparison.baseline_target_profile_name == target_profile_name
-            or comparison.candidate_target_profile_name == target_profile_name
-        )
-    ]
-    issue_count = sum(1 for issue in sweep_report.issues if issue.scenario_name in {None, scenario_name})
+            )
+            seen_keys.add(comparison_key)
+
+    if sweep_report is not None:
+        for comparison in sweep_report.comparisons:
+            if comparison.scenario_name != scenario_name or comparison.mode != mode:
+                continue
+            if not _matches_target_profile(
+                comparison.baseline_target_profile_name,
+                comparison.candidate_target_profile_name,
+                target_profile_name,
+            ):
+                continue
+            comparison_key = _build_sweep_compare_key(
+                scenario_name=comparison.scenario_name,
+                mode=comparison.mode,
+                baseline_target_profile_name=comparison.baseline_target_profile_name,
+                candidate_target_profile_name=comparison.candidate_target_profile_name,
+            )
+            if comparison_key in seen_keys:
+                continue
+            comparisons.append(
+                VisualizationSweepComparisonView(
+                    candidate_target_profile_name=comparison.candidate_target_profile_name,
+                    scenario_name=comparison.scenario_name,
+                    mode=comparison.mode,
+                    metric_deltas={
+                        metric_delta.metric_name: metric_delta.delta_value
+                        for metric_delta in comparison.metric_deltas
+                    },
+                    compare_summary=None,
+                    layer_deltas=layer_deltas_by_key.get(comparison_key, []),
+                )
+            )
+
+    issue_source = sweep_report if sweep_report is not None else phase_d_compare_report
+    assert issue_source is not None
+    issue_count = sum(1 for issue in issue_source.issues if issue.scenario_name in {None, scenario_name})
     if not comparisons and issue_count == 0:
         return None
+
+    baseline_target_profile_name = (
+        phase_d_compare_report.baseline_target_profile_name
+        if phase_d_compare_report is not None
+        else sweep_report.baseline_target_profile_name
+    )
     return VisualizationSweepView(
-        baseline_target_profile_name=sweep_report.baseline_target_profile_name,
+        baseline_target_profile_name=baseline_target_profile_name,
         comparison_count=len(comparisons),
         issue_count=issue_count,
         comparisons=comparisons,
+    )
+
+
+def _build_sweep_layer_delta_lookup(
+    sweep_report: SweepDeltaReport | None,
+) -> dict[tuple[str, str, str, str], list[VisualizationSweepLayerDeltaView]]:
+    if sweep_report is None:
+        return {}
+
+    return {
+        _build_sweep_compare_key(
+            scenario_name=comparison.scenario_name,
+            mode=comparison.mode,
+            baseline_target_profile_name=comparison.baseline_target_profile_name,
+            candidate_target_profile_name=comparison.candidate_target_profile_name,
+        ): [
+            VisualizationSweepLayerDeltaView(
+                layer_id=layer_delta.layer_id,
+                baseline_cycles=layer_delta.baseline_cycles,
+                candidate_cycles=layer_delta.candidate_cycles,
+                delta_cycles=layer_delta.delta_cycles,
+                baseline_bytes=layer_delta.baseline_bytes,
+                candidate_bytes=layer_delta.candidate_bytes,
+                delta_bytes=layer_delta.delta_bytes,
+            )
+            for layer_delta in comparison.layer_deltas
+        ]
+        for comparison in sweep_report.comparisons
+    }
+
+
+def _build_sweep_compare_key(
+    *,
+    scenario_name: str,
+    mode: str,
+    baseline_target_profile_name: str,
+    candidate_target_profile_name: str,
+) -> tuple[str, str, str, str]:
+    return (
+        scenario_name,
+        mode,
+        baseline_target_profile_name,
+        candidate_target_profile_name,
+    )
+
+
+def _matches_target_profile(
+    baseline_target_profile_name: str,
+    candidate_target_profile_name: str,
+    target_profile_name: str,
+) -> bool:
+    return target_profile_name in {
+        baseline_target_profile_name,
+        candidate_target_profile_name,
+    }
+
+
+def _build_compare_summary(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> VisualizationSweepCompareSummaryView:
+    if isinstance(compare_row, PhaseDPrefillCompareRow):
+        scalar_deltas = [
+            _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
+            _build_scalar_delta("tokens_per_cycle", compare_row.tokens_per_cycle),
+            _build_scalar_delta("cycles_per_token", compare_row.cycles_per_token),
+            _build_scalar_delta("bytes_per_cycle", compare_row.bytes_per_cycle),
+            _build_scalar_delta("max_region_utilization", compare_row.max_region_utilization),
+        ]
+    else:
+        scalar_deltas = [
+            _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
+            _build_scalar_delta("cycles_per_token", compare_row.cycles_per_token),
+            _build_scalar_delta("kv_related_cycle_share", compare_row.kv_related_cycle_share),
+            _build_scalar_delta("kv_related_bytes", compare_row.kv_related_bytes),
+            _build_scalar_delta("sync_cycles", compare_row.sync_cycles),
+        ]
+
+    return VisualizationSweepCompareSummaryView(
+        baseline_schedule_kind=compare_row.baseline_schedule_kind,
+        candidate_schedule_kind=compare_row.candidate_schedule_kind,
+        profile_diff_fields=list(compare_row.profile_diff_fields),
+        scalar_deltas=scalar_deltas,
+    )
+
+
+def _build_scalar_delta(
+    metric_name: str,
+    scalar_delta: SweepScalarDelta,
+) -> VisualizationSweepCompareScalarDeltaView:
+    return VisualizationSweepCompareScalarDeltaView(
+        metric_name=metric_name,
+        baseline_value=scalar_delta.baseline_value,
+        candidate_value=scalar_delta.candidate_value,
+        delta_value=scalar_delta.delta_value,
+        delta_ratio=scalar_delta.delta_ratio,
     )

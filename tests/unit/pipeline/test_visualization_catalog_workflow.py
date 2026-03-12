@@ -43,6 +43,14 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert artifact.entries[0].metric_values["estimated_cycles"] == 4096.0
     assert artifact.entries[0].metric_values["tokens_per_cycle"] == 0.03125
     assert artifact.entries[0].sweep_baseline_target_profile_name == "riscv_npu_single_core_v1"
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary is not None
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.profile_diff_fields == [
+        "core_mode",
+        "num_cores",
+    ]
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
+        "estimated_cycles"
+    )
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert artifact.entries[1].metric_values["token_latency_cycles"] == 512.0
     assert artifact.entries[1].metric_values["tokens_per_second"] == 1953.125
@@ -70,6 +78,9 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "Open Layer In Sweep" in app_js
     assert "metric_values" in app_js
     assert "sweep_comparisons" in app_js
+    assert "compare_summary" in app_js
+    assert "profile_diff_fields" in app_js
+    assert "baseline_schedule_kind" in app_js
     assert "function currentWorkbenchPanel" in app_js
     assert "function buildComparePanelLinks" in app_js
     assert "function serializeCatalogState" in app_js
@@ -601,6 +612,27 @@ def _bundle_payload(
                         "scenario_name": scenario_name,
                         "mode": mode,
                         "metric_deltas": {"estimated_cycles": -1024.0},
+                        "compare_summary": {
+                            "baseline_schedule_kind": "single-core",
+                            "candidate_schedule_kind": "dual-core",
+                            "profile_diff_fields": ["core_mode", "num_cores"],
+                            "scalar_deltas": [
+                                {
+                                    "metric_name": "estimated_cycles",
+                                    "baseline_value": 4096.0,
+                                    "candidate_value": 3072.0,
+                                    "delta_value": -1024.0,
+                                    "delta_ratio": -0.25,
+                                },
+                                {
+                                    "metric_name": "tokens_per_cycle",
+                                    "baseline_value": 0.03125,
+                                    "candidate_value": 0.0416666667,
+                                    "delta_value": 0.0104166667,
+                                    "delta_ratio": 0.3333333344,
+                                },
+                            ],
+                        },
                         "layer_deltas": [
                             {
                                 "layer_id": 2,

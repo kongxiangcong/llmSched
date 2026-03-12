@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from llm_sched.analysis import build_visualization_bundle
+from llm_sched.analysis import build_phase_d_compare_report, build_visualization_bundle
 from llm_sched.config.loader import Diagnostic, load_scenario_profile, load_target_profile
 from llm_sched.contracts.artifact_layout import build_run_layout
 from llm_sched.contracts.decode_report import DecodeEvaluationReport
@@ -16,6 +16,7 @@ from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.packed_descriptor_bundle import PackedDescriptorBundle
+from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
 from llm_sched.contracts.prefill_report import PrefillEvaluationReport
 from llm_sched.contracts.run_summary import RunSummary
 from llm_sched.contracts.sweep_report import SweepDeltaReport
@@ -86,7 +87,7 @@ def run_visualization_packaging(
             coverage_report_path.read_text(encoding="utf-8")
         )
         prefill_report, decode_report = _load_top_level_reports(layout.run_root, artifact_index, scenario_profile.mode)
-        sweep_report = _load_sweep_report(sweep_root)
+        sweep_report, phase_d_compare_report = _load_sweep_context(sweep_root)
 
         bundle = build_visualization_bundle(
             run_root=layout.run_root,
@@ -100,6 +101,7 @@ def run_visualization_packaging(
             packed_descriptor_bundle=packed_descriptor_bundle,
             prefill_report=prefill_report,
             decode_report=decode_report,
+            phase_d_compare_report=phase_d_compare_report,
             sweep_report=sweep_report,
             sweep_root=Path(sweep_root) if sweep_root is not None else None,
         )
@@ -177,13 +179,28 @@ def _load_top_level_reports(
     )
 
 
-def _load_sweep_report(sweep_root: str | Path | None) -> SweepDeltaReport | None:
+def _load_sweep_context(
+    sweep_root: str | Path | None,
+) -> tuple[SweepDeltaReport | None, PhaseDCompareReport | None]:
     if sweep_root is None:
-        return None
+        return (None, None)
     sweep_report_path = Path(sweep_root) / "reports" / "sweep_delta_report.json"
     if not sweep_report_path.is_file():
         raise FileNotFoundError(f"sweep_delta_report not found at {sweep_report_path}")
-    return SweepDeltaReport.model_validate_json(sweep_report_path.read_text(encoding="utf-8"))
+    sweep_report = SweepDeltaReport.model_validate_json(sweep_report_path.read_text(encoding="utf-8"))
+
+    phase_d_compare_report_path = Path(sweep_root) / "reports" / "phase_d_compare_report.json"
+    if phase_d_compare_report_path.is_file():
+        phase_d_compare_report = PhaseDCompareReport.model_validate_json(
+            phase_d_compare_report_path.read_text(encoding="utf-8")
+        )
+    else:
+        phase_d_compare_report = build_phase_d_compare_report(
+            report_name=f"phase-d-compare.{sweep_report.sweep_name}",
+            sweep_report=sweep_report,
+        )
+
+    return (sweep_report, phase_d_compare_report)
 
 
 def _resolve_schedule_path(run_root: Path, artifact_index: dict[str, str]) -> Path:

@@ -17,6 +17,7 @@ from llm_sched.contracts.decode_report import DecodeEvaluationReport
 from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
+from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
 from llm_sched.contracts.prefill_report import PrefillEvaluationReport
 from llm_sched.contracts.sweep_report import SweepDeltaReport
 from llm_sched.ir.common import AuditRef
@@ -39,6 +40,7 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         packed_descriptor_bundle=_packed_bundle("single-core"),
         prefill_report=_prefill_report(),
         decode_report=None,
+        phase_d_compare_report=_phase_d_compare_report(),
         sweep_report=_sweep_report(),
         sweep_root=Path("tmp/sweep-phase-d"),
     )
@@ -57,6 +59,11 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     assert bundle.sweep_view is not None
     assert bundle.sweep_view.comparison_count == 1
     assert bundle.sweep_view.comparisons[0].candidate_target_profile_name == "riscv_npu_dual_core_v1"
+    assert bundle.sweep_view.comparisons[0].compare_summary is not None
+    assert bundle.sweep_view.comparisons[0].compare_summary.baseline_schedule_kind == "single-core"
+    assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
+        "estimated_cycles"
+    )
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
 
@@ -76,6 +83,7 @@ def test_build_visualization_bundle_for_decode_without_sweep() -> None:
         packed_descriptor_bundle=_packed_bundle("dual-core"),
         prefill_report=None,
         decode_report=_decode_report(),
+        phase_d_compare_report=None,
         sweep_report=None,
         sweep_root=None,
     )
@@ -105,6 +113,7 @@ def test_build_visualization_bundle_propagates_vmem_region_backing_store_breakdo
         packed_descriptor_bundle=_packed_bundle("single-core"),
         prefill_report=_prefill_report(),
         decode_report=None,
+        phase_d_compare_report=None,
         sweep_report=None,
         sweep_root=None,
     )
@@ -131,6 +140,7 @@ def test_build_visualization_bundle_propagates_vmem_region_memory_class_breakdow
         packed_descriptor_bundle=_packed_bundle("single-core"),
         prefill_report=_prefill_report(),
         decode_report=None,
+        phase_d_compare_report=None,
         sweep_report=None,
         sweep_root=None,
     )
@@ -637,6 +647,64 @@ def _sweep_report() -> SweepDeltaReport:
                     ],
                 }
             ],
+            "issues": [],
+        }
+    )
+
+
+def _phase_d_compare_report() -> PhaseDCompareReport:
+    return PhaseDCompareReport.model_validate(
+        {
+            "report_name": "phase-d-compare.phase-d-foundation",
+            "source_sweep_name": "phase-d-foundation",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 4,
+            "failed_run_count": 0,
+            "comparison_count": 1,
+            "prefill_compare_count": 1,
+            "decode_compare_count": 0,
+            "prefill_compares": [
+                {
+                    "scenario_name": "prefill_seq128",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "baseline_schedule_kind": "single-core",
+                    "candidate_schedule_kind": "dual-core",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "layer_delta_count": 1,
+                    "estimated_cycles": {
+                        "baseline_value": 4096.0,
+                        "candidate_value": 3072.0,
+                        "delta_value": -1024.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "tokens_per_cycle": {
+                        "baseline_value": 0.03125,
+                        "candidate_value": 0.0416666667,
+                        "delta_value": 0.0104166667,
+                        "delta_ratio": 0.3333333344,
+                    },
+                    "cycles_per_token": {
+                        "baseline_value": 32.0,
+                        "candidate_value": 24.0,
+                        "delta_value": -8.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "bytes_per_cycle": {
+                        "baseline_value": 64.0,
+                        "candidate_value": 72.0,
+                        "delta_value": 8.0,
+                        "delta_ratio": 0.125,
+                    },
+                    "max_region_utilization": {
+                        "baseline_value": 0.75,
+                        "candidate_value": 0.625,
+                        "delta_value": -0.125,
+                        "delta_ratio": -0.1666666667,
+                    },
+                }
+            ],
+            "decode_compares": [],
             "issues": [],
         }
     )

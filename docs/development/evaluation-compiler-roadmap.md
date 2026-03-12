@@ -1818,3 +1818,25 @@ graph TD
   - deeper `SPEC-13` cycle model and token-phase attribution
   - richer layer-level compare surfacing above the current report-level summaries
   - stronger downstream-consumer adoption of the standalone compare artifact such as `SPEC-18/19`
+
+## 2026-03-12 SPEC-18/19 Phase D Compare Consumption Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-18-19-phase-d-compare-consumption.md`
+- `SPEC-18` visualization packaging now treats `PhaseDCompareReport` as the primary top-level compare source and only reuses `SweepDeltaReport` for `layer_deltas`.
+- `SPEC-19` workbench and catalog compare surfaces now consume the propagated structured compare summary directly instead of rebuilding top-level compare rows from raw sweep data.
+- new closure evidence:
+  - `VisualizationSweepComparisonView` now carries structured `compare_summary` rows with schedule kinds, `profile_diff_fields`, and scalar deltas
+  - `VisualizationCatalogSweepComparison` now preserves the same `compare_summary` surface for cross-run compare consumers
+  - visualization packaging now loads `reports/phase_d_compare_report.json` when present and otherwise centralizes fallback extraction through the Phase D compare builder
+  - visualization bundle builder now uses `PhaseDCompareReport` rows as the primary compare source and merges `SweepComparison.layer_deltas` by scenario/mode/target identity
+  - workbench sweep rendering and catalog compare rendering now surface structured compare rows above the existing layer-delta drill-down flow
+  - focused visualization unit/workflow verification remains green with the stronger compare handoff
+  - CLI smoke for `run-visualization-packaging`, `run-visualization-workbench`, and `run-visualization-catalog` remains green
+- what this closes:
+  - one M3 handoff gap where `SPEC-18/19` still flattened or re-derived top-level compare output instead of consuming the standalone compare contract
+  - one closure gap where `PhaseDCompareReport` existed as an artifact but had no first-class visualization consumers
+  - one workflow gap where packaged compare surfaces still depended on raw `SweepComparison` traversal for top-level summary reuse
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle model and token-phase attribution
+  - richer `SPEC-16` diff modes above the current scalar-plus-layer summary surface
+  - any later `SPEC-19` deeper drill-down or export work should stay downstream of this compare-summary handoff instead of reopening new compare foundations

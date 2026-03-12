@@ -86,6 +86,27 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
                             "scenario_name": "prefill_seq128",
                             "mode": "prefill",
                             "metric_deltas": {"estimated_cycles": -1024.0},
+                            "compare_summary": {
+                                "baseline_schedule_kind": "single-core",
+                                "candidate_schedule_kind": "dual-core",
+                                "profile_diff_fields": ["core_mode", "num_cores"],
+                                "scalar_deltas": [
+                                    {
+                                        "metric_name": "estimated_cycles",
+                                        "baseline_value": 4096.0,
+                                        "candidate_value": 3072.0,
+                                        "delta_value": -1024.0,
+                                        "delta_ratio": -0.25,
+                                    },
+                                    {
+                                        "metric_name": "tokens_per_cycle",
+                                        "baseline_value": 0.03125,
+                                        "candidate_value": 0.0416666667,
+                                        "delta_value": 0.0104166667,
+                                        "delta_ratio": 0.3333333344,
+                                    },
+                                ],
+                            },
                             "layer_deltas": [
                                 {
                                     "layer_id": 0,
@@ -107,6 +128,13 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
 
     assert artifact.entries[0].sweep_baseline_target_profile_name == "riscv_npu_single_core_v1"
     assert artifact.entries[0].sweep_comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary is not None
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.candidate_schedule_kind == (
+        "dual-core"
+    )
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_deltas[0].delta_value == (
+        -1024.0
+    )
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
 
 

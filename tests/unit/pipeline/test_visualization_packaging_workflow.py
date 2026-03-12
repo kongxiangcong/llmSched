@@ -9,7 +9,6 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
     tmp_path: Path,
     prepared_run_root_factory,
 ) -> None:
-    from llm_sched.contracts.sweep_report import SweepDeltaReport
     from llm_sched.contracts.visualization_bundle import VisualizationBundle
     from llm_sched.pipeline import run_decode_evaluation, run_visualization_packaging
 
@@ -27,6 +26,10 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         json.dumps(_sweep_report().model_dump(mode="json"), indent=2),
         encoding="utf-8",
     )
+    (sweep_root / "reports" / "phase_d_compare_report.json").write_text(
+        json.dumps(_phase_d_compare_report().model_dump(mode="json"), indent=2),
+        encoding="utf-8",
+    )
 
     result = run_visualization_packaging(run_root, sweep_root=sweep_root)
 
@@ -39,6 +42,11 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
 
     assert bundle.metadata.mode == "decode"
     assert bundle.sweep_view is not None
+    assert bundle.sweep_view.comparisons[0].compare_summary is not None
+    assert bundle.sweep_view.comparisons[0].compare_summary.candidate_schedule_kind == "dual-core"
+    assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
+        "estimated_cycles"
+    )
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
@@ -102,6 +110,66 @@ def _sweep_report():
                             "delta_bytes": -2048.0,
                         }
                     ],
+                }
+            ],
+            "issues": [],
+        }
+    )
+
+
+def _phase_d_compare_report():
+    from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
+
+    return PhaseDCompareReport.model_validate(
+        {
+            "report_name": "phase-d-compare.phase-d-foundation",
+            "source_sweep_name": "phase-d-foundation",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "comparison_count": 1,
+            "prefill_compare_count": 0,
+            "decode_compare_count": 1,
+            "prefill_compares": [],
+            "decode_compares": [
+                {
+                    "scenario_name": "decode_token1_kv2048",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "baseline_schedule_kind": "single-core",
+                    "candidate_schedule_kind": "dual-core",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "layer_delta_count": 1,
+                    "estimated_cycles": {
+                        "baseline_value": 768.0,
+                        "candidate_value": 512.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "cycles_per_token": {
+                        "baseline_value": 768.0,
+                        "candidate_value": 512.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "kv_related_cycle_share": {
+                        "baseline_value": 0.5,
+                        "candidate_value": 0.375,
+                        "delta_value": -0.125,
+                        "delta_ratio": -0.25,
+                    },
+                    "kv_related_bytes": {
+                        "baseline_value": 16384.0,
+                        "candidate_value": 12288.0,
+                        "delta_value": -4096.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "sync_cycles": {
+                        "baseline_value": 64.0,
+                        "candidate_value": 32.0,
+                        "delta_value": -32.0,
+                        "delta_ratio": -0.5,
+                    },
                 }
             ],
             "issues": [],

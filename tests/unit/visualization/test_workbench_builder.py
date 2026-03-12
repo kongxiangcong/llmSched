@@ -83,6 +83,10 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "Layer Deltas" in files["workbench/assets/app.js"]
     assert "layer_deltas" in files["workbench/assets/app.js"]
     assert "delta_cycles" in files["workbench/assets/app.js"]
+    assert "compare_summary" in files["workbench/assets/app.js"]
+    assert "baseline_schedule_kind" in files["workbench/assets/app.js"]
+    assert "profile_diff_fields" in files["workbench/assets/app.js"]
+    assert "scalar_deltas" in files["workbench/assets/app.js"]
     assert "function buildSweepExportData" in files["workbench/assets/app.js"]
     assert "function buildSweepSnapshotMetadata" in files["workbench/assets/app.js"]
     assert "snapshot_metadata" in files["workbench/assets/app.js"]
@@ -295,6 +299,27 @@ def _bundle(*, include_sweep: bool) -> object:
                             "scenario_name": "prefill_seq128",
                             "mode": "prefill",
                             "metric_deltas": {"estimated_cycles": -1024.0},
+                            "compare_summary": {
+                                "baseline_schedule_kind": "single-core",
+                                "candidate_schedule_kind": "dual-core",
+                                "profile_diff_fields": ["core_mode", "num_cores"],
+                                "scalar_deltas": [
+                                    {
+                                        "metric_name": "estimated_cycles",
+                                        "baseline_value": 4096.0,
+                                        "candidate_value": 3072.0,
+                                        "delta_value": -1024.0,
+                                        "delta_ratio": -0.25,
+                                    },
+                                    {
+                                        "metric_name": "tokens_per_cycle",
+                                        "baseline_value": 0.03125,
+                                        "candidate_value": 0.0416666667,
+                                        "delta_value": 0.0104166667,
+                                        "delta_ratio": 0.3333333344,
+                                    },
+                                ],
+                            },
                             "layer_deltas": [
                                 {
                                     "layer_id": 0,

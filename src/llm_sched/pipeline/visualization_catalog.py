@@ -17,6 +17,8 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogPhaseCBlockedCase,
     VisualizationCatalogEntry,
     VisualizationCatalogPhaseCGateSummary,
+    VisualizationCatalogSweepCompareScalarDelta,
+    VisualizationCatalogSweepCompareSummary,
     VisualizationCatalogSweepComparison,
     VisualizationCatalogSweepLayerDelta,
 )
@@ -157,6 +159,25 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
             scenario_name=comparison.scenario_name,
             mode=comparison.mode,
             metric_deltas={key: float(value) for key, value in comparison.metric_deltas.items()},
+            compare_summary=(
+                VisualizationCatalogSweepCompareSummary(
+                    baseline_schedule_kind=comparison.compare_summary.baseline_schedule_kind,
+                    candidate_schedule_kind=comparison.compare_summary.candidate_schedule_kind,
+                    profile_diff_fields=list(comparison.compare_summary.profile_diff_fields),
+                    scalar_deltas=[
+                        VisualizationCatalogSweepCompareScalarDelta(
+                            metric_name=scalar_delta.metric_name,
+                            baseline_value=scalar_delta.baseline_value,
+                            candidate_value=scalar_delta.candidate_value,
+                            delta_value=scalar_delta.delta_value,
+                            delta_ratio=scalar_delta.delta_ratio,
+                        )
+                        for scalar_delta in comparison.compare_summary.scalar_deltas
+                    ],
+                )
+                if comparison.compare_summary is not None
+                else None
+            ),
             layer_deltas=[
                 VisualizationCatalogSweepLayerDelta(
                     layer_id=layer_delta.layer_id,

@@ -455,6 +455,31 @@ function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
   }).join("")}</ul>`;
 }
 
+function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison) {
+  if (!sweepComparison || !sweepComparison.compare_summary) {
+    return buildSharedMetricDeltaRows(baselineEntry, candidateEntry);
+  }
+  const compareSummary = sweepComparison.compare_summary;
+  const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
+  const scalarRows = compareSummary.scalar_deltas || [];
+  if (!scalarRows.length) {
+    return '<p class="empty">No matched Phase D compare summary rows.</p>';
+  }
+  return `
+    <p class="muted">Schedule: ${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}</p>
+    ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
+    <ul class="metric-detail-list">${scalarRows.map((scalarDelta) => `
+      <li>
+        <span>${scalarDelta.metric_name}</span>
+        <div class="metric-detail-values">
+          <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
+          <em>${formatMetricValue(scalarDelta.baseline_value)} -> ${formatMetricValue(scalarDelta.candidate_value)}</em>
+        </div>
+      </li>
+    `).join("")}</ul>
+  `;
+}
+
 function findSweepComparisonMatch(entry, baselineEntry, candidateEntry) {
   if (!entry || !baselineEntry || !candidateEntry) {
     return null;
@@ -561,7 +586,9 @@ function renderSweepComparisonSummary(sweepComparison) {
   if (!sweepComparison) {
     return '<p class="muted">No matched sweep compare summary.</p>';
   }
-  const metricRows = Object.entries(sweepComparison.metric_deltas || {});
+  const metricRows = sweepComparison.compare_summary && (sweepComparison.compare_summary.scalar_deltas || []).length
+    ? (sweepComparison.compare_summary.scalar_deltas || []).map((scalarDelta) => [scalarDelta.metric_name, scalarDelta.delta_value])
+    : Object.entries(sweepComparison.metric_deltas || {});
   if (!metricRows.length) {
     return '<p class="muted">No matched sweep metric deltas.</p>';
   }
@@ -669,7 +696,7 @@ function buildCompareSummary(selectedEntries) {
         <h3>Shared Metric Deltas</h3>
         <p>${sameMetric ? `${candidate.primary_metric_name} delta: ${formatMetricDelta(delta)}` : "Metric mismatch"}</p>
         <p>${sameMetric && ratio !== null ? `ratio: ${ratio.toFixed(3)}x` : "ratio unavailable"}</p>
-        ${buildSharedMetricDeltaRows(baseline, candidate)}
+        ${buildMatchedCompareSummaryRows(baseline, candidate, sweepComparison)}
       </div>
       <div>
         <h3>Sweep Layer Deltas</h3>
@@ -744,7 +771,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${entry.primary_metric_name}</td>
               <td>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</td>
               <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
-              <td>${buildSharedMetricDeltaRows(baselineEntry, entry)}</td>
+              <td>${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>

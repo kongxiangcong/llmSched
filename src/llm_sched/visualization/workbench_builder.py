@@ -650,6 +650,34 @@ function selectedSweepLayerDeltas(comparison) {
   );
 }
 
+function renderSweepCompareSummary(compareSummary, metricDeltas) {
+  if (compareSummary && (compareSummary.scalar_deltas || []).length) {
+    const scheduleSummary = `${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}`;
+    const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
+    const scalarRows = (compareSummary.scalar_deltas || []).map((scalarDelta) => `
+      <li>
+        <span>${scalarDelta.metric_name}</span>
+        <div class="metric-detail-values">
+          <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
+          <em>${formatNumber(scalarDelta.baseline_value)} -> ${formatNumber(scalarDelta.candidate_value)}</em>
+        </div>
+      </li>
+    `).join("");
+    return `
+      <div class="compare-summary-block">
+        <p class="muted">Schedule: ${scheduleSummary}</p>
+        ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
+        <ul class="metric-detail-list">${scalarRows}</ul>
+      </div>
+    `;
+  }
+  const metricRows = Object.entries(metricDeltas || {});
+  if (!metricRows.length) {
+    return '<span class="muted">No matched sweep metric deltas.</span>';
+  }
+  return metricRows.map(([key, value]) => `${key}: ${formatNumber(value)}`).join("<br>");
+}
+
 function buildSweepSnapshotMetadata(sweepData) {
   const headerRows = [
     sweepData.baseline_target_profile_name
@@ -763,7 +791,7 @@ function renderSweep(bundle) {
       <td>${comparison.candidate_target_profile_name}</td>
       <td>${comparison.scenario_name}</td>
       <td>${comparison.mode}</td>
-      <td>${Object.entries(comparison.metric_deltas || {}).map(([k, v]) => `${k}: ${formatNumber(v)}`).join("<br>")}</td>
+      <td>${renderSweepCompareSummary(comparison.compare_summary, comparison.metric_deltas)}</td>
       <td>${(comparison.layer_deltas || []).length > 0
         ? (comparison.layer_deltas || []).map((layerDelta) =>
             `<span class="${sweepData.focused_sweep_layer && String(layerDelta.layer_id) === String(sweepData.focused_sweep_layer) ? "focused-sweep-row" : ""}">Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}, delta_bytes ${formatNumber(layerDelta.delta_bytes)}</span>`
