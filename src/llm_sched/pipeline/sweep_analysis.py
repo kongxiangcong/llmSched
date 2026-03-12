@@ -182,6 +182,7 @@ def _execute_run_root(
                 SweepLayerPoint(
                     layer_id=row.layer_id,
                     estimated_cycles=row.estimated_cycles,
+                    cycle_share=row.cycle_share,
                     total_bytes=row.total_bytes,
                 )
                 for row in report.layer_breakdown
@@ -221,6 +222,7 @@ def _execute_run_root(
             SweepLayerPoint(
                 layer_id=row.layer_id,
                 estimated_cycles=row.estimated_cycles,
+                cycle_share=row.cycle_share,
                 total_bytes=row.total_bytes,
             )
             for row in report.layer_breakdown

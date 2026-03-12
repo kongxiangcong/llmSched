@@ -42,6 +42,7 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.failed_run_count == 0
     assert len(report.comparisons) == 1
     assert report.run_records[0].layer_breakdown
+    assert report.run_records[0].layer_breakdown[0].cycle_share > 0.0
     assert report.comparisons[0].layer_deltas
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].decode_compare is None
@@ -51,6 +52,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     )
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == metric_delta.delta_value
     assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value < 0.0
+    assert report.comparisons[0].layer_deltas[0].baseline_cycle_share > 0.0
+    assert report.comparisons[0].layer_deltas[0].change_direction in {"up", "down", "flat"}
 
 
 def test_run_sweep_analysis_rejects_invalid_baseline_spec(tmp_path: Path) -> None:

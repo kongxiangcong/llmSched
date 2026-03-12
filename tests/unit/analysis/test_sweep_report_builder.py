@@ -16,8 +16,18 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
                 4096.0,
                 3072.0,
                 layer_rows=[
-                    {"layer_id": 0, "estimated_cycles": 3072.0, "total_bytes": 131072.0},
-                    {"layer_id": 1, "estimated_cycles": 1024.0, "total_bytes": 65536.0},
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 3072.0,
+                        "cycle_share": 0.75,
+                        "total_bytes": 131072.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1024.0,
+                        "cycle_share": 0.25,
+                        "total_bytes": 65536.0,
+                    },
                 ],
             ),
             _completed_prefill_run(
@@ -26,8 +36,18 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
                 3072.0,
                 2048.0,
                 layer_rows=[
-                    {"layer_id": 0, "estimated_cycles": 2048.0, "total_bytes": 98304.0},
-                    {"layer_id": 1, "estimated_cycles": 1024.0, "total_bytes": 65536.0},
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 2048.0,
+                        "cycle_share": 0.6666666667,
+                        "total_bytes": 98304.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1024.0,
+                        "cycle_share": 0.3333333333,
+                        "total_bytes": 65536.0,
+                    },
                 ],
             ),
             _completed_decode_run(
@@ -36,8 +56,18 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
                 3200.0,
                 900.0,
                 layer_rows=[
-                    {"layer_id": 0, "estimated_cycles": 2000.0, "total_bytes": 114000.0},
-                    {"layer_id": 1, "estimated_cycles": 1200.0, "total_bytes": 66000.0},
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 2000.0,
+                        "cycle_share": 0.625,
+                        "total_bytes": 114000.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1200.0,
+                        "cycle_share": 0.375,
+                        "total_bytes": 66000.0,
+                    },
                 ],
             ),
             _completed_decode_run(
@@ -46,8 +76,18 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
                 2800.0,
                 700.0,
                 layer_rows=[
-                    {"layer_id": 0, "estimated_cycles": 1600.0, "total_bytes": 96000.0},
-                    {"layer_id": 1, "estimated_cycles": 1200.0, "total_bytes": 62000.0},
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 1600.0,
+                        "cycle_share": 0.5714285714,
+                        "total_bytes": 96000.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1200.0,
+                        "cycle_share": 0.4285714286,
+                        "total_bytes": 62000.0,
+                    },
                 ],
             ),
         ],
@@ -72,6 +112,12 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert [delta.layer_id for delta in prefill_comparison.layer_deltas] == [0, 1]
     assert prefill_comparison.layer_deltas[0].delta_cycles == -1024.0
     assert prefill_comparison.layer_deltas[0].delta_bytes == -32768.0
+    assert prefill_comparison.layer_deltas[0].baseline_cycle_share == 0.75
+    assert prefill_comparison.layer_deltas[0].candidate_cycle_share == pytest.approx(0.6666666667)
+    assert prefill_comparison.layer_deltas[0].delta_cycle_share == pytest.approx(-0.0833333333)
+    assert prefill_comparison.layer_deltas[0].delta_cycles_ratio == pytest.approx(-1024.0 / 3072.0)
+    assert prefill_comparison.layer_deltas[0].delta_bytes_ratio == pytest.approx(-32768.0 / 131072.0)
+    assert prefill_comparison.layer_deltas[0].change_direction == "down"
     assert prefill_comparison.prefill_compare is not None
     assert prefill_comparison.decode_compare is None
     assert prefill_comparison.prefill_compare.estimated_cycles.delta_value == -1024.0
@@ -96,6 +142,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         (700.0 / 2800.0) - (900.0 / 3200.0)
     )
     assert decode_comparison.decode_compare.sync_cycles.delta_value == -40.0
+    assert decode_comparison.layer_deltas[0].delta_cycle_share == pytest.approx(0.5714285714 - 0.625)
+    assert decode_comparison.layer_deltas[1].change_direction == "flat"
 
 
 def test_build_sweep_delta_report_surfaces_failures_and_missing_baselines() -> None:

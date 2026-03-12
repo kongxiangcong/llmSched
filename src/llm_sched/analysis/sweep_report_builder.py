@@ -158,24 +158,45 @@ def _build_layer_deltas(
     }
     layer_ids = set(baseline_layers) | set(candidate_layers)
     deltas = [
-        SweepLayerDelta(
+        _build_layer_delta(
             layer_id=layer_id,
-            baseline_cycles=float(baseline_layers.get(layer_id).estimated_cycles if layer_id in baseline_layers else 0.0),
-            candidate_cycles=float(candidate_layers.get(layer_id).estimated_cycles if layer_id in candidate_layers else 0.0),
-            delta_cycles=float(
-                (candidate_layers.get(layer_id).estimated_cycles if layer_id in candidate_layers else 0.0)
-                - (baseline_layers.get(layer_id).estimated_cycles if layer_id in baseline_layers else 0.0)
-            ),
-            baseline_bytes=float(baseline_layers.get(layer_id).total_bytes if layer_id in baseline_layers else 0.0),
-            candidate_bytes=float(candidate_layers.get(layer_id).total_bytes if layer_id in candidate_layers else 0.0),
-            delta_bytes=float(
-                (candidate_layers.get(layer_id).total_bytes if layer_id in candidate_layers else 0.0)
-                - (baseline_layers.get(layer_id).total_bytes if layer_id in baseline_layers else 0.0)
-            ),
+            baseline_layer=baseline_layers.get(layer_id),
+            candidate_layer=candidate_layers.get(layer_id),
         )
         for layer_id in layer_ids
     ]
     return sorted(deltas, key=lambda delta: (-abs(delta.delta_cycles), delta.layer_id))
+
+
+def _build_layer_delta(
+    *,
+    layer_id: int,
+    baseline_layer,
+    candidate_layer,
+) -> SweepLayerDelta:
+    baseline_cycles = float(baseline_layer.estimated_cycles) if baseline_layer is not None else 0.0
+    candidate_cycles = float(candidate_layer.estimated_cycles) if candidate_layer is not None else 0.0
+    delta_cycles = candidate_cycles - baseline_cycles
+    baseline_bytes = float(baseline_layer.total_bytes) if baseline_layer is not None else 0.0
+    candidate_bytes = float(candidate_layer.total_bytes) if candidate_layer is not None else 0.0
+    delta_bytes = candidate_bytes - baseline_bytes
+    baseline_cycle_share = float(baseline_layer.cycle_share) if baseline_layer is not None else 0.0
+    candidate_cycle_share = float(candidate_layer.cycle_share) if candidate_layer is not None else 0.0
+    return SweepLayerDelta(
+        layer_id=layer_id,
+        baseline_cycles=baseline_cycles,
+        candidate_cycles=candidate_cycles,
+        delta_cycles=delta_cycles,
+        baseline_cycle_share=baseline_cycle_share,
+        candidate_cycle_share=candidate_cycle_share,
+        delta_cycle_share=candidate_cycle_share - baseline_cycle_share,
+        delta_cycles_ratio=_delta_ratio(baseline_cycles, delta_cycles),
+        baseline_bytes=baseline_bytes,
+        candidate_bytes=candidate_bytes,
+        delta_bytes=delta_bytes,
+        delta_bytes_ratio=_delta_ratio(baseline_bytes, delta_bytes),
+        change_direction=_change_direction(delta_cycles),
+    )
 
 
 def _build_scalar_delta(
@@ -183,13 +204,28 @@ def _build_scalar_delta(
     candidate_value: float,
 ) -> SweepScalarDelta:
     delta_value = candidate_value - baseline_value
-    delta_ratio = (delta_value / baseline_value) if baseline_value != 0.0 else 0.0
+    delta_ratio = _delta_ratio(baseline_value, delta_value)
     return SweepScalarDelta(
         baseline_value=baseline_value,
         candidate_value=candidate_value,
         delta_value=delta_value,
         delta_ratio=delta_ratio,
     )
+
+
+def _delta_ratio(
+    baseline_value: float,
+    delta_value: float,
+) -> float:
+    return (delta_value / baseline_value) if baseline_value != 0.0 else 0.0
+
+
+def _change_direction(delta_value: float) -> str:
+    if delta_value > 0.0:
+        return "up"
+    if delta_value < 0.0:
+        return "down"
+    return "flat"
 
 
 def _metric_value(run: SweepRunRecord, metric_name: str) -> float:

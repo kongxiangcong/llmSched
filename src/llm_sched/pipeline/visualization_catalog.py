@@ -184,9 +184,15 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                     baseline_cycles=layer_delta.baseline_cycles,
                     candidate_cycles=layer_delta.candidate_cycles,
                     delta_cycles=layer_delta.delta_cycles,
+                    baseline_cycle_share=layer_delta.baseline_cycle_share,
+                    candidate_cycle_share=layer_delta.candidate_cycle_share,
+                    delta_cycle_share=layer_delta.delta_cycle_share,
+                    delta_cycles_ratio=layer_delta.delta_cycles_ratio,
                     baseline_bytes=layer_delta.baseline_bytes,
                     candidate_bytes=layer_delta.candidate_bytes,
                     delta_bytes=layer_delta.delta_bytes,
+                    delta_bytes_ratio=layer_delta.delta_bytes_ratio,
+                    change_direction=layer_delta.change_direction,
                 )
                 for layer_delta in sorted(
                     comparison.layer_deltas,

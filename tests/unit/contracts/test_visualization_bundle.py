@@ -181,9 +181,15 @@ def test_visualization_bundle_accepts_all_views() -> None:
                                 "baseline_cycles": 2048.0,
                                 "candidate_cycles": 1536.0,
                                 "delta_cycles": -512.0,
+                                "baseline_cycle_share": 0.5,
+                                "candidate_cycle_share": 0.4444444444,
+                                "delta_cycle_share": -0.0555555556,
+                                "delta_cycles_ratio": -0.25,
                                 "baseline_bytes": 65536.0,
                                 "candidate_bytes": 49152.0,
                                 "delta_bytes": -16384.0,
+                                "delta_bytes_ratio": -0.25,
+                                "change_direction": "down",
                             }
                         ],
                     }
@@ -209,6 +215,9 @@ def test_visualization_bundle_accepts_all_views() -> None:
     assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
         "estimated_cycles"
     )
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].change_direction == "down"
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_bytes == -16384.0
 
 

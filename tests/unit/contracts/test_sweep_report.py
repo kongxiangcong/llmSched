@@ -58,8 +58,18 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                         {"macro_op": "WDQ_GEMM", "estimated_cycles": 3072.0, "total_bytes": 131072.0}
                     ],
                     "layer_breakdown": [
-                        {"layer_id": 0, "estimated_cycles": 3072.0, "total_bytes": 131072.0},
-                        {"layer_id": 1, "estimated_cycles": 1024.0, "total_bytes": 131072.0},
+                        {
+                            "layer_id": 0,
+                            "estimated_cycles": 3072.0,
+                            "cycle_share": 0.75,
+                            "total_bytes": 131072.0,
+                        },
+                        {
+                            "layer_id": 1,
+                            "estimated_cycles": 1024.0,
+                            "cycle_share": 0.25,
+                            "total_bytes": 131072.0,
+                        },
                     ],
                 }
             ],
@@ -93,9 +103,15 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "baseline_cycles": 3072.0,
                             "candidate_cycles": 2048.0,
                             "delta_cycles": -1024.0,
+                            "baseline_cycle_share": 0.75,
+                            "candidate_cycle_share": 0.6666666667,
+                            "delta_cycle_share": -0.0833333333,
+                            "delta_cycles_ratio": -0.3333333333,
                             "baseline_bytes": 131072.0,
                             "candidate_bytes": 98304.0,
                             "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
                         }
                     ],
                     "prefill_compare": {
@@ -161,7 +177,10 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.completed_run_count == 4
     assert report.comparisons[0].metric_deltas[0].delta_ratio == -0.25
     assert report.run_records[0].layer_breakdown[0].layer_id == 0
+    assert report.run_records[0].layer_breakdown[0].cycle_share == 0.75
     assert report.comparisons[0].layer_deltas[0].delta_bytes == -32768.0
+    assert report.comparisons[0].layer_deltas[0].delta_cycle_share < 0.0
+    assert report.comparisons[0].layer_deltas[0].change_direction == "down"
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == -1024.0
     assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value == -1280.0

@@ -52,6 +52,9 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
         "estimated_cycles"
     )
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
+    assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
+    assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
+    assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].change_direction == "down"
     assert artifact.entries[1].metric_values["token_latency_cycles"] == 512.0
     assert artifact.entries[1].metric_values["tokens_per_second"] == 1953.125
     assert (catalog_root / "catalog" / "index.html").is_file()
@@ -639,36 +642,60 @@ def _bundle_payload(
                                 "baseline_cycles": 1024.0,
                                 "candidate_cycles": 896.0,
                                 "delta_cycles": -128.0,
+                                "baseline_cycle_share": 0.25,
+                                "candidate_cycle_share": 0.2051282051,
+                                "delta_cycle_share": -0.0448717949,
+                                "delta_cycles_ratio": -0.125,
                                 "baseline_bytes": 32768.0,
                                 "candidate_bytes": 30720.0,
                                 "delta_bytes": -2048.0,
+                                "delta_bytes_ratio": -0.0625,
+                                "change_direction": "down",
                             },
                             {
                                 "layer_id": 0,
                                 "baseline_cycles": 2048.0,
                                 "candidate_cycles": 1536.0,
                                 "delta_cycles": -512.0,
+                                "baseline_cycle_share": 0.5,
+                                "candidate_cycle_share": 0.4444444444,
+                                "delta_cycle_share": -0.0555555556,
+                                "delta_cycles_ratio": -0.25,
                                 "baseline_bytes": 65536.0,
                                 "candidate_bytes": 49152.0,
                                 "delta_bytes": -16384.0,
+                                "delta_bytes_ratio": -0.25,
+                                "change_direction": "down",
                             },
                             {
                                 "layer_id": 3,
                                 "baseline_cycles": 1536.0,
                                 "candidate_cycles": 1280.0,
                                 "delta_cycles": -256.0,
+                                "baseline_cycle_share": 0.375,
+                                "candidate_cycle_share": 0.3162393162,
+                                "delta_cycle_share": -0.0587606838,
+                                "delta_cycles_ratio": -0.1666666667,
                                 "baseline_bytes": 49152.0,
                                 "candidate_bytes": 45056.0,
                                 "delta_bytes": -4096.0,
+                                "delta_bytes_ratio": -0.0833333333,
+                                "change_direction": "down",
                             },
                             {
                                 "layer_id": 1,
                                 "baseline_cycles": 768.0,
                                 "candidate_cycles": 640.0,
                                 "delta_cycles": -128.0,
+                                "baseline_cycle_share": 0.1875,
+                                "candidate_cycle_share": 0.1709401709,
+                                "delta_cycle_share": -0.0165598291,
+                                "delta_cycles_ratio": -0.1666666667,
                                 "baseline_bytes": 24576.0,
                                 "candidate_bytes": 22528.0,
                                 "delta_bytes": -2048.0,
+                                "delta_bytes_ratio": -0.0833333333,
+                                "change_direction": "down",
                             }
                         ],
                     }

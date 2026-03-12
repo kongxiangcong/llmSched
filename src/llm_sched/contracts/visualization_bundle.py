@@ -184,9 +184,15 @@ class VisualizationSweepLayerDeltaView(BaseModel):
     baseline_cycles: float
     candidate_cycles: float
     delta_cycles: float
+    baseline_cycle_share: float = Field(ge=0.0, default=0.0)
+    candidate_cycle_share: float = Field(ge=0.0, default=0.0)
+    delta_cycle_share: float = 0.0
+    delta_cycles_ratio: float = 0.0
     baseline_bytes: float
     candidate_bytes: float
     delta_bytes: float
+    delta_bytes_ratio: float = 0.0
+    change_direction: Literal["up", "down", "flat"] = "flat"
 
 
 class VisualizationSweepCompareScalarDeltaView(BaseModel):

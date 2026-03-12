@@ -73,6 +73,9 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     }
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
+    assert bundle.sweep_view.comparisons[0].layer_deltas[0].change_direction == "down"
 
 
 def test_build_visualization_bundle_for_decode_without_sweep() -> None:
@@ -647,9 +650,15 @@ def _sweep_report() -> SweepDeltaReport:
                             "baseline_cycles": 2048.0,
                             "candidate_cycles": 1536.0,
                             "delta_cycles": -512.0,
+                            "baseline_cycle_share": 0.5,
+                            "candidate_cycle_share": 0.4444444444,
+                            "delta_cycle_share": -0.0555555556,
+                            "delta_cycles_ratio": -0.25,
                             "baseline_bytes": 65536.0,
                             "candidate_bytes": 49152.0,
                             "delta_bytes": -16384.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
                         }
                     ],
                 }

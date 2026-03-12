@@ -1901,3 +1901,24 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current critical-path summary
   - richer `SPEC-16` diff modes above the current scalar-plus-layer compare surface, especially around layer-level diff shaping and broader multi-metric compare
   - any later `SPEC-19` compare expansion should stay downstream of the existing sweep/Phase-D compare contracts
+
+## 2026-03-12 SPEC-16 Layer Diff Shaping Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-16-layer-diff-shaping.md`
+- `SPEC-16` layer deltas now preserve `cycle_share` and expose share-aware plus ratio-aware shaping on top of the existing raw cycle/byte compare rows.
+- `SPEC-18` visualization bundle and catalog packaging now preserve the same richer layer-diff surface end to end without adding a new compare workflow.
+- new closure evidence:
+  - `SweepLayerPoint` now carries `cycle_share`
+  - `SweepLayerDelta` now carries `baseline_cycle_share`, `candidate_cycle_share`, `delta_cycle_share`, `delta_cycles_ratio`, `delta_bytes_ratio`, and `change_direction`
+  - sweep analysis now copies `cycle_share` directly from prefill/decode `layer_breakdown` rows into sweep run records
+  - sweep report building now computes share deltas, normalized ratio deltas, and stable `up/down/flat` direction labels on top of the existing cycle/byte layer rows
+  - visualization bundle and catalog layer-delta views now preserve the richer fields without reopening raw prefill/decode reports downstream
+  - focused contract/builder/workflow verification remains green, and sweep-foundation plus visualization-packaging smoke coverage remains green
+- what this closes:
+  - one `SPEC-16` gap where layer diff stayed at raw cycle/byte deltas and could not tell whether a layer became more or less dominant in the run
+  - one downstream-consumer gap where richer layer compare required reopening prefill/decode report artifacts instead of consuming the existing sweep surface
+  - one compare-grade normalization gap above the current layer summary chain from `layer_breakdown` through visualization bundle/catalog artifacts
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-shaped-layer contract, especially richer multi-metric compare
+  - any later `SPEC-19` compare adoption should stay downstream of the existing sweep and visualization contracts instead of reopening a new compare workflow
