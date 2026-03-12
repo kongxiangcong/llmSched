@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from llm_sched.contracts.perf_report import PerfPhaseSummary
+
 
 class PrefillThroughputSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -23,6 +25,7 @@ class PrefillThroughputSummary(BaseModel):
     tokens_per_critical_path_cycle: float = Field(ge=0.0, default=0.0)
     cycles_per_token: float = Field(ge=0.0)
     bytes_per_cycle: float = Field(ge=0.0)
+    phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
 
 
 class PrefillMemorySummary(BaseModel):

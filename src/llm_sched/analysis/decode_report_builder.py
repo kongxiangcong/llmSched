@@ -108,6 +108,7 @@ def build_decode_evaluation_report(
             attention_bytes=attention_bytes,
             sync_bytes=sync_bytes,
             other_bytes=other_bytes,
+            phase_attribution=dict(sorted(perf_summary.phase_attribution.items())),
         ),
         kv_summary=DecodeKVSummary(
             kv_len=scenario.kv_len,

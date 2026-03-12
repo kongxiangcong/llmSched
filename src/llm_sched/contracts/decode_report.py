@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from llm_sched.contracts.perf_report import PerfPhaseSummary
+
 
 class DecodeLatencySummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -21,6 +23,7 @@ class DecodeLatencySummary(BaseModel):
     attention_bytes: float = Field(ge=0.0, default=0.0)
     sync_bytes: float = Field(ge=0.0, default=0.0)
     other_bytes: float = Field(ge=0.0, default=0.0)
+    phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
 
 
 class DecodeKVSummary(BaseModel):

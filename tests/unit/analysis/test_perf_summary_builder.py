@@ -1,3 +1,4 @@
+from llm_sched.config.scenario_profile import LayerScope, ReportingConfig, ScenarioProfile
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.descriptor_ir import AddressField, DescriptorPackingProfile, TransferFields
 
@@ -213,6 +214,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
         descriptor_ir=descriptor_ir,
         analysis_ir=analysis_ir,
         coverage_report=coverage,
+        scenario=_prefill_scenario_fixture(),
         schedule_ir=schedule_ir,
         memory_plan=_memory_plan_fixture(),
     )
@@ -243,12 +245,16 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     }
     assert report.phase_attribution["projection"].estimated_cycles == 48.0
     assert report.phase_attribution["projection"].total_bytes == 32768.0
+    assert report.phase_attribution["projection"].cycles_per_token == 48.0 / 128.0
+    assert report.phase_attribution["projection"].bytes_per_token == 32768.0 / 128.0
     assert report.phase_attribution["sync"].estimated_cycles == 18.0
     assert report.phase_attribution["sync"].total_bytes == 0.0
+    assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
     assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
     assert report.phase_attribution["attention"].estimated_cycles == 0.0
     assert report.phase_attribution["other"].estimated_cycles == 8.0
     assert report.phase_attribution["other"].total_bytes == 16384.0
+    assert report.phase_attribution["other"].bytes_per_token == 16384.0 / 128.0
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {
@@ -601,4 +607,17 @@ def _memory_plan_fixture():
         kv_formulas=[],
         diagnostics=[],
         address_diagnostics=[],
+    )
+
+
+def _prefill_scenario_fixture() -> ScenarioProfile:
+    return ScenarioProfile(
+        scenario_name="prefill_seq128",
+        version="phase-a.v1",
+        mode="prefill",
+        batch=1,
+        seq_len=128,
+        kv_len=0,
+        layer_scope=LayerScope(kind="all"),
+        reporting=ReportingConfig(include_layer_breakdown=True, include_bandwidth=True),
     )

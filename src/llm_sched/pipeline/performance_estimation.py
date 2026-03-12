@@ -81,6 +81,7 @@ def run_performance_estimation(run_root: str | Path) -> PerformanceEstimationRes
             descriptor_ir,
             analysis_ir,
             coverage_report,
+            scenario=scenario_profile,
             schedule_ir=schedule_ir,
             memory_plan=memory_plan,
         )

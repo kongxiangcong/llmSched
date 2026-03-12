@@ -33,6 +33,8 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.throughput.attention_bytes >= 0.0
     assert report.throughput.other_bytes >= 0.0
     assert report.throughput.tokens_per_critical_path_cycle > 0.0
+    assert report.throughput.phase_attribution["projection"].cycles_per_token > 0.0
+    assert report.throughput.phase_attribution["attention"].bytes_per_token >= 0.0
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}

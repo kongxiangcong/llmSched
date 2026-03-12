@@ -38,6 +38,8 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.throughput.attention_bytes == pytest.approx(163840.0)
     assert report.throughput.sync_bytes == pytest.approx(0.0)
     assert report.throughput.other_bytes == pytest.approx(32768.0)
+    assert report.throughput.phase_attribution["projection"].cycles_per_token == pytest.approx(12.0)
+    assert report.throughput.phase_attribution["attention"].bytes_per_token == pytest.approx(1280.0)
     assert report.memory_summary.max_region_utilization == pytest.approx(0.75)
     assert report.memory_summary.overflow_region_count == 0
     assert report.memory_summary.unresolved_address_count == 1
@@ -151,11 +153,36 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "sync_cycles": 0.0,
             },
             "phase_attribution": {
-                "projection": {"estimated_cycles": 1536.0, "total_bytes": 65536.0},
-                "kv_io": {"estimated_cycles": 0.0, "total_bytes": 0.0},
-                "attention": {"estimated_cycles": 2048.0, "total_bytes": 163840.0},
-                "sync": {"estimated_cycles": 0.0, "total_bytes": 0.0},
-                "other": {"estimated_cycles": 512.0, "total_bytes": 32768.0},
+                "projection": {
+                    "estimated_cycles": 1536.0,
+                    "total_bytes": 65536.0,
+                    "cycles_per_token": 12.0,
+                    "bytes_per_token": 512.0,
+                },
+                "kv_io": {
+                    "estimated_cycles": 0.0,
+                    "total_bytes": 0.0,
+                    "cycles_per_token": 0.0,
+                    "bytes_per_token": 0.0,
+                },
+                "attention": {
+                    "estimated_cycles": 2048.0,
+                    "total_bytes": 163840.0,
+                    "cycles_per_token": 16.0,
+                    "bytes_per_token": 1280.0,
+                },
+                "sync": {
+                    "estimated_cycles": 0.0,
+                    "total_bytes": 0.0,
+                    "cycles_per_token": 0.0,
+                    "bytes_per_token": 0.0,
+                },
+                "other": {
+                    "estimated_cycles": 512.0,
+                    "total_bytes": 32768.0,
+                    "cycles_per_token": 4.0,
+                    "bytes_per_token": 256.0,
+                },
             },
             "per_macro_cycles": {
                 "WDQ_GEMM": 3072.0,

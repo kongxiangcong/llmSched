@@ -97,6 +97,7 @@ def build_prefill_evaluation_report(
             ) if critical_path_cycles > 0.0 else 0.0,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
             bytes_per_cycle=(total_bytes / total_cycles) if total_cycles > 0.0 else 0.0,
+            phase_attribution=dict(sorted(perf_summary.phase_attribution.items())),
         ),
         memory_summary=PrefillMemorySummary(
             max_region_utilization=_max_region_utilization(memory_plan),

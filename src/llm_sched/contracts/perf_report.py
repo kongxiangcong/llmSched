@@ -16,6 +16,8 @@ class PerfPhaseSummary(BaseModel):
 
     estimated_cycles: float = Field(ge=0.0)
     total_bytes: float = Field(ge=0.0)
+    cycles_per_token: float = Field(ge=0.0, default=0.0)
+    bytes_per_token: float = Field(ge=0.0, default=0.0)
 
 
 class PerfSummaryReport(BaseModel):

@@ -34,6 +34,8 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
     assert report.token_latency.attention_bytes >= 0.0
     assert report.kv_summary.kv_related_bytes >= 0.0
     assert report.token_latency.critical_path_cycles_per_token > 0.0
+    assert report.token_latency.phase_attribution["projection"].cycles_per_token >= 0.0
+    assert report.token_latency.phase_attribution["kv_io"].bytes_per_token >= 0.0
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}

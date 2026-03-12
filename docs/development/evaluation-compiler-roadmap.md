@@ -2044,3 +2044,22 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-13 Phase Token Attribution Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-13-phase-token-attribution.md`
+- `SPEC-13` now preserves token-normalized phase attribution directly in `PerfSummaryReport.phase_attribution`, and `SPEC-14/15` top-level summaries now carry the same canonical structured phase surface instead of forcing downstream consumers to reconstruct token-phase semantics from flattened scalars.
+- no new compare workflow was introduced; this slice stays on the existing `ScenarioProfile -> PerfSummaryReport -> Prefill/DecodeEvaluationReport` chain.
+- new closure evidence:
+  - `PerfPhaseSummary` now carries `cycles_per_token` and `bytes_per_token` with compatibility-friendly zero defaults
+  - performance estimation now threads `ScenarioProfile` into `build_perf_summary_report(...)` so token-normalized phase values are computed once at the perf-summary layer
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` now preserve canonical `phase_attribution` directly from `PerfSummaryReport` while keeping the existing flattened phase cycle/byte fields
+  - focused contract/builder/workflow verification remains green (`21 passed`), and performance/prefill/decode CLI smoke now asserts the new JSON fields end to end (`6 passed`)
+- what this closes:
+  - one `SPEC-13` gap where phase attribution still stopped at raw cycle/byte totals and could not answer token-normalized phase questions directly
+  - one `SPEC-13 -> SPEC-14/15` handoff gap where top-level reports still had to flatten token-phase semantics instead of preserving the canonical structured perf surface
+  - one future-consumer gap where later compare/report layers would otherwise have needed to rebuild token-phase attribution from ad hoc top-line fields
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

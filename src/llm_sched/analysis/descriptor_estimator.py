@@ -78,6 +78,7 @@ def build_perf_summary_report(
     descriptor_ir: DescriptorIR,
     analysis_ir: AnalysisIR,
     coverage_report: ISACoverageReport,
+    scenario: ScenarioProfile | None = None,
     schedule_ir: ScheduleIR | None = None,
     memory_plan: MemoryPlanArtifact | None = None,
 ) -> PerfSummaryReport:
@@ -193,6 +194,7 @@ def build_perf_summary_report(
         schedule_makespan_slots=schedule_makespan_slots,
         estimated_cycles=float(totals["estimated_cycles"]),
     )
+    total_tokens = _total_tokens_for_scenario(scenario)
 
     return PerfSummaryReport(
         run_id=run_id,
@@ -214,7 +216,11 @@ def build_perf_summary_report(
         vmem_region_capacity_bytes=vmem_region_capacity_bytes,
         vmem_region_peak_utilization=vmem_region_peak_utilization,
         totals=totals,
-        phase_attribution=_build_phase_attribution(phase_cycles, phase_bytes),
+        phase_attribution=_build_phase_attribution(
+            phase_cycles,
+            phase_bytes,
+            total_tokens=total_tokens,
+        ),
         per_macro_cycles=dict(per_macro_cycles),
         per_macro_bytes=dict(per_macro_bytes),
         per_node_cycles=dict(sorted(per_node_cycles.items())),
@@ -324,14 +330,28 @@ def _classify_record_phase(descriptor: DescriptorRecord | None) -> str:
 def _build_phase_attribution(
     phase_cycles: Counter[str],
     phase_bytes: Counter[str],
+    *,
+    total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
     return {
         phase_name: PerfPhaseSummary(
             estimated_cycles=float(phase_cycles.get(phase_name, 0.0)),
             total_bytes=float(phase_bytes.get(phase_name, 0.0)),
+            cycles_per_token=(
+                float(phase_cycles.get(phase_name, 0.0)) / float(total_tokens)
+            ) if total_tokens > 0 else 0.0,
+            bytes_per_token=(
+                float(phase_bytes.get(phase_name, 0.0)) / float(total_tokens)
+            ) if total_tokens > 0 else 0.0,
         )
         for phase_name in _PERF_PHASE_ORDER
     }
+
+
+def _total_tokens_for_scenario(scenario: ScenarioProfile | None) -> int:
+    if scenario is None:
+        return 0
+    return int(max(0, scenario.batch * scenario.seq_len))
 
 
 def _address_spaces_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> list[str]:
