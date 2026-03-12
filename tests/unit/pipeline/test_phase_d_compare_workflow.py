@@ -22,7 +22,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert report.decode_compare_count == 1
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
+    assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
     assert report.decode_compares[0].sync_cycles.delta_value == -40.0
+    assert report.decode_compares[0].projection_cycles.delta_value == -200.0
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
 
 
@@ -80,6 +82,36 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 2304.0,
                         "delta_value": -1280.0,
                         "delta_ratio": -0.3571428571,
+                    },
+                    "projection_cycles": {
+                        "baseline_value": 1536.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": -512.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "kv_io_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_cycles": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1792.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.125,
+                    },
+                    "sync_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_cycles": {
+                        "baseline_value": 512.0,
+                        "candidate_value": 256.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.5,
                     },
                     "tokens_per_cycle": {
                         "baseline_value": 0.03125,
@@ -148,6 +180,30 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 2240.0,
                         "delta_value": -640.0,
                         "delta_ratio": -0.2222222222,
+                    },
+                    "projection_cycles": {
+                        "baseline_value": 980.0,
+                        "candidate_value": 780.0,
+                        "delta_value": -200.0,
+                        "delta_ratio": -0.2040816327,
+                    },
+                    "kv_io_cycles": {
+                        "baseline_value": 900.0,
+                        "candidate_value": 700.0,
+                        "delta_value": -200.0,
+                        "delta_ratio": -0.2222222222,
+                    },
+                    "attention_cycles": {
+                        "baseline_value": 820.0,
+                        "candidate_value": 900.0,
+                        "delta_value": 80.0,
+                        "delta_ratio": 0.0975609756,
+                    },
+                    "other_cycles": {
+                        "baseline_value": 280.0,
+                        "candidate_value": 240.0,
+                        "delta_value": -40.0,
+                        "delta_ratio": -0.1428571429,
                     },
                     "cycles_per_token": {
                         "baseline_value": 3200.0,

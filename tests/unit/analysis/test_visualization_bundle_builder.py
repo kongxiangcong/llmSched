@@ -69,6 +69,9 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     } >= {
         "estimated_cycles",
         "critical_path_cycles",
+        "projection_cycles",
+        "attention_cycles",
+        "other_cycles",
         "tokens_per_critical_path_cycle",
     }
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
@@ -699,6 +702,36 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "candidate_value": 2304.0,
                         "delta_value": -1280.0,
                         "delta_ratio": -0.3571428571,
+                    },
+                    "projection_cycles": {
+                        "baseline_value": 1536.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": -512.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "kv_io_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_cycles": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1792.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.125,
+                    },
+                    "sync_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_cycles": {
+                        "baseline_value": 512.0,
+                        "candidate_value": 256.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.5,
                     },
                     "tokens_per_cycle": {
                         "baseline_value": 0.03125,

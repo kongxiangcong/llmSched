@@ -18,6 +18,8 @@ from llm_sched.contracts.prefill_report import (
 )
 
 MXU_HEAVY_MACROS = {"GEMM", "WDQ_GEMM", "RMSNORM_GEMM"}
+KV_IO_MACROS = {"KVLOAD", "KVSTORE"}
+ATTENTION_MACROS = {"SDPA", "ROPE", "ATTENTION_MASK_PREP"}
 
 
 def build_prefill_evaluation_report(
@@ -35,6 +37,21 @@ def build_prefill_evaluation_report(
     total_bytes = float(perf_summary.totals.get("total_bytes", 0.0))
     total_tokens = scenario.batch * scenario.seq_len
     mxu_cycles = _projection_cycles(perf_summary)
+    kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
+    attention_cycles = _phase_cycles(perf_summary, "attention")
+    sync_cycles = _phase_cycles(
+        perf_summary,
+        "sync",
+        fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
+    )
+    other_cycles = _phase_cycles(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            total_cycles - mxu_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+        ),
+    )
 
     return PrefillEvaluationReport(
         run_id=run_id,
@@ -48,6 +65,11 @@ def build_prefill_evaluation_report(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
             critical_path_cycles=critical_path_cycles,
+            projection_cycles=mxu_cycles,
+            kv_io_cycles=kv_io_cycles,
+            attention_cycles=attention_cycles,
+            sync_cycles=sync_cycles,
+            other_cycles=other_cycles,
             tokens_per_cycle=(total_tokens / total_cycles) if total_cycles > 0.0 else 0.0,
             tokens_per_critical_path_cycle=(
                 total_tokens / critical_path_cycles
@@ -79,14 +101,33 @@ def build_prefill_evaluation_report(
 
 
 def _projection_cycles(perf_summary: PerfSummaryReport) -> float:
-    phase_summary = perf_summary.phase_attribution.get("projection")
+    return _phase_cycles(perf_summary, "projection")
+
+
+def _phase_cycles(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float | None = None,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
     if phase_summary is not None:
         return float(phase_summary.estimated_cycles)
+    if fallback is not None:
+        return float(fallback)
+    if phase_name == "projection":
+        macros = MXU_HEAVY_MACROS
+    elif phase_name == "kv_io":
+        macros = KV_IO_MACROS
+    elif phase_name == "attention":
+        macros = ATTENTION_MACROS
+    else:
+        return 0.0
     return float(
         sum(
             cycles
             for macro_op, cycles in perf_summary.per_macro_cycles.items()
-            if macro_op in MXU_HEAVY_MACROS
+            if macro_op in macros
         )
     )
 

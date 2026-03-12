@@ -19,6 +19,11 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                 "tokens_per_critical_path_cycle": 128.0 / 3072.0,
                 "cycles_per_token": 32.0,
                 "bytes_per_cycle": 64.0,
+                "projection_cycles": 1536.0,
+                "kv_io_cycles": 0.0,
+                "attention_cycles": 2048.0,
+                "sync_cycles": 0.0,
+                "other_cycles": 512.0,
             },
             "memory_summary": {
                 "max_region_utilization": 0.75,
@@ -79,6 +84,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.throughput.total_tokens == 128
     assert report.throughput.critical_path_cycles == 3072.0
     assert report.throughput.tokens_per_critical_path_cycle == 128.0 / 3072.0
+    assert report.throughput.projection_cycles == 1536.0
+    assert report.throughput.attention_cycles == 2048.0
+    assert report.throughput.other_cycles == 512.0
     assert report.memory_summary.max_region_utilization == 0.75
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

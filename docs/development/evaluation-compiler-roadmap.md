@@ -1922,3 +1922,24 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-shaped-layer contract, especially richer multi-metric compare
   - any later `SPEC-19` compare adoption should stay downstream of the existing sweep and visualization contracts instead of reopening a new compare workflow
+
+## 2026-03-12 SPEC-16 Phase-Cycle Compare Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-16-phase-cycle-compare.md`
+- `SPEC-16` compare now preserves phase-cycle rows from the existing `SPEC-13 phase_attribution` surface instead of staying limited to top-line throughput and latency scalars.
+- `SPEC-18` visualization compare summaries now surface the same richer phase rows through the existing `scalar_deltas` path, without adding a new compare workflow or UI state model.
+- new closure evidence:
+  - `PrefillThroughputSummary` now carries `projection_cycles`, `kv_io_cycles`, `attention_cycles`, `sync_cycles`, and `other_cycles` with compatibility-friendly defaults
+  - sweep analysis now copies phase-cycle metrics from both prefill and decode reports into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve phase-cycle deltas alongside the existing top-line scalar deltas
+  - `PhaseDPrefillCompareRow` and `PhaseDDecodeCompareRow` now forward the same phase-cycle compare rows without redefining compare semantics downstream
+  - visualization bundle compare summaries now append `projection_cycles`, `kv_io_cycles`, `attention_cycles`, `sync_cycles`, and `other_cycles` where available through the existing compare-summary surface
+  - focused unit/workflow verification remains green, and CLI smoke for `run-phase-d-compare` plus `run-visualization-packaging` remains green
+- what this closes:
+  - one `SPEC-16` broader-compare gap where phase-level differences still disappeared when reports entered structured sweep compare
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where `prefill` still lacked the same phase-cycle top-line surface that `decode` already exposed
+  - one downstream-consumer gap where richer compare rows on `SPEC-18/19` would otherwise have required reopening raw perf artifacts instead of consuming the existing compare chain
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-layer contract, especially richer byte-aware or share-aware top-level compare
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

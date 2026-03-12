@@ -164,6 +164,11 @@ def _execute_run_root(
             metrics={
                 "estimated_cycles": report.throughput.estimated_cycles,
                 "critical_path_cycles": report.throughput.critical_path_cycles,
+                "projection_cycles": report.throughput.projection_cycles,
+                "kv_io_cycles": report.throughput.kv_io_cycles,
+                "attention_cycles": report.throughput.attention_cycles,
+                "sync_cycles": report.throughput.sync_cycles,
+                "other_cycles": report.throughput.other_cycles,
                 "tokens_per_cycle": report.throughput.tokens_per_cycle,
                 "tokens_per_critical_path_cycle": report.throughput.tokens_per_critical_path_cycle,
                 "cycles_per_token": report.throughput.cycles_per_token,
@@ -204,11 +209,15 @@ def _execute_run_root(
         metrics={
             "estimated_cycles": report.token_latency.estimated_cycles,
             "critical_path_cycles": report.token_latency.critical_path_cycles,
+            "projection_cycles": report.token_latency.projection_cycles,
+            "kv_io_cycles": report.token_latency.kv_io_cycles,
+            "attention_cycles": report.token_latency.attention_cycles,
             "cycles_per_token": report.token_latency.cycles_per_token,
             "critical_path_cycles_per_token": report.token_latency.critical_path_cycles_per_token,
             "kv_related_cycle_share": report.kv_summary.kv_related_cycle_share,
             "kv_related_bytes": report.kv_summary.kv_related_bytes,
             "sync_cycles": report.token_latency.sync_cycles,
+            "other_cycles": report.token_latency.other_cycles,
         },
         macro_hotspots=[
             SweepMacroPoint(

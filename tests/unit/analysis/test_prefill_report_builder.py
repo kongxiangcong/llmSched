@@ -28,6 +28,11 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.throughput.tokens_per_cycle == pytest.approx(128 / 4096.0)
     assert report.throughput.critical_path_cycles == pytest.approx(3072.0)
     assert report.throughput.tokens_per_critical_path_cycle == pytest.approx(128 / 3072.0)
+    assert report.throughput.projection_cycles == pytest.approx(1536.0)
+    assert report.throughput.kv_io_cycles == pytest.approx(0.0)
+    assert report.throughput.attention_cycles == pytest.approx(2048.0)
+    assert report.throughput.sync_cycles == pytest.approx(0.0)
+    assert report.throughput.other_cycles == pytest.approx(512.0)
     assert report.memory_summary.max_region_utilization == pytest.approx(0.75)
     assert report.memory_summary.overflow_region_count == 0
     assert report.memory_summary.unresolved_address_count == 1

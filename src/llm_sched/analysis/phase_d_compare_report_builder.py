@@ -31,6 +31,11 @@ def build_phase_d_compare_report(
                     layer_delta_count=len(comparison.layer_deltas),
                     estimated_cycles=comparison.prefill_compare.estimated_cycles,
                     critical_path_cycles=comparison.prefill_compare.critical_path_cycles,
+                    projection_cycles=comparison.prefill_compare.projection_cycles,
+                    kv_io_cycles=comparison.prefill_compare.kv_io_cycles,
+                    attention_cycles=comparison.prefill_compare.attention_cycles,
+                    sync_cycles=comparison.prefill_compare.sync_cycles,
+                    other_cycles=comparison.prefill_compare.other_cycles,
                     tokens_per_cycle=comparison.prefill_compare.tokens_per_cycle,
                     tokens_per_critical_path_cycle=comparison.prefill_compare.tokens_per_critical_path_cycle,
                     cycles_per_token=comparison.prefill_compare.cycles_per_token,
@@ -50,11 +55,15 @@ def build_phase_d_compare_report(
                     layer_delta_count=len(comparison.layer_deltas),
                     estimated_cycles=comparison.decode_compare.estimated_cycles,
                     critical_path_cycles=comparison.decode_compare.critical_path_cycles,
+                    projection_cycles=comparison.decode_compare.projection_cycles,
+                    kv_io_cycles=comparison.decode_compare.kv_io_cycles,
+                    attention_cycles=comparison.decode_compare.attention_cycles,
                     cycles_per_token=comparison.decode_compare.cycles_per_token,
                     critical_path_cycles_per_token=comparison.decode_compare.critical_path_cycles_per_token,
                     kv_related_cycle_share=comparison.decode_compare.kv_related_cycle_share,
                     kv_related_bytes=comparison.decode_compare.kv_related_bytes,
                     sync_cycles=comparison.decode_compare.sync_cycles,
+                    other_cycles=comparison.decode_compare.other_cycles,
                 )
             )
 

@@ -47,13 +47,19 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
     assert bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
         "estimated_cycles"
     )
-    assert {
+    metric_names = [
         scalar.metric_name for scalar in bundle.sweep_view.comparisons[0].compare_summary.scalar_deltas
-    } >= {
+    ]
+    assert set(metric_names) >= {
         "estimated_cycles",
         "critical_path_cycles",
         "critical_path_cycles_per_token",
+        "projection_cycles",
+        "kv_io_cycles",
+        "attention_cycles",
+        "other_cycles",
     }
+    assert metric_names.count("sync_cycles") == 1
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
@@ -158,6 +164,30 @@ def _phase_d_compare_report():
                         "candidate_value": 448.0,
                         "delta_value": -256.0,
                         "delta_ratio": -0.3636363636,
+                    },
+                    "projection_cycles": {
+                        "baseline_value": 200.0,
+                        "candidate_value": 128.0,
+                        "delta_value": -72.0,
+                        "delta_ratio": -0.36,
+                    },
+                    "kv_io_cycles": {
+                        "baseline_value": 256.0,
+                        "candidate_value": 192.0,
+                        "delta_value": -64.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "attention_cycles": {
+                        "baseline_value": 160.0,
+                        "candidate_value": 128.0,
+                        "delta_value": -32.0,
+                        "delta_ratio": -0.2,
+                    },
+                    "other_cycles": {
+                        "baseline_value": 48.0,
+                        "candidate_value": 32.0,
+                        "delta_value": -16.0,
+                        "delta_ratio": -0.3333333333,
                     },
                     "cycles_per_token": {
                         "baseline_value": 768.0,
