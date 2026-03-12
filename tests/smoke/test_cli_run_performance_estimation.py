@@ -46,6 +46,8 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert manifest["artifact_index"]["perf_summary_report"] == "reports/perf_summary_report.json"
     assert analysis_ir["records"]
     assert perf_report["totals"]["estimated_cycles"] > 0.0
+    assert perf_report["totals"]["critical_path_cycles"] > 0.0
+    assert perf_report["totals"]["critical_path_cycles"] == perf_report["schedule_makespan_slots"]
 
 
 def test_run_performance_estimation_rejects_missing_descriptor_without_traceback(

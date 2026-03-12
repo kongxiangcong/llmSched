@@ -72,6 +72,8 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     else:
         assert summary_report.vmem_region_peak_bytes_by_memory_class["weight"]["WEIGHT"] > 0
     assert summary_report.totals["estimated_cycles"] > 0.0
+    assert summary_report.totals["critical_path_cycles"] > 0.0
+    assert summary_report.totals["critical_path_cycles"] == float(summary_report.schedule_makespan_slots)
     assert summary_report.phase_attribution
     assert "other" in summary_report.phase_attribution
     assert summary_report.per_node_cycles

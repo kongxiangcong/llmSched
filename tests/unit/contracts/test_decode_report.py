@@ -14,7 +14,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
             "token_latency": {
                 "total_tokens": 1,
                 "estimated_cycles": 3120.0,
+                "critical_path_cycles": 2048.0,
                 "cycles_per_token": 3120.0,
+                "critical_path_cycles_per_token": 2048.0,
                 "projection_cycles": 1100.0,
                 "kv_io_cycles": 1100.0,
                 "attention_cycles": 700.0,
@@ -79,6 +81,8 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
 
     assert report.sdpa_decode_present is True
     assert report.token_latency.cycles_per_token == 3120.0
+    assert report.token_latency.critical_path_cycles == 2048.0
+    assert report.token_latency.critical_path_cycles_per_token == 2048.0
     assert report.kv_summary.kv_len == 2048
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

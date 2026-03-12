@@ -235,6 +235,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {
         "estimated_cycles": 74.0,
+        "critical_path_cycles": 54.0,
         "total_bytes": 49152.0,
         "read_bytes": 28672.0,
         "write_bytes": 20480.0,
@@ -360,6 +361,7 @@ def test_build_perf_summary_report_uses_union_busy_slots_instead_of_sum() -> Non
     assert report.per_core_busy_slots == {"0": 20, "1": 8}
     assert report.per_core_idle_slots == {"0": 10, "1": 22}
     assert report.schedule_stage_slot_totals == {"compute": 20, "dma_in": 10, "prepare": 8}
+    assert report.totals["critical_path_cycles"] == 30.0
     assert report.vmem_region_peak_bytes["ping"] == 20480
 
 
@@ -558,6 +560,7 @@ def test_build_perf_summary_report_aggregates_multiple_blocks_into_node_totals()
     assert report.per_node_bytes == {"nig.node.shared": 4608.0}
     assert report.per_layer_cycles == {"3": 48.0}
     assert report.per_layer_bytes == {"3": 4608.0}
+    assert report.totals["critical_path_cycles"] == 48.0
 
 
 def _memory_plan_fixture():

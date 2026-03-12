@@ -8,7 +8,9 @@ class PrefillThroughputSummary(BaseModel):
 
     total_tokens: int = Field(gt=0)
     estimated_cycles: float = Field(ge=0.0)
+    critical_path_cycles: float = Field(ge=0.0, default=0.0)
     tokens_per_cycle: float = Field(ge=0.0)
+    tokens_per_critical_path_cycle: float = Field(ge=0.0, default=0.0)
     cycles_per_token: float = Field(ge=0.0)
     bytes_per_cycle: float = Field(ge=0.0)
 

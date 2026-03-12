@@ -31,6 +31,7 @@ def build_prefill_evaluation_report(
         raise ValueError("prefill evaluation requires scenario.mode='prefill'")
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
+    critical_path_cycles = float(perf_summary.totals.get("critical_path_cycles", total_cycles))
     total_bytes = float(perf_summary.totals.get("total_bytes", 0.0))
     total_tokens = scenario.batch * scenario.seq_len
     mxu_cycles = _projection_cycles(perf_summary)
@@ -46,7 +47,11 @@ def build_prefill_evaluation_report(
         throughput=PrefillThroughputSummary(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
+            critical_path_cycles=critical_path_cycles,
             tokens_per_cycle=(total_tokens / total_cycles) if total_cycles > 0.0 else 0.0,
+            tokens_per_critical_path_cycle=(
+                total_tokens / critical_path_cycles
+            ) if critical_path_cycles > 0.0 else 0.0,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
             bytes_per_cycle=(total_bytes / total_cycles) if total_cycles > 0.0 else 0.0,
         ),

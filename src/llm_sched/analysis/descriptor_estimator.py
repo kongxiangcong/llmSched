@@ -189,6 +189,10 @@ def build_perf_summary_report(
         vmem_region_capacity_bytes,
         vmem_region_peak_utilization,
     ) = _summarize_vmem_regions(memory_plan)
+    totals["critical_path_cycles"] = _critical_path_cycles(
+        schedule_makespan_slots=schedule_makespan_slots,
+        estimated_cycles=float(totals["estimated_cycles"]),
+    )
 
     return PerfSummaryReport(
         run_id=run_id,
@@ -221,6 +225,12 @@ def build_perf_summary_report(
         isa_gap_counts=dict(coverage_report.gap_counts),
         issues=issues,
     )
+
+
+def _critical_path_cycles(*, schedule_makespan_slots: int, estimated_cycles: float) -> float:
+    if schedule_makespan_slots > 0:
+        return float(schedule_makespan_slots)
+    return float(estimated_cycles)
 
 
 def _accumulate_data_movement_breakdown(

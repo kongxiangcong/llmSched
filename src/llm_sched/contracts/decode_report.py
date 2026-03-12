@@ -8,7 +8,9 @@ class DecodeLatencySummary(BaseModel):
 
     total_tokens: int = Field(gt=0)
     estimated_cycles: float = Field(ge=0.0)
+    critical_path_cycles: float = Field(ge=0.0, default=0.0)
     cycles_per_token: float = Field(ge=0.0)
+    critical_path_cycles_per_token: float = Field(ge=0.0, default=0.0)
     projection_cycles: float = Field(ge=0.0)
     kv_io_cycles: float = Field(ge=0.0)
     attention_cycles: float = Field(ge=0.0)

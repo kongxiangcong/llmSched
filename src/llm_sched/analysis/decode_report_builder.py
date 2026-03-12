@@ -33,6 +33,7 @@ def build_decode_evaluation_report(
         raise ValueError("decode evaluation requires scenario.mode='decode'")
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
+    critical_path_cycles = float(perf_summary.totals.get("critical_path_cycles", total_cycles))
     total_tokens = scenario.batch * scenario.seq_len
     projection_cycles = _phase_cycles(perf_summary, "projection")
     kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
@@ -67,7 +68,11 @@ def build_decode_evaluation_report(
         token_latency=DecodeLatencySummary(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
+            critical_path_cycles=critical_path_cycles,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
+            critical_path_cycles_per_token=(
+                critical_path_cycles / total_tokens
+            ) if total_tokens > 0 else 0.0,
             projection_cycles=projection_cycles,
             kv_io_cycles=kv_io_cycles,
             attention_cycles=attention_cycles,

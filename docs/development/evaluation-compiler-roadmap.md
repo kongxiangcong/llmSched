@@ -43,7 +43,7 @@
 | SPEC-10 | 单核映射与调度器 | C | `done` | 已有扩展后的 `ScheduleIR`、interval reservations、duration policy、phased reservations，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 scheduler surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
 | SPEC-11 | 双核映射与调度器 | C | `done` | 已有 dual-core `ScheduleIR` foundation、transfer/sync overlap、shared-resource contention，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 dual-core surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
 | SPEC-12 | 描述符生成与 ISA 覆盖映射 | C | `done` | 已有稳定 `DescriptorIR` / packed stream artifact、summary-grade packed consumer proof、workbench packed-summary visibility，以及 structured `address_fields` 对 `storage_binding_id/backing_store` 的直接复用。 | packed summary consumer proof + workbench summary visibility 已纳入当前 canonical gate；per-record drilldown 和更重 ABI hardening 不再阻塞 `M2`。 |
-| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries和 summary-grade `phase_attribution`。 | 仍缺更深 cycle model，以及高于当前 token-phase / node-layer summary surface 的 compare-grade 聚合。 |
+| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
 | SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
 | SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
 | SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
@@ -1835,9 +1835,29 @@ graph TD
   - one workflow gap where compare-only reuse required rerunning or repacking sweep analysis instead of lifting a dedicated artifact from the cached sweep root
   - one closure gap between `SPEC-14/15` top-level metrics and a standalone machine-readable compare report
 - what still remains for `M3`:
-  - deeper `SPEC-13` cycle model and token-phase attribution
+  - deeper `SPEC-13` cycle fitting below the current critical-path and token-phase summary surfaces
   - richer layer-level compare surfacing above the current report-level summaries
   - stronger downstream-consumer adoption of the standalone compare artifact such as `SPEC-18/19`
+
+## 2026-03-12 SPEC-13 Critical-Path Cycles Checkpoint
+
+- plan doc: `../plans/2026-03-12-spec-13-critical-path-cycles.md`
+- `SPEC-13` now carries overlap-aware `critical_path_cycles` inside `PerfSummaryReport.totals`, and `SPEC-14` / `SPEC-15` now expose the same top-line cycle signal directly in their summary sections.
+- new closure evidence:
+  - `PerfSummaryReport.totals["critical_path_cycles"]` now resolves to `schedule_makespan_slots` when schedule timing exists and falls back to summed work cycles otherwise
+  - `DecodeLatencySummary` now carries `critical_path_cycles` and `critical_path_cycles_per_token`
+  - `PrefillThroughputSummary` now carries `critical_path_cycles` and `tokens_per_critical_path_cycle`
+  - performance-estimation workflow and CLI artifact now preserve the new top-line cycle surface end to end
+  - focused Phase D contract/builder/workflow verification remains green with the stronger summary contract
+  - CLI smoke for `run-performance-estimation`, `run-prefill-evaluation`, and `run-decode-evaluation` remains green
+- what this closes:
+  - one `SPEC-13` gap where overlap-aware top-line cycle accounting still existed only as raw schedule makespan rather than as a reusable perf-summary signal
+  - one `SPEC-14/15` gap where top-level latency and throughput shells could not expose the stronger schedule-aware cycle model without reopening perf artifacts
+  - one closure gap between summary-grade phase attribution and a comparable top-line cycle metric that reflects core/stage overlap
+- what still remains for `M3`:
+  - deeper cycle fitting below the current critical-path summary, especially inside macro- and phase-level work models
+  - richer `SPEC-16` compare surfaces once the project is ready to compare `critical_path_cycles` alongside the legacy `estimated_cycles`
+  - any later `SPEC-19` metric migration should consume this perf surface instead of redefining top-line cycle semantics downstream
 
 ## 2026-03-12 SPEC-18/19 Phase D Compare Consumption Checkpoint
 
@@ -1857,6 +1877,6 @@ graph TD
   - one closure gap where `PhaseDCompareReport` existed as an artifact but had no first-class visualization consumers
   - one workflow gap where packaged compare surfaces still depended on raw `SweepComparison` traversal for top-level summary reuse
 - what still remains for `M3`:
-  - deeper `SPEC-13` cycle model and token-phase attribution
+  - deeper `SPEC-13` cycle fitting below the current critical-path and token-phase summary surfaces
   - richer `SPEC-16` diff modes above the current scalar-plus-layer summary surface
   - any later `SPEC-19` deeper drill-down or export work should stay downstream of this compare-summary handoff instead of reopening new compare foundations

@@ -28,6 +28,8 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
 
     assert report.scenario_name == "decode_token1_kv2048"
     assert report.token_latency.estimated_cycles > 0.0
+    assert report.token_latency.critical_path_cycles > 0.0
+    assert report.token_latency.critical_path_cycles_per_token > 0.0
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}

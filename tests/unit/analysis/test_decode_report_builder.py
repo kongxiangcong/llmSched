@@ -21,6 +21,8 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.sdpa_decode_present is True
     assert report.token_latency.total_tokens == 1
     assert report.token_latency.cycles_per_token == pytest.approx(3120.0)
+    assert report.token_latency.critical_path_cycles == pytest.approx(2048.0)
+    assert report.token_latency.critical_path_cycles_per_token == pytest.approx(2048.0)
     assert report.token_latency.projection_cycles == pytest.approx(980.0)
     assert report.token_latency.kv_io_cycles == pytest.approx(960.0)
     assert report.token_latency.attention_cycles == pytest.approx(820.0)
@@ -138,6 +140,7 @@ def _perf_summary_report() -> PerfSummaryReport:
             "schedule_kind": "dual-core",
             "totals": {
                 "estimated_cycles": 3120.0,
+                "critical_path_cycles": 2048.0,
                 "total_bytes": 180000.0,
                 "read_bytes": 120000.0,
                 "write_bytes": 60000.0,

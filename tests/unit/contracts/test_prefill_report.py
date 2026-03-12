@@ -14,7 +14,9 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
             "throughput": {
                 "total_tokens": 128,
                 "estimated_cycles": 4096.0,
+                "critical_path_cycles": 3072.0,
                 "tokens_per_cycle": 0.03125,
+                "tokens_per_critical_path_cycle": 128.0 / 3072.0,
                 "cycles_per_token": 32.0,
                 "bytes_per_cycle": 64.0,
             },
@@ -75,6 +77,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
 
     assert report.mxu_dominant is True
     assert report.throughput.total_tokens == 128
+    assert report.throughput.critical_path_cycles == 3072.0
+    assert report.throughput.tokens_per_critical_path_cycle == 128.0 / 3072.0
     assert report.memory_summary.max_region_utilization == 0.75
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

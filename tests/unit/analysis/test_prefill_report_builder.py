@@ -26,6 +26,8 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.mxu_dominant is False
     assert report.throughput.total_tokens == 128
     assert report.throughput.tokens_per_cycle == pytest.approx(128 / 4096.0)
+    assert report.throughput.critical_path_cycles == pytest.approx(3072.0)
+    assert report.throughput.tokens_per_critical_path_cycle == pytest.approx(128 / 3072.0)
     assert report.memory_summary.max_region_utilization == pytest.approx(0.75)
     assert report.memory_summary.overflow_region_count == 0
     assert report.memory_summary.unresolved_address_count == 1
@@ -132,6 +134,7 @@ def _perf_summary_report() -> PerfSummaryReport:
             "schedule_kind": "single-core",
             "totals": {
                 "estimated_cycles": 4096.0,
+                "critical_path_cycles": 3072.0,
                 "total_bytes": 262144.0,
                 "read_bytes": 196608.0,
                 "write_bytes": 65536.0,

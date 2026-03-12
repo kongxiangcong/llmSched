@@ -22,7 +22,11 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             },
             "vmem_region_capacity_bytes": {"ping": 30720, "pong": 30720},
             "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
-            "totals": {"estimated_cycles": 1024.0, "total_bytes": 65536.0},
+            "totals": {
+                "estimated_cycles": 1024.0,
+                "critical_path_cycles": 128.0,
+                "total_bytes": 65536.0,
+            },
             "phase_attribution": {
                 "projection": {"estimated_cycles": 768.0, "total_bytes": 32768.0},
                 "sync": {"estimated_cycles": 256.0, "total_bytes": 32768.0},
@@ -62,6 +66,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.vmem_region_capacity_bytes["pong"] == 30720
     assert report.vmem_region_peak_utilization["ping"] == 0.8
     assert report.totals["estimated_cycles"] == 1024.0
+    assert report.totals["critical_path_cycles"] == 128.0
     assert report.phase_attribution["projection"].estimated_cycles == 768.0
     assert report.phase_attribution["sync"].total_bytes == 32768.0
     assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
