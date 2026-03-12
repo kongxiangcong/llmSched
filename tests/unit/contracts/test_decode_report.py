@@ -42,6 +42,11 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                             "vmem-local": 8000.0,
                         },
                         "write_bytes_by_backing_store": {"vmem-local": 10000.0},
+                        "read_bytes_by_memory_class": {
+                            "WEIGHT": 32000.0,
+                            "ACTIVATION": 8000.0,
+                        },
+                        "write_bytes_by_memory_class": {"ACTIVATION": 10000.0},
                     },
                     "kv_io": {
                         "estimated_cycles": 1100.0,
@@ -54,6 +59,8 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                         "write_bytes_by_address_space": {"DDR": 32000.0},
                         "read_bytes_by_backing_store": {"ddr-persistent": 64000.0},
                         "write_bytes_by_backing_store": {"ddr-persistent": 32000.0},
+                        "read_bytes_by_memory_class": {"KV_CACHE": 64000.0},
+                        "write_bytes_by_memory_class": {"KV_CACHE": 32000.0},
                     },
                     "attention": {
                         "estimated_cycles": 700.0,
@@ -69,6 +76,11 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                             "vmem-local": 8000.0,
                         },
                         "write_bytes_by_backing_store": {"vmem-local": 2000.0},
+                        "read_bytes_by_memory_class": {
+                            "KV_CACHE": 16000.0,
+                            "ACTIVATION": 8000.0,
+                        },
+                        "write_bytes_by_memory_class": {"ACTIVATION": 2000.0},
                     },
                     "sync": {
                         "estimated_cycles": 120.0,
@@ -81,6 +93,8 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                         "write_bytes_by_address_space": {},
                         "read_bytes_by_backing_store": {},
                         "write_bytes_by_backing_store": {},
+                        "read_bytes_by_memory_class": {},
+                        "write_bytes_by_memory_class": {},
                     },
                     "other": {
                         "estimated_cycles": 100.0,
@@ -95,6 +109,11 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                         "write_bytes_by_backing_store": {
                             "ddr-persistent": 16000.0,
                             "vmem-local": 4000.0,
+                        },
+                        "read_bytes_by_memory_class": {"ACTIVATION": 4000.0},
+                        "write_bytes_by_memory_class": {
+                            "KV_CACHE": 16000.0,
+                            "ACTIVATION": 4000.0,
                         },
                     },
                 },
@@ -170,6 +189,8 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.token_latency.phase_attribution["other"].write_bytes_by_address_space["DDR"] == 16000.0
     assert report.token_latency.phase_attribution["kv_io"].read_bytes_by_backing_store["ddr-persistent"] == 64000.0
     assert report.token_latency.phase_attribution["other"].write_bytes_by_backing_store["ddr-persistent"] == 16000.0
+    assert report.token_latency.phase_attribution["kv_io"].read_bytes_by_memory_class["KV_CACHE"] == 64000.0
+    assert report.token_latency.phase_attribution["other"].write_bytes_by_memory_class["KV_CACHE"] == 16000.0
     assert report.kv_summary.kv_len == 2048
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

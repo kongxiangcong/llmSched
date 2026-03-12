@@ -255,6 +255,8 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
         "ddr-backed-staged": 8192.0
     }
     assert report.phase_attribution["projection"].write_bytes_by_backing_store == {}
+    assert report.phase_attribution["projection"].read_bytes_by_memory_class == {"WEIGHT": 8192.0}
+    assert report.phase_attribution["projection"].write_bytes_by_memory_class == {}
     assert report.phase_attribution["sync"].estimated_cycles == 18.0
     assert report.phase_attribution["sync"].total_bytes == 0.0
     assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
@@ -263,6 +265,8 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["sync"].write_bytes_by_address_space == {}
     assert report.phase_attribution["sync"].read_bytes_by_backing_store == {}
     assert report.phase_attribution["sync"].write_bytes_by_backing_store == {}
+    assert report.phase_attribution["sync"].read_bytes_by_memory_class == {}
+    assert report.phase_attribution["sync"].write_bytes_by_memory_class == {}
     assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
     assert report.phase_attribution["attention"].estimated_cycles == 0.0
     assert report.phase_attribution["other"].estimated_cycles == 8.0
@@ -273,6 +277,8 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["other"].write_bytes_by_address_space == {"VMEM": 8192.0}
     assert report.phase_attribution["other"].read_bytes_by_backing_store == {"vmem-local": 8192.0}
     assert report.phase_attribution["other"].write_bytes_by_backing_store == {"vmem-local": 8192.0}
+    assert report.phase_attribution["other"].read_bytes_by_memory_class == {"ACTIVATION": 8192.0}
+    assert report.phase_attribution["other"].write_bytes_by_memory_class == {"ACTIVATION": 8192.0}
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {

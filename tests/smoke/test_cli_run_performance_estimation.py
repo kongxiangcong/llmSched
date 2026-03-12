@@ -56,6 +56,8 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert isinstance(perf_report["phase_attribution"]["projection"]["write_bytes_by_address_space"], dict)
     assert isinstance(perf_report["phase_attribution"]["projection"]["read_bytes_by_backing_store"], dict)
     assert isinstance(perf_report["phase_attribution"]["projection"]["write_bytes_by_backing_store"], dict)
+    assert isinstance(perf_report["phase_attribution"]["projection"]["read_bytes_by_memory_class"], dict)
+    assert isinstance(perf_report["phase_attribution"]["projection"]["write_bytes_by_memory_class"], dict)
 
 
 def test_run_performance_estimation_rejects_missing_descriptor_without_traceback(

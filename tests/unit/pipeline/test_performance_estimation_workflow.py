@@ -84,6 +84,8 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert isinstance(summary_report.phase_attribution["other"].write_bytes_by_address_space, dict)
     assert isinstance(summary_report.phase_attribution["other"].read_bytes_by_backing_store, dict)
     assert isinstance(summary_report.phase_attribution["other"].write_bytes_by_backing_store, dict)
+    assert isinstance(summary_report.phase_attribution["other"].read_bytes_by_memory_class, dict)
+    assert isinstance(summary_report.phase_attribution["other"].write_bytes_by_memory_class, dict)
     assert summary_report.per_node_cycles
     assert summary_report.per_node_bytes
     assert summary_report.per_layer_cycles

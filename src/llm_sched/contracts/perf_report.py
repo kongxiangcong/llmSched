@@ -24,6 +24,8 @@ class PerfPhaseSummary(BaseModel):
     write_bytes_by_address_space: dict[str, float] = Field(default_factory=dict)
     read_bytes_by_backing_store: dict[str, float] = Field(default_factory=dict)
     write_bytes_by_backing_store: dict[str, float] = Field(default_factory=dict)
+    read_bytes_by_memory_class: dict[str, float] = Field(default_factory=dict)
+    write_bytes_by_memory_class: dict[str, float] = Field(default_factory=dict)
 
 
 class PerfSummaryReport(BaseModel):

@@ -58,6 +58,16 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
         "ddr-persistent": 81920.0,
         "vmem-local": 32768.0,
     }
+    assert report.throughput.phase_attribution["projection"].read_bytes_by_memory_class == {
+        "WEIGHT": 49152.0
+    }
+    assert report.throughput.phase_attribution["projection"].write_bytes_by_memory_class == {
+        "ACTIVATION": 16384.0
+    }
+    assert report.throughput.phase_attribution["attention"].read_bytes_by_memory_class == {
+        "ACTIVATION": 32768.0,
+        "KV_CACHE": 81920.0,
+    }
     assert report.memory_summary.max_region_utilization == pytest.approx(0.75)
     assert report.memory_summary.overflow_region_count == 0
     assert report.memory_summary.unresolved_address_count == 1
@@ -182,6 +192,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "write_bytes_by_address_space": {"VMEM": 16384.0},
                     "read_bytes_by_backing_store": {"ddr-backed-staged": 49152.0},
                     "write_bytes_by_backing_store": {"vmem-local": 16384.0},
+                    "read_bytes_by_memory_class": {"WEIGHT": 49152.0},
+                    "write_bytes_by_memory_class": {"ACTIVATION": 16384.0},
                 },
                 "kv_io": {
                     "estimated_cycles": 0.0,
@@ -194,6 +206,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {},
+                    "write_bytes_by_memory_class": {},
                 },
                 "attention": {
                     "estimated_cycles": 2048.0,
@@ -206,6 +220,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "write_bytes_by_address_space": {"VMEM": 49152.0},
                     "read_bytes_by_backing_store": {"ddr-persistent": 81920.0, "vmem-local": 32768.0},
                     "write_bytes_by_backing_store": {"vmem-local": 49152.0},
+                    "read_bytes_by_memory_class": {"KV_CACHE": 81920.0, "ACTIVATION": 32768.0},
+                    "write_bytes_by_memory_class": {"ACTIVATION": 49152.0},
                 },
                 "sync": {
                     "estimated_cycles": 0.0,
@@ -218,6 +234,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {},
+                    "write_bytes_by_memory_class": {},
                 },
                 "other": {
                     "estimated_cycles": 512.0,
@@ -230,6 +248,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "write_bytes_by_address_space": {"VMEM": 16384.0},
                     "read_bytes_by_backing_store": {"vmem-local": 16384.0},
                     "write_bytes_by_backing_store": {"vmem-local": 16384.0},
+                    "read_bytes_by_memory_class": {"ACTIVATION": 16384.0},
+                    "write_bytes_by_memory_class": {"ACTIVATION": 16384.0},
                 },
             },
             "per_macro_cycles": {

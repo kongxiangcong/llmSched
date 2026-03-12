@@ -39,6 +39,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "write_bytes_by_address_space": {"VMEM": 8192.0},
                     "read_bytes_by_backing_store": {"ddr-backed-staged": 24576.0},
                     "write_bytes_by_backing_store": {"vmem-local": 8192.0},
+                    "read_bytes_by_memory_class": {"WEIGHT": 24576.0},
+                    "write_bytes_by_memory_class": {"ACTIVATION": 8192.0},
                 },
                 "sync": {
                     "estimated_cycles": 256.0,
@@ -51,6 +53,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {"ddr-persistent": 8192.0},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {"KV_CACHE": 8192.0},
+                    "write_bytes_by_memory_class": {},
                 },
                 "kv_io": {
                     "estimated_cycles": 0.0,
@@ -63,6 +67,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {},
+                    "write_bytes_by_memory_class": {},
                 },
                 "attention": {
                     "estimated_cycles": 0.0,
@@ -75,6 +81,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {},
+                    "write_bytes_by_memory_class": {},
                 },
                 "other": {
                     "estimated_cycles": 0.0,
@@ -87,6 +95,8 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
                     "write_bytes_by_backing_store": {},
+                    "read_bytes_by_memory_class": {},
+                    "write_bytes_by_memory_class": {},
                 },
             },
             "per_macro_cycles": {"WDQ_GEMM": 768.0, "DMA_TRANSFER": 256.0},
@@ -134,6 +144,9 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.phase_attribution["projection"].read_bytes_by_backing_store["ddr-backed-staged"] == 24576.0
     assert report.phase_attribution["projection"].write_bytes_by_backing_store["vmem-local"] == 8192.0
     assert report.phase_attribution["sync"].write_bytes_by_backing_store == {}
+    assert report.phase_attribution["projection"].read_bytes_by_memory_class["WEIGHT"] == 24576.0
+    assert report.phase_attribution["projection"].write_bytes_by_memory_class["ACTIVATION"] == 8192.0
+    assert report.phase_attribution["sync"].write_bytes_by_memory_class == {}
     assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
     assert report.per_node_cycles["nig.node.linear.0"] == 768.0
     assert report.per_node_bytes["nig.node.transfer.0"] == 32768.0

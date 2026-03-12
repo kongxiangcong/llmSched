@@ -83,6 +83,7 @@ def build_perf_summary_report(
     memory_plan: MemoryPlanArtifact | None = None,
 ) -> PerfSummaryReport:
     descriptor_by_subject = {descriptor.schedule_block_id: descriptor for descriptor in descriptor_ir.descriptors}
+    memory_class_by_storage_binding = _memory_class_by_storage_binding(memory_plan)
     node_by_subject = (
         {block.block_id: block.node_id for block in schedule_ir.blocks}
         if schedule_ir is not None
@@ -119,6 +120,12 @@ def build_perf_summary_report(
         lambda: defaultdict(float)
     )
     phase_write_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    phase_read_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    phase_write_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
     totals = {
@@ -199,6 +206,14 @@ def build_perf_summary_report(
             phase_read_bytes_by_backing_store,
             phase_write_bytes_by_backing_store,
         )
+        _accumulate_phase_memory_class_breakdown(
+            record_phase_name,
+            descriptor,
+            record.metrics,
+            memory_class_by_storage_binding,
+            phase_read_bytes_by_memory_class,
+            phase_write_bytes_by_memory_class,
+        )
 
     if schedule_ir is not None:
         (
@@ -252,6 +267,8 @@ def build_perf_summary_report(
             phase_write_bytes_by_address_space=phase_write_bytes_by_address_space,
             phase_read_bytes_by_backing_store=phase_read_bytes_by_backing_store,
             phase_write_bytes_by_backing_store=phase_write_bytes_by_backing_store,
+            phase_read_bytes_by_memory_class=phase_read_bytes_by_memory_class,
+            phase_write_bytes_by_memory_class=phase_write_bytes_by_memory_class,
             total_tokens=total_tokens,
         ),
         per_macro_cycles=dict(per_macro_cycles),
@@ -311,6 +328,23 @@ def _accumulate_phase_backing_store_breakdown(
     )
 
 
+def _accumulate_phase_memory_class_breakdown(
+    phase_name: str,
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    memory_class_by_storage_binding: dict[str, str],
+    phase_read_totals: defaultdict[str, defaultdict[str, float]],
+    phase_write_totals: defaultdict[str, defaultdict[str, float]],
+) -> None:
+    _accumulate_memory_class_breakdown(
+        descriptor,
+        metrics,
+        memory_class_by_storage_binding,
+        phase_read_totals[phase_name],
+        phase_write_totals[phase_name],
+    )
+
+
 def _accumulate_address_space_breakdown(
     descriptor: DescriptorRecord,
     metrics: dict[str, float],
@@ -351,6 +385,36 @@ def _accumulate_backing_store_breakdown(
         inferred_ddr_weight_bytes = _infer_external_weight_bytes(descriptor)
         if inferred_ddr_weight_bytes > 0.0:
             read_totals["ddr-backed-staged"] += inferred_ddr_weight_bytes
+
+
+def _accumulate_memory_class_breakdown(
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    memory_class_by_storage_binding: dict[str, str],
+    read_totals: defaultdict[str, float],
+    write_totals: defaultdict[str, float],
+) -> None:
+    stage = str(descriptor.ctrl_fields.get("stage", "compute"))
+    read_bytes = float(metrics.get("read_bytes", 0.0))
+    write_bytes = float(metrics.get("write_bytes", 0.0))
+    read_classes = _memory_classes_for_roles(
+        descriptor,
+        _read_roles_for_stage(stage),
+        memory_class_by_storage_binding,
+    )
+    write_classes = _memory_classes_for_roles(
+        descriptor,
+        _write_roles_for_stage(stage),
+        memory_class_by_storage_binding,
+    )
+
+    _distribute_bytes(read_totals, read_classes, read_bytes)
+    _distribute_bytes(write_totals, write_classes, write_bytes)
+
+    if stage == "compute":
+        inferred_ddr_weight_bytes = _infer_external_weight_bytes(descriptor)
+        if inferred_ddr_weight_bytes > 0.0:
+            read_totals["WEIGHT"] += inferred_ddr_weight_bytes
 
 
 def _summarize_vmem_regions(
@@ -421,6 +485,8 @@ def _build_phase_attribution(
     phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     phase_read_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]],
     phase_write_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]],
+    phase_read_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]],
+    phase_write_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]],
     total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
     return {
@@ -448,6 +514,12 @@ def _build_phase_attribution(
             ),
             write_bytes_by_backing_store=dict(
                 sorted(phase_write_bytes_by_backing_store.get(phase_name, {}).items())
+            ),
+            read_bytes_by_memory_class=dict(
+                sorted(phase_read_bytes_by_memory_class.get(phase_name, {}).items())
+            ),
+            write_bytes_by_memory_class=dict(
+                sorted(phase_write_bytes_by_memory_class.get(phase_name, {}).items())
             ),
         )
         for phase_name in _PERF_PHASE_ORDER
@@ -523,6 +595,48 @@ def _backing_store_for_field(field: AddressField) -> str | None:
             return "ddr-persistent"
         return "ddr-backed-staged"
     return None
+
+
+def _memory_classes_for_roles(
+    descriptor: DescriptorRecord,
+    roles: set[str],
+    memory_class_by_storage_binding: dict[str, str],
+) -> list[str]:
+    classes = [
+        memory_class
+        for field in descriptor.address_fields
+        if field.role in roles
+        if (memory_class := _memory_class_for_field(field, memory_class_by_storage_binding)) is not None
+    ]
+    return sorted(set(classes))
+
+
+def _memory_class_for_field(
+    field: AddressField,
+    memory_class_by_storage_binding: dict[str, str],
+) -> str | None:
+    if field.storage_binding_id:
+        resolved = memory_class_by_storage_binding.get(field.storage_binding_id)
+        if resolved is not None:
+            return resolved
+    if field.role == "weight":
+        return "WEIGHT"
+    if field.role in {"scale", "zp", "quant"}:
+        return "QUANT_PARAM"
+    if field.role == "kv":
+        return "KV_CACHE"
+    if field.role in {"input", "activation", "output", "dst", "src"}:
+        return "ACTIVATION"
+    return None
+
+
+def _memory_class_by_storage_binding(memory_plan: MemoryPlanArtifact | None) -> dict[str, str]:
+    if memory_plan is None:
+        return {}
+    return {
+        binding.binding_id: binding.memory_class
+        for binding in memory_plan.storage_bindings
+    }
 
 
 def _read_roles_for_stage(stage: str) -> set[str]:
