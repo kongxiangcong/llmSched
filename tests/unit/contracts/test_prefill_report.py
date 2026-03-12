@@ -39,6 +39,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "occupied_slots_per_token": 8.0,
                         "read_bytes_by_address_space": {"DDR": 49152.0},
                         "write_bytes_by_address_space": {"VMEM": 16384.0},
+                        "read_bytes_by_backing_store": {"ddr-backed-staged": 49152.0},
+                        "write_bytes_by_backing_store": {"vmem-local": 16384.0},
                     },
                     "kv_io": {
                         "estimated_cycles": 0.0,
@@ -49,6 +51,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "occupied_slots_per_token": 0.0,
                         "read_bytes_by_address_space": {},
                         "write_bytes_by_address_space": {},
+                        "read_bytes_by_backing_store": {},
+                        "write_bytes_by_backing_store": {},
                     },
                     "attention": {
                         "estimated_cycles": 2048.0,
@@ -59,6 +63,11 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "occupied_slots_per_token": 12.0,
                         "read_bytes_by_address_space": {"DDR": 81920.0, "VMEM": 32768.0},
                         "write_bytes_by_address_space": {"VMEM": 49152.0},
+                        "read_bytes_by_backing_store": {
+                            "ddr-persistent": 81920.0,
+                            "vmem-local": 32768.0,
+                        },
+                        "write_bytes_by_backing_store": {"vmem-local": 49152.0},
                     },
                     "sync": {
                         "estimated_cycles": 0.0,
@@ -69,6 +78,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "occupied_slots_per_token": 0.0,
                         "read_bytes_by_address_space": {},
                         "write_bytes_by_address_space": {},
+                        "read_bytes_by_backing_store": {},
+                        "write_bytes_by_backing_store": {},
                     },
                     "other": {
                         "estimated_cycles": 512.0,
@@ -79,6 +90,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
                         "occupied_slots_per_token": 4.0,
                         "read_bytes_by_address_space": {"VMEM": 16384.0},
                         "write_bytes_by_address_space": {"VMEM": 16384.0},
+                        "read_bytes_by_backing_store": {"vmem-local": 16384.0},
+                        "write_bytes_by_backing_store": {"vmem-local": 16384.0},
                     },
                 },
             },
@@ -153,6 +166,8 @@ def test_prefill_evaluation_report_tracks_throughput_memory_and_hotspots() -> No
     assert report.throughput.phase_attribution["other"].occupied_slots_per_token == 4.0
     assert report.throughput.phase_attribution["projection"].read_bytes_by_address_space["DDR"] == 49152.0
     assert report.throughput.phase_attribution["attention"].write_bytes_by_address_space["VMEM"] == 49152.0
+    assert report.throughput.phase_attribution["projection"].read_bytes_by_backing_store["ddr-backed-staged"] == 49152.0
+    assert report.throughput.phase_attribution["attention"].write_bytes_by_backing_store["vmem-local"] == 49152.0
     assert report.memory_summary.max_region_utilization == 0.75
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

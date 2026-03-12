@@ -39,6 +39,8 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.throughput.phase_attribution["other"].occupied_slots_per_token >= 0.0
     assert isinstance(report.throughput.phase_attribution["projection"].read_bytes_by_address_space, dict)
     assert isinstance(report.throughput.phase_attribution["projection"].write_bytes_by_address_space, dict)
+    assert isinstance(report.throughput.phase_attribution["projection"].read_bytes_by_backing_store, dict)
+    assert isinstance(report.throughput.phase_attribution["projection"].write_bytes_by_backing_store, dict)
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}

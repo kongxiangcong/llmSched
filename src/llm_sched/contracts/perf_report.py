@@ -22,6 +22,8 @@ class PerfPhaseSummary(BaseModel):
     occupied_slots_per_token: float = Field(ge=0.0, default=0.0)
     read_bytes_by_address_space: dict[str, float] = Field(default_factory=dict)
     write_bytes_by_address_space: dict[str, float] = Field(default_factory=dict)
+    read_bytes_by_backing_store: dict[str, float] = Field(default_factory=dict)
+    write_bytes_by_backing_store: dict[str, float] = Field(default_factory=dict)
 
 
 class PerfSummaryReport(BaseModel):

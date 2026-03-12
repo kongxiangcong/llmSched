@@ -50,6 +50,8 @@ def test_run_prefill_evaluation_writes_report_for_single_core(
     assert report["throughput"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
     assert isinstance(report["throughput"]["phase_attribution"]["projection"]["read_bytes_by_address_space"], dict)
     assert isinstance(report["throughput"]["phase_attribution"]["projection"]["write_bytes_by_address_space"], dict)
+    assert isinstance(report["throughput"]["phase_attribution"]["projection"]["read_bytes_by_backing_store"], dict)
+    assert isinstance(report["throughput"]["phase_attribution"]["projection"]["write_bytes_by_backing_store"], dict)
 
 
 def test_run_prefill_evaluation_rejects_decode_without_traceback(

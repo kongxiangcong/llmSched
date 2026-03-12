@@ -50,6 +50,8 @@ def test_run_decode_evaluation_writes_report_for_single_core(
     assert report["token_latency"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["read_bytes_by_address_space"], dict)
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["write_bytes_by_address_space"], dict)
+    assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["read_bytes_by_backing_store"], dict)
+    assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["write_bytes_by_backing_store"], dict)
 
 
 def test_run_decode_evaluation_rejects_prefill_without_traceback(

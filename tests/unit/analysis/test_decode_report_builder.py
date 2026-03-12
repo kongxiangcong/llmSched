@@ -46,6 +46,17 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
         "DDR": 16000.0,
         "VMEM": 4000.0,
     }
+    assert report.token_latency.phase_attribution["projection"].read_bytes_by_backing_store == {
+        "ddr-backed-staged": 32000.0,
+        "vmem-local": 8000.0,
+    }
+    assert report.token_latency.phase_attribution["kv_io"].write_bytes_by_backing_store == {
+        "ddr-persistent": 32000.0
+    }
+    assert report.token_latency.phase_attribution["other"].write_bytes_by_backing_store == {
+        "ddr-persistent": 16000.0,
+        "vmem-local": 4000.0,
+    }
     assert report.kv_summary.kv_len == 2048
     assert report.kv_summary.kv_formula_count == 2
     assert report.kv_summary.unresolved_address_count == 1
@@ -174,6 +185,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "occupied_slots_per_token": 640.0,
                     "read_bytes_by_address_space": {"DDR": 32000.0, "VMEM": 8000.0},
                     "write_bytes_by_address_space": {"VMEM": 10000.0},
+                    "read_bytes_by_backing_store": {"ddr-backed-staged": 32000.0, "vmem-local": 8000.0},
+                    "write_bytes_by_backing_store": {"vmem-local": 10000.0},
                 },
                 "kv_io": {
                     "estimated_cycles": 960.0,
@@ -184,6 +197,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "occupied_slots_per_token": 960.0,
                     "read_bytes_by_address_space": {"DDR": 64000.0},
                     "write_bytes_by_address_space": {"DDR": 32000.0},
+                    "read_bytes_by_backing_store": {"ddr-persistent": 64000.0},
+                    "write_bytes_by_backing_store": {"ddr-persistent": 32000.0},
                 },
                 "attention": {
                     "estimated_cycles": 820.0,
@@ -194,6 +209,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "occupied_slots_per_token": 700.0,
                     "read_bytes_by_address_space": {"DDR": 16000.0, "VMEM": 8000.0},
                     "write_bytes_by_address_space": {"VMEM": 2000.0},
+                    "read_bytes_by_backing_store": {"ddr-persistent": 16000.0, "vmem-local": 8000.0},
+                    "write_bytes_by_backing_store": {"vmem-local": 2000.0},
                 },
                 "sync": {
                     "estimated_cycles": 120.0,
@@ -204,6 +221,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "occupied_slots_per_token": 0.0,
                     "read_bytes_by_address_space": {},
                     "write_bytes_by_address_space": {},
+                    "read_bytes_by_backing_store": {},
+                    "write_bytes_by_backing_store": {},
                 },
                 "other": {
                     "estimated_cycles": 240.0,
@@ -214,6 +233,8 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "occupied_slots_per_token": 180.0,
                     "read_bytes_by_address_space": {"VMEM": 4000.0},
                     "write_bytes_by_address_space": {"DDR": 16000.0, "VMEM": 4000.0},
+                    "read_bytes_by_backing_store": {"vmem-local": 4000.0},
+                    "write_bytes_by_backing_store": {"ddr-persistent": 16000.0, "vmem-local": 4000.0},
                 },
             },
             "per_macro_cycles": {

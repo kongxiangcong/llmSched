@@ -14,7 +14,7 @@ from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfPhaseSummary, PerfSummaryReport
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.common import AuditRef
-from llm_sched.ir.descriptor_ir import DescriptorIR, DescriptorRecord
+from llm_sched.ir.descriptor_ir import AddressField, DescriptorIR, DescriptorRecord
 from llm_sched.ir.schedule_ir import ScheduleIR
 
 _LAYER_PATTERNS = (
@@ -115,6 +115,12 @@ def build_perf_summary_report(
     phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
+    phase_read_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    phase_write_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
     totals = {
         "estimated_cycles": 0.0,
         "total_bytes": 0.0,
@@ -186,6 +192,13 @@ def build_perf_summary_report(
             phase_read_bytes_by_address_space,
             phase_write_bytes_by_address_space,
         )
+        _accumulate_phase_backing_store_breakdown(
+            record_phase_name,
+            descriptor,
+            record.metrics,
+            phase_read_bytes_by_backing_store,
+            phase_write_bytes_by_backing_store,
+        )
 
     if schedule_ir is not None:
         (
@@ -237,6 +250,8 @@ def build_perf_summary_report(
             phase_occupied_slots=phase_occupied_slots,
             phase_read_bytes_by_address_space=phase_read_bytes_by_address_space,
             phase_write_bytes_by_address_space=phase_write_bytes_by_address_space,
+            phase_read_bytes_by_backing_store=phase_read_bytes_by_backing_store,
+            phase_write_bytes_by_backing_store=phase_write_bytes_by_backing_store,
             total_tokens=total_tokens,
         ),
         per_macro_cycles=dict(per_macro_cycles),
@@ -281,6 +296,21 @@ def _accumulate_phase_data_movement_breakdown(
     )
 
 
+def _accumulate_phase_backing_store_breakdown(
+    phase_name: str,
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    phase_read_totals: defaultdict[str, defaultdict[str, float]],
+    phase_write_totals: defaultdict[str, defaultdict[str, float]],
+) -> None:
+    _accumulate_backing_store_breakdown(
+        descriptor,
+        metrics,
+        phase_read_totals[phase_name],
+        phase_write_totals[phase_name],
+    )
+
+
 def _accumulate_address_space_breakdown(
     descriptor: DescriptorRecord,
     metrics: dict[str, float],
@@ -300,6 +330,27 @@ def _accumulate_address_space_breakdown(
         inferred_ddr_weight_bytes = _infer_external_weight_bytes(descriptor)
         if inferred_ddr_weight_bytes > 0.0:
             read_totals["DDR"] += inferred_ddr_weight_bytes
+
+
+def _accumulate_backing_store_breakdown(
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    read_totals: defaultdict[str, float],
+    write_totals: defaultdict[str, float],
+) -> None:
+    stage = str(descriptor.ctrl_fields.get("stage", "compute"))
+    read_bytes = float(metrics.get("read_bytes", 0.0))
+    write_bytes = float(metrics.get("write_bytes", 0.0))
+    read_stores = _backing_stores_for_roles(descriptor, _read_roles_for_stage(stage))
+    write_stores = _backing_stores_for_roles(descriptor, _write_roles_for_stage(stage))
+
+    _distribute_bytes(read_totals, read_stores, read_bytes)
+    _distribute_bytes(write_totals, write_stores, write_bytes)
+
+    if stage == "compute":
+        inferred_ddr_weight_bytes = _infer_external_weight_bytes(descriptor)
+        if inferred_ddr_weight_bytes > 0.0:
+            read_totals["ddr-backed-staged"] += inferred_ddr_weight_bytes
 
 
 def _summarize_vmem_regions(
@@ -368,6 +419,8 @@ def _build_phase_attribution(
     phase_occupied_slots: dict[str, float],
     phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
+    phase_read_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]],
+    phase_write_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]],
     total_tokens: int,
 ) -> dict[str, PerfPhaseSummary]:
     return {
@@ -389,6 +442,12 @@ def _build_phase_attribution(
             ),
             write_bytes_by_address_space=dict(
                 sorted(phase_write_bytes_by_address_space.get(phase_name, {}).items())
+            ),
+            read_bytes_by_backing_store=dict(
+                sorted(phase_read_bytes_by_backing_store.get(phase_name, {}).items())
+            ),
+            write_bytes_by_backing_store=dict(
+                sorted(phase_write_bytes_by_backing_store.get(phase_name, {}).items())
             ),
         )
         for phase_name in _PERF_PHASE_ORDER
@@ -442,6 +501,28 @@ def _address_spaces_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> 
         if field.role in roles and field.address_space
     ]
     return sorted(set(spaces))
+
+
+def _backing_stores_for_roles(descriptor: DescriptorRecord, roles: set[str]) -> list[str]:
+    stores = [
+        backing_store
+        for field in descriptor.address_fields
+        if field.role in roles
+        if (backing_store := _backing_store_for_field(field)) is not None
+    ]
+    return sorted(set(stores))
+
+
+def _backing_store_for_field(field: AddressField) -> str | None:
+    if field.backing_store:
+        return field.backing_store
+    if field.address_space == "VMEM":
+        return "vmem-local"
+    if field.address_space == "DDR":
+        if field.role == "kv":
+            return "ddr-persistent"
+        return "ddr-backed-staged"
+    return None
 
 
 def _read_roles_for_stage(stage: str) -> set[str]:
