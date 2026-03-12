@@ -16,6 +16,11 @@ class DecodeLatencySummary(BaseModel):
     attention_cycles: float = Field(ge=0.0)
     sync_cycles: float = Field(ge=0.0)
     other_cycles: float = Field(ge=0.0)
+    projection_bytes: float = Field(ge=0.0, default=0.0)
+    kv_io_bytes: float = Field(ge=0.0, default=0.0)
+    attention_bytes: float = Field(ge=0.0, default=0.0)
+    sync_bytes: float = Field(ge=0.0, default=0.0)
+    other_bytes: float = Field(ge=0.0, default=0.0)
 
 
 class DecodeKVSummary(BaseModel):

@@ -55,16 +55,22 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         "critical_path_cycles",
         "critical_path_cycles_per_token",
         "projection_cycles",
+        "projection_bytes",
         "projection_cycle_share",
         "kv_io_cycles",
+        "kv_io_bytes",
         "kv_io_cycle_share",
         "attention_cycles",
+        "attention_bytes",
         "attention_cycle_share",
         "other_cycles",
+        "other_bytes",
         "other_cycle_share",
+        "sync_bytes",
         "sync_cycle_share",
     }
     assert metric_names.count("sync_cycles") == 1
+    assert metric_names.count("kv_related_bytes") == 1
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
@@ -176,6 +182,12 @@ def _phase_d_compare_report():
                         "delta_value": -72.0,
                         "delta_ratio": -0.36,
                     },
+                    "projection_bytes": {
+                        "baseline_value": 8192.0,
+                        "candidate_value": 6144.0,
+                        "delta_value": -2048.0,
+                        "delta_ratio": -0.25,
+                    },
                     "projection_cycle_share": {
                         "baseline_value": 0.2604166667,
                         "candidate_value": 0.25,
@@ -186,6 +198,12 @@ def _phase_d_compare_report():
                         "baseline_value": 256.0,
                         "candidate_value": 192.0,
                         "delta_value": -64.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "kv_io_bytes": {
+                        "baseline_value": 16384.0,
+                        "candidate_value": 12288.0,
+                        "delta_value": -4096.0,
                         "delta_ratio": -0.25,
                     },
                     "kv_io_cycle_share": {
@@ -200,6 +218,12 @@ def _phase_d_compare_report():
                         "delta_value": -32.0,
                         "delta_ratio": -0.2,
                     },
+                    "attention_bytes": {
+                        "baseline_value": 4096.0,
+                        "candidate_value": 6144.0,
+                        "delta_value": 2048.0,
+                        "delta_ratio": 0.5,
+                    },
                     "attention_cycle_share": {
                         "baseline_value": 0.2083333333,
                         "candidate_value": 0.25,
@@ -211,6 +235,12 @@ def _phase_d_compare_report():
                         "candidate_value": 32.0,
                         "delta_value": -16.0,
                         "delta_ratio": -0.3333333333,
+                    },
+                    "other_bytes": {
+                        "baseline_value": 1024.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
                     },
                     "other_cycle_share": {
                         "baseline_value": 0.0625,
@@ -246,6 +276,12 @@ def _phase_d_compare_report():
                         "baseline_value": 64.0,
                         "candidate_value": 32.0,
                         "delta_value": -32.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "sync_bytes": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": -1024.0,
                         "delta_ratio": -0.5,
                     },
                     "sync_cycle_share": {

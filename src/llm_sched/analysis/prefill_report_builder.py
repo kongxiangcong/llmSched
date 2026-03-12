@@ -52,6 +52,22 @@ def build_prefill_evaluation_report(
             total_cycles - mxu_cycles - kv_io_cycles - attention_cycles - sync_cycles,
         ),
     )
+    projection_bytes = _phase_bytes(perf_summary, "projection", fallback=_sum_bytes(perf_summary, MXU_HEAVY_MACROS))
+    kv_io_bytes = _phase_bytes(perf_summary, "kv_io", fallback=_sum_bytes(perf_summary, KV_IO_MACROS))
+    attention_bytes = _phase_bytes(
+        perf_summary,
+        "attention",
+        fallback=_sum_bytes(perf_summary, ATTENTION_MACROS),
+    )
+    sync_bytes = _phase_bytes(perf_summary, "sync")
+    other_bytes = _phase_bytes(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            total_bytes - projection_bytes - kv_io_bytes - attention_bytes - sync_bytes,
+        ),
+    )
 
     return PrefillEvaluationReport(
         run_id=run_id,
@@ -70,6 +86,11 @@ def build_prefill_evaluation_report(
             attention_cycles=attention_cycles,
             sync_cycles=sync_cycles,
             other_cycles=other_cycles,
+            projection_bytes=projection_bytes,
+            kv_io_bytes=kv_io_bytes,
+            attention_bytes=attention_bytes,
+            sync_bytes=sync_bytes,
+            other_bytes=other_bytes,
             tokens_per_cycle=(total_tokens / total_cycles) if total_cycles > 0.0 else 0.0,
             tokens_per_critical_path_cycle=(
                 total_tokens / critical_path_cycles
@@ -104,6 +125,10 @@ def _projection_cycles(perf_summary: PerfSummaryReport) -> float:
     return _phase_cycles(perf_summary, "projection")
 
 
+def _sum_bytes(perf_summary: PerfSummaryReport, macros: set[str]) -> float:
+    return float(sum(perf_summary.per_macro_bytes.get(macro, 0.0) for macro in macros))
+
+
 def _phase_cycles(
     perf_summary: PerfSummaryReport,
     phase_name: str,
@@ -130,6 +155,18 @@ def _phase_cycles(
             if macro_op in macros
         )
     )
+
+
+def _phase_bytes(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float = 0.0,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        return float(phase_summary.total_bytes)
+    return float(fallback)
 
 
 def _max_region_utilization(memory_plan: MemoryPlanArtifact) -> float:

@@ -70,10 +70,15 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         "estimated_cycles",
         "critical_path_cycles",
         "projection_cycles",
+        "projection_bytes",
         "projection_cycle_share",
+        "kv_io_bytes",
         "attention_cycles",
+        "attention_bytes",
         "attention_cycle_share",
+        "sync_bytes",
         "other_cycles",
+        "other_bytes",
         "other_cycle_share",
         "tokens_per_critical_path_cycle",
     }
@@ -712,6 +717,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_value": -512.0,
                         "delta_ratio": -0.3333333333,
                     },
+                    "projection_bytes": {
+                        "baseline_value": 65536.0,
+                        "candidate_value": 49152.0,
+                        "delta_value": -16384.0,
+                        "delta_ratio": -0.25,
+                    },
                     "projection_cycle_share": {
                         "baseline_value": 0.375,
                         "candidate_value": 0.3333333333,
@@ -719,6 +730,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_ratio": -0.1111111111,
                     },
                     "kv_io_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_bytes": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -736,6 +753,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_value": -256.0,
                         "delta_ratio": -0.125,
                     },
+                    "attention_bytes": {
+                        "baseline_value": 163840.0,
+                        "candidate_value": 131072.0,
+                        "delta_value": -32768.0,
+                        "delta_ratio": -0.2,
+                    },
                     "attention_cycle_share": {
                         "baseline_value": 0.5,
                         "candidate_value": 0.5833333333,
@@ -743,6 +766,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "delta_ratio": 0.1666666667,
                     },
                     "sync_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_bytes": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -758,6 +787,12 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "baseline_value": 512.0,
                         "candidate_value": 256.0,
                         "delta_value": -256.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_bytes": {
+                        "baseline_value": 32768.0,
+                        "candidate_value": 16384.0,
+                        "delta_value": -16384.0,
                         "delta_ratio": -0.5,
                     },
                     "other_cycle_share": {

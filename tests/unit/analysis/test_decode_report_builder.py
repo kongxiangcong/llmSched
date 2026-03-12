@@ -28,6 +28,11 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.token_latency.attention_cycles == pytest.approx(820.0)
     assert report.token_latency.sync_cycles == pytest.approx(120.0)
     assert report.token_latency.other_cycles == pytest.approx(240.0)
+    assert report.token_latency.projection_bytes == pytest.approx(47000.0)
+    assert report.token_latency.kv_io_bytes == pytest.approx(99000.0)
+    assert report.token_latency.attention_bytes == pytest.approx(26000.0)
+    assert report.token_latency.sync_bytes == pytest.approx(4000.0)
+    assert report.token_latency.other_bytes == pytest.approx(4000.0)
     assert report.kv_summary.kv_len == 2048
     assert report.kv_summary.kv_formula_count == 2
     assert report.kv_summary.unresolved_address_count == 1

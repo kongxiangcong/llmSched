@@ -29,14 +29,19 @@ class PhaseDPrefillCompareRow(BaseModel):
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    projection_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    kv_io_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    attention_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    sync_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    other_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     tokens_per_cycle: SweepScalarDelta
     tokens_per_critical_path_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -58,18 +63,23 @@ class PhaseDDecodeCompareRow(BaseModel):
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    projection_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    kv_io_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    attention_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     cycles_per_token: SweepScalarDelta
     critical_path_cycles_per_token: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_related_cycle_share: SweepScalarDelta
     kv_related_bytes: SweepScalarDelta
     sync_cycles: SweepScalarDelta
+    sync_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    other_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
 
 

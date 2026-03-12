@@ -22,6 +22,11 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                 "attention_cycles": 700.0,
                 "sync_cycles": 120.0,
                 "other_cycles": 100.0,
+                "projection_bytes": 50000.0,
+                "kv_io_bytes": 96000.0,
+                "attention_bytes": 26000.0,
+                "sync_bytes": 4000.0,
+                "other_bytes": 4000.0,
             },
             "kv_summary": {
                 "kv_len": 2048,
@@ -83,6 +88,9 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.token_latency.cycles_per_token == 3120.0
     assert report.token_latency.critical_path_cycles == 2048.0
     assert report.token_latency.critical_path_cycles_per_token == 2048.0
+    assert report.token_latency.projection_bytes == 50000.0
+    assert report.token_latency.kv_io_bytes == 96000.0
+    assert report.token_latency.attention_bytes == 26000.0
     assert report.kv_summary.kv_len == 2048
     assert report.memory_hotspot.dominant_address_space == "DDR"
     assert report.memory_hotspot.hottest_region == "ping"

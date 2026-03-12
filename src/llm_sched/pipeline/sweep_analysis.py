@@ -172,26 +172,31 @@ def _execute_run_root(
                 "estimated_cycles": report.throughput.estimated_cycles,
                 "critical_path_cycles": report.throughput.critical_path_cycles,
                 "projection_cycles": report.throughput.projection_cycles,
+                "projection_bytes": report.throughput.projection_bytes,
                 "projection_cycle_share": _phase_cycle_share(
                     report.throughput.projection_cycles,
                     estimated_cycles,
                 ),
                 "kv_io_cycles": report.throughput.kv_io_cycles,
+                "kv_io_bytes": report.throughput.kv_io_bytes,
                 "kv_io_cycle_share": _phase_cycle_share(
                     report.throughput.kv_io_cycles,
                     estimated_cycles,
                 ),
                 "attention_cycles": report.throughput.attention_cycles,
+                "attention_bytes": report.throughput.attention_bytes,
                 "attention_cycle_share": _phase_cycle_share(
                     report.throughput.attention_cycles,
                     estimated_cycles,
                 ),
                 "sync_cycles": report.throughput.sync_cycles,
+                "sync_bytes": report.throughput.sync_bytes,
                 "sync_cycle_share": _phase_cycle_share(
                     report.throughput.sync_cycles,
                     estimated_cycles,
                 ),
                 "other_cycles": report.throughput.other_cycles,
+                "other_bytes": report.throughput.other_bytes,
                 "other_cycle_share": _phase_cycle_share(
                     report.throughput.other_cycles,
                     estimated_cycles,
@@ -238,16 +243,19 @@ def _execute_run_root(
             "estimated_cycles": report.token_latency.estimated_cycles,
             "critical_path_cycles": report.token_latency.critical_path_cycles,
             "projection_cycles": report.token_latency.projection_cycles,
+            "projection_bytes": report.token_latency.projection_bytes,
             "projection_cycle_share": _phase_cycle_share(
                 report.token_latency.projection_cycles,
                 estimated_cycles,
             ),
             "kv_io_cycles": report.token_latency.kv_io_cycles,
+            "kv_io_bytes": report.token_latency.kv_io_bytes,
             "kv_io_cycle_share": _phase_cycle_share(
                 report.token_latency.kv_io_cycles,
                 estimated_cycles,
             ),
             "attention_cycles": report.token_latency.attention_cycles,
+            "attention_bytes": report.token_latency.attention_bytes,
             "attention_cycle_share": _phase_cycle_share(
                 report.token_latency.attention_cycles,
                 estimated_cycles,
@@ -257,11 +265,13 @@ def _execute_run_root(
             "kv_related_cycle_share": report.kv_summary.kv_related_cycle_share,
             "kv_related_bytes": report.kv_summary.kv_related_bytes,
             "sync_cycles": report.token_latency.sync_cycles,
+            "sync_bytes": report.token_latency.sync_bytes,
             "sync_cycle_share": _phase_cycle_share(
                 report.token_latency.sync_cycles,
                 estimated_cycles,
             ),
             "other_cycles": report.token_latency.other_cycles,
+            "other_bytes": report.token_latency.other_bytes,
             "other_cycle_share": _phase_cycle_share(
                 report.token_latency.other_cycles,
                 estimated_cycles,

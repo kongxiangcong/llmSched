@@ -29,6 +29,9 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.scenario_name == "prefill_seq128"
     assert report.throughput.estimated_cycles > 0.0
     assert report.throughput.critical_path_cycles > 0.0
+    assert report.throughput.projection_bytes > 0.0
+    assert report.throughput.attention_bytes >= 0.0
+    assert report.throughput.other_bytes >= 0.0
     assert report.throughput.tokens_per_critical_path_cycle > 0.0
     assert report.memory_hotspot.hottest_region is not None
     assert report.memory_hotspot.hottest_region_utilization >= 0.0

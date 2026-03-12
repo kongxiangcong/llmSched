@@ -56,6 +56,31 @@ def build_decode_evaluation_report(
         "kv_io",
         fallback=_sum_bytes(perf_summary, KV_IO_MACROS),
     )
+    projection_bytes = _phase_bytes(
+        perf_summary,
+        "projection",
+        fallback=_sum_bytes(perf_summary, PROJECTION_MACROS),
+    )
+    kv_io_bytes = _phase_bytes(
+        perf_summary,
+        "kv_io",
+        fallback=_sum_bytes(perf_summary, KV_IO_MACROS),
+    )
+    attention_bytes = _phase_bytes(
+        perf_summary,
+        "attention",
+        fallback=_sum_bytes(perf_summary, ATTENTION_MACROS),
+    )
+    sync_bytes = _phase_bytes(perf_summary, "sync")
+    total_bytes = float(perf_summary.totals.get("total_bytes", 0.0))
+    other_bytes = _phase_bytes(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            total_bytes - projection_bytes - kv_io_bytes - attention_bytes - sync_bytes,
+        ),
+    )
 
     return DecodeEvaluationReport(
         run_id=run_id,
@@ -78,6 +103,11 @@ def build_decode_evaluation_report(
             attention_cycles=attention_cycles,
             sync_cycles=sync_cycles,
             other_cycles=other_cycles,
+            projection_bytes=projection_bytes,
+            kv_io_bytes=kv_io_bytes,
+            attention_bytes=attention_bytes,
+            sync_bytes=sync_bytes,
+            other_bytes=other_bytes,
         ),
         kv_summary=DecodeKVSummary(
             kv_len=scenario.kv_len,
