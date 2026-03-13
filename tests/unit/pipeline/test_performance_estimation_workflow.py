@@ -86,6 +86,13 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert summary_report.phase_attribution["other"].schedule_overhang_cycles >= 0.0
     assert summary_report.phase_attribution["other"].occupied_slots >= 0.0
     assert summary_report.phase_attribution["other"].occupied_slots_per_token >= 0.0
+    expected_core_keys = ["0", "1"] if schedule_kind == "dual-core" else ["0"]
+    assert list(summary_report.phase_attribution["other"].per_core_occupied_slots) == expected_core_keys
+    assert list(summary_report.phase_attribution["other"].per_core_span_slots) == expected_core_keys
+    assert summary_report.phase_attribution["other"].occupied_slot_imbalance_slots >= 0.0
+    assert summary_report.phase_attribution["other"].occupied_slot_balance_ratio >= 0.0
+    assert summary_report.phase_attribution["other"].span_imbalance_slots >= 0.0
+    assert summary_report.phase_attribution["other"].span_balance_ratio >= 0.0
     assert isinstance(summary_report.phase_attribution["other"].read_bytes_by_address_space, dict)
     assert isinstance(summary_report.phase_attribution["other"].write_bytes_by_address_space, dict)
     assert isinstance(summary_report.phase_attribution["other"].read_bytes_by_backing_store, dict)

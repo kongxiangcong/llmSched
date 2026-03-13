@@ -249,7 +249,10 @@ def build_perf_summary_report(
         estimated_cycles=float(totals["estimated_cycles"]),
     )
     total_tokens = _total_tokens_for_scenario(scenario)
-    phase_occupied_slots = _summarize_phase_occupied_slots(schedule_ir)
+    (
+        phase_per_core_occupied_slots,
+        phase_per_core_span_slots,
+    ) = _summarize_phase_core_timing(schedule_ir)
 
     return PerfSummaryReport(
         run_id=run_id,
@@ -277,7 +280,8 @@ def build_perf_summary_report(
             phase_memory_cycles=phase_memory_cycles,
             phase_sync_component_cycles=phase_sync_component_cycles,
             phase_bytes=phase_bytes,
-            phase_occupied_slots=phase_occupied_slots,
+            phase_per_core_occupied_slots=phase_per_core_occupied_slots,
+            phase_per_core_span_slots=phase_per_core_span_slots,
             phase_read_bytes_by_address_space=phase_read_bytes_by_address_space,
             phase_write_bytes_by_address_space=phase_write_bytes_by_address_space,
             phase_read_bytes_by_backing_store=phase_read_bytes_by_backing_store,
@@ -532,7 +536,8 @@ def _build_phase_attribution(
     phase_memory_cycles: Counter[str],
     phase_sync_component_cycles: Counter[str],
     phase_bytes: Counter[str],
-    phase_occupied_slots: dict[str, float],
+    phase_per_core_occupied_slots: dict[str, dict[str, float]],
+    phase_per_core_span_slots: dict[str, dict[str, float]],
     phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     phase_write_bytes_by_address_space: defaultdict[str, defaultdict[str, float]],
     phase_read_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]],
@@ -548,7 +553,17 @@ def _build_phase_attribution(
         memory_cycles = float(phase_memory_cycles.get(phase_name, 0.0))
         sync_cycles = float(phase_sync_component_cycles.get(phase_name, 0.0))
         total_bytes = float(phase_bytes.get(phase_name, 0.0))
-        occupied_slots = float(phase_occupied_slots.get(phase_name, 0.0))
+        per_core_occupied_slots = dict(
+            sorted(phase_per_core_occupied_slots.get(phase_name, {}).items())
+        )
+        per_core_span_slots = dict(
+            sorted(phase_per_core_span_slots.get(phase_name, {}).items())
+        )
+        occupied_slots = float(sum(per_core_occupied_slots.values()))
+        occupied_slot_imbalance_slots, occupied_slot_balance_ratio = _balance_metrics(
+            per_core_occupied_slots
+        )
+        span_imbalance_slots, span_balance_ratio = _balance_metrics(per_core_span_slots)
         (
             schedule_compression_cycles,
             schedule_compression_ratio,
@@ -570,6 +585,12 @@ def _build_phase_attribution(
             bytes_per_token=(total_bytes / float(total_tokens)) if total_tokens > 0 else 0.0,
             occupied_slots=occupied_slots,
             occupied_slots_per_token=(occupied_slots / float(total_tokens)) if total_tokens > 0 else 0.0,
+            per_core_occupied_slots=per_core_occupied_slots,
+            per_core_span_slots=per_core_span_slots,
+            occupied_slot_imbalance_slots=occupied_slot_imbalance_slots,
+            occupied_slot_balance_ratio=occupied_slot_balance_ratio,
+            span_imbalance_slots=span_imbalance_slots,
+            span_balance_ratio=span_balance_ratio,
             read_bytes_by_address_space=dict(
                 sorted(phase_read_bytes_by_address_space.get(phase_name, {}).items())
             ),
@@ -607,16 +628,32 @@ def _schedule_fit_metrics(*, non_sync_cycles: float, occupied_slots: float) -> t
     )
 
 
+def _balance_metrics(values_by_core: dict[str, float]) -> tuple[float, float]:
+    if not values_by_core:
+        return 0.0, 0.0
+    max_value = max(values_by_core.values())
+    min_value = min(values_by_core.values())
+    if max_value <= 0.0:
+        return 0.0, 0.0
+    return float(max_value - min_value), float(min_value / max_value)
+
+
 def _total_tokens_for_scenario(scenario: ScenarioProfile | None) -> int:
     if scenario is None:
         return 0
     return int(max(0, scenario.batch * scenario.seq_len))
 
 
-def _summarize_phase_occupied_slots(schedule_ir: ScheduleIR | None) -> dict[str, float]:
+def _summarize_phase_core_timing(
+    schedule_ir: ScheduleIR | None,
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]]]:
     if schedule_ir is None:
-        return {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+        return (
+            {phase_name: {} for phase_name in _PERF_PHASE_ORDER},
+            {phase_name: {} for phase_name in _PERF_PHASE_ORDER},
+        )
 
+    core_keys = _schedule_core_keys(schedule_ir)
     intervals_by_phase_and_core: defaultdict[tuple[str, str], list[tuple[int, int]]] = defaultdict(list)
     for block in schedule_ir.blocks:
         phase_name = _classify_phase(
@@ -627,12 +664,45 @@ def _summarize_phase_occupied_slots(schedule_ir: ScheduleIR | None) -> dict[str,
         block_end = block_start + max(0, block.duration_slots)
         if block_end <= block_start:
             continue
-        intervals_by_phase_and_core[(phase_name, str(block.core_id))].append((block_start, block_end))
+        for core_key in _block_core_keys(block, core_keys):
+            intervals_by_phase_and_core[(phase_name, core_key)].append((block_start, block_end))
 
-    totals = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
-    for (phase_name, _core_key), intervals in intervals_by_phase_and_core.items():
-        totals[phase_name] += float(_merged_interval_length(intervals))
-    return totals
+    per_phase_occupied = {
+        phase_name: {core_key: 0.0 for core_key in core_keys}
+        for phase_name in _PERF_PHASE_ORDER
+    }
+    per_phase_span = {
+        phase_name: {core_key: 0.0 for core_key in core_keys}
+        for phase_name in _PERF_PHASE_ORDER
+    }
+    for (phase_name, core_key), intervals in intervals_by_phase_and_core.items():
+        per_phase_occupied[phase_name][core_key] = float(_merged_interval_length(intervals))
+        per_phase_span[phase_name][core_key] = float(_interval_span_length(intervals))
+    return per_phase_occupied, per_phase_span
+
+
+def _schedule_core_keys(schedule_ir: ScheduleIR) -> list[str]:
+    seen_core_ids = {
+        str(block.core_id)
+        for block in schedule_ir.blocks
+        if block.core_id != "both"
+    }
+    seen_core_ids.update(
+        str(block.peer_core_id)
+        for block in schedule_ir.blocks
+        if block.peer_core_id is not None
+    )
+    if schedule_ir.core_mode == "dual-core":
+        seen_core_ids.update({"0", "1"})
+    if not seen_core_ids:
+        seen_core_ids.add("0")
+    return sorted(seen_core_ids, key=lambda value: int(value))
+
+
+def _block_core_keys(block, core_keys: list[str]) -> list[str]:
+    if block.core_id == "both":
+        return list(core_keys)
+    return [str(block.core_id)]
 
 
 def _classify_phase(*, stage: str, macro: str) -> str:
@@ -812,6 +882,14 @@ def _merged_interval_length(intervals: list[tuple[int, int]]) -> int:
         merged_start, merged_end = start, end
     total += max(0, merged_end - merged_start)
     return total
+
+
+def _interval_span_length(intervals: list[tuple[int, int]]) -> int:
+    if not intervals:
+        return 0
+    min_start = min(start for start, _end in intervals)
+    max_end = max(end for _start, end in intervals)
+    return max(0, max_end - min_start)
 
 
 def _estimate_descriptor_record(

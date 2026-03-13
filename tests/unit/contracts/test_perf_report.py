@@ -41,6 +41,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "bytes_per_token": 256.0,
                     "occupied_slots": 96.0,
                     "occupied_slots_per_token": 0.75,
+                    "per_core_occupied_slots": {"0": 64.0, "1": 32.0},
+                    "per_core_span_slots": {"0": 72.0, "1": 40.0},
+                    "occupied_slot_imbalance_slots": 32.0,
+                    "occupied_slot_balance_ratio": 0.5,
+                    "span_imbalance_slots": 32.0,
+                    "span_balance_ratio": 40.0 / 72.0,
                     "read_bytes_by_address_space": {"DDR": 24576.0},
                     "write_bytes_by_address_space": {"VMEM": 8192.0},
                     "read_bytes_by_backing_store": {"ddr-backed-staged": 24576.0},
@@ -61,6 +67,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "bytes_per_token": 256.0,
                     "occupied_slots": 24.0,
                     "occupied_slots_per_token": 0.1875,
+                    "per_core_occupied_slots": {"0": 24.0, "1": 0.0},
+                    "per_core_span_slots": {"0": 24.0, "1": 0.0},
+                    "occupied_slot_imbalance_slots": 24.0,
+                    "occupied_slot_balance_ratio": 0.0,
+                    "span_imbalance_slots": 24.0,
+                    "span_balance_ratio": 0.0,
                     "read_bytes_by_address_space": {"DDR": 8192.0},
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {"ddr-persistent": 8192.0},
@@ -81,6 +93,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "bytes_per_token": 0.0,
                     "occupied_slots": 0.0,
                     "occupied_slots_per_token": 0.0,
+                    "per_core_occupied_slots": {"0": 0.0, "1": 0.0},
+                    "per_core_span_slots": {"0": 0.0, "1": 0.0},
+                    "occupied_slot_imbalance_slots": 0.0,
+                    "occupied_slot_balance_ratio": 0.0,
+                    "span_imbalance_slots": 0.0,
+                    "span_balance_ratio": 0.0,
                     "read_bytes_by_address_space": {},
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
@@ -101,6 +119,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "bytes_per_token": 0.0,
                     "occupied_slots": 0.0,
                     "occupied_slots_per_token": 0.0,
+                    "per_core_occupied_slots": {"0": 0.0, "1": 0.0},
+                    "per_core_span_slots": {"0": 0.0, "1": 0.0},
+                    "occupied_slot_imbalance_slots": 0.0,
+                    "occupied_slot_balance_ratio": 0.0,
+                    "span_imbalance_slots": 0.0,
+                    "span_balance_ratio": 0.0,
                     "read_bytes_by_address_space": {},
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
@@ -121,6 +145,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                     "bytes_per_token": 0.0,
                     "occupied_slots": 8.0,
                     "occupied_slots_per_token": 0.0625,
+                    "per_core_occupied_slots": {"0": 8.0, "1": 0.0},
+                    "per_core_span_slots": {"0": 8.0, "1": 0.0},
+                    "occupied_slot_imbalance_slots": 8.0,
+                    "occupied_slot_balance_ratio": 0.0,
+                    "span_imbalance_slots": 8.0,
+                    "span_balance_ratio": 0.0,
                     "read_bytes_by_address_space": {},
                     "write_bytes_by_address_space": {},
                     "read_bytes_by_backing_store": {},
@@ -176,6 +206,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.phase_attribution["sync"].bytes_per_token == 256.0
     assert report.phase_attribution["projection"].occupied_slots == 96.0
     assert report.phase_attribution["other"].occupied_slots_per_token == 0.0625
+    assert report.phase_attribution["projection"].per_core_occupied_slots == {"0": 64.0, "1": 32.0}
+    assert report.phase_attribution["projection"].per_core_span_slots == {"0": 72.0, "1": 40.0}
+    assert report.phase_attribution["projection"].occupied_slot_imbalance_slots == 32.0
+    assert report.phase_attribution["projection"].occupied_slot_balance_ratio == 0.5
+    assert report.phase_attribution["projection"].span_imbalance_slots == 32.0
+    assert report.phase_attribution["projection"].span_balance_ratio == 40.0 / 72.0
     assert report.phase_attribution["projection"].read_bytes_by_address_space["DDR"] == 24576.0
     assert report.phase_attribution["projection"].write_bytes_by_address_space["VMEM"] == 8192.0
     assert report.phase_attribution["sync"].write_bytes_by_address_space == {}

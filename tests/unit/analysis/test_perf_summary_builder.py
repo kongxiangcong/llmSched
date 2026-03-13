@@ -255,6 +255,12 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["projection"].bytes_per_token == 32768.0 / 128.0
     assert report.phase_attribution["projection"].occupied_slots == 32.0
     assert report.phase_attribution["projection"].occupied_slots_per_token == 32.0 / 128.0
+    assert report.phase_attribution["projection"].per_core_occupied_slots == {"0": 32.0, "1": 0.0}
+    assert report.phase_attribution["projection"].per_core_span_slots == {"0": 32.0, "1": 0.0}
+    assert report.phase_attribution["projection"].occupied_slot_imbalance_slots == 32.0
+    assert report.phase_attribution["projection"].occupied_slot_balance_ratio == 0.0
+    assert report.phase_attribution["projection"].span_imbalance_slots == 32.0
+    assert report.phase_attribution["projection"].span_balance_ratio == 0.0
     assert report.phase_attribution["projection"].read_bytes_by_address_space == {"DDR": 8192.0}
     assert report.phase_attribution["projection"].write_bytes_by_address_space == {}
     assert report.phase_attribution["projection"].read_bytes_by_backing_store == {
@@ -273,6 +279,12 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["sync"].total_bytes == 0.0
     assert report.phase_attribution["sync"].cycles_per_token == 18.0 / 128.0
     assert report.phase_attribution["sync"].occupied_slots == 0.0
+    assert report.phase_attribution["sync"].per_core_occupied_slots == {"0": 0.0, "1": 0.0}
+    assert report.phase_attribution["sync"].per_core_span_slots == {"0": 0.0, "1": 0.0}
+    assert report.phase_attribution["sync"].occupied_slot_imbalance_slots == 0.0
+    assert report.phase_attribution["sync"].occupied_slot_balance_ratio == 0.0
+    assert report.phase_attribution["sync"].span_imbalance_slots == 0.0
+    assert report.phase_attribution["sync"].span_balance_ratio == 0.0
     assert report.phase_attribution["sync"].read_bytes_by_address_space == {}
     assert report.phase_attribution["sync"].write_bytes_by_address_space == {}
     assert report.phase_attribution["sync"].read_bytes_by_backing_store == {}
@@ -291,6 +303,12 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["other"].total_bytes == 16384.0
     assert report.phase_attribution["other"].bytes_per_token == 16384.0 / 128.0
     assert report.phase_attribution["other"].occupied_slots == 12.0
+    assert report.phase_attribution["other"].per_core_occupied_slots == {"0": 12.0, "1": 0.0}
+    assert report.phase_attribution["other"].per_core_span_slots == {"0": 12.0, "1": 0.0}
+    assert report.phase_attribution["other"].occupied_slot_imbalance_slots == 12.0
+    assert report.phase_attribution["other"].occupied_slot_balance_ratio == 0.0
+    assert report.phase_attribution["other"].span_imbalance_slots == 12.0
+    assert report.phase_attribution["other"].span_balance_ratio == 0.0
     assert report.phase_attribution["other"].read_bytes_by_address_space == {"VMEM": 8192.0}
     assert report.phase_attribution["other"].write_bytes_by_address_space == {"VMEM": 8192.0}
     assert report.phase_attribution["other"].read_bytes_by_backing_store == {"vmem-local": 8192.0}
@@ -480,7 +498,104 @@ def test_build_perf_summary_report_uses_union_semantics_for_phase_occupied_slots
 
     assert report.phase_attribution["projection"].occupied_slots == 20.0
     assert report.phase_attribution["projection"].occupied_slots_per_token == 20.0 / 128.0
+    assert report.phase_attribution["projection"].per_core_occupied_slots == {"0": 20.0}
+    assert report.phase_attribution["projection"].per_core_span_slots == {"0": 20.0}
+    assert report.phase_attribution["projection"].occupied_slot_imbalance_slots == 0.0
+    assert report.phase_attribution["projection"].occupied_slot_balance_ratio == 1.0
+    assert report.phase_attribution["projection"].span_imbalance_slots == 0.0
+    assert report.phase_attribution["projection"].span_balance_ratio == 1.0
     assert report.phase_attribution["other"].occupied_slots == 0.0
+
+
+def test_build_perf_summary_report_derives_per_core_phase_balance() -> None:
+    from llm_sched.analysis.descriptor_estimator import build_perf_summary_report
+    from llm_sched.contracts.isa_coverage_report import ISACoverageReport
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.ir.descriptor_ir import DescriptorIR
+    from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
+
+    report = build_perf_summary_report(
+        run_id="run-spec13-phase-balance",
+        descriptor_ir=DescriptorIR(ir_version="phase-a.v1", graph_id="spec13-phase-balance", descriptors=[]),
+        analysis_ir=AnalysisIR(ir_version="phase-a.v1", graph_id="spec13-phase-balance", records=[]),
+        coverage_report=ISACoverageReport(
+            graph_id="spec13-phase-balance",
+            schedule_kind="dual-core",
+            mapped_descriptor_count=0,
+            unmapped_block_count=0,
+            opcode_counts={},
+            gap_counts={},
+            issues=[],
+        ),
+        scenario=_prefill_scenario_fixture(),
+        schedule_ir=ScheduleIR(
+            ir_version="phase-a.v1",
+            graph_id="spec13-phase-balance",
+            core_mode="dual-core",
+            blocks=[
+                ScheduleBlock(
+                    block_id="sched.proj.core0.a",
+                    core_id=0,
+                    node_id="nig.node.proj.core0.a",
+                    macro_op="WDQ_GEMM",
+                    stage="compute",
+                    tiling_candidate_id="cand.proj.core0.a",
+                    resource_set=["WDQ", "MXU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=10,
+                    duration_slots=10,
+                    order_key=0,
+                    audit_ref=AuditRef(schedule_block_ids=["sched.proj.core0.a"]),
+                ),
+                ScheduleBlock(
+                    block_id="sched.proj.core0.b",
+                    core_id=0,
+                    node_id="nig.node.proj.core0.b",
+                    macro_op="WDQ_GEMM",
+                    stage="prepare",
+                    tiling_candidate_id="cand.proj.core0.b",
+                    resource_set=["VPU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=25,
+                    duration_slots=10,
+                    order_key=1,
+                    audit_ref=AuditRef(schedule_block_ids=["sched.proj.core0.b"]),
+                ),
+                ScheduleBlock(
+                    block_id="sched.proj.core1.a",
+                    core_id=1,
+                    node_id="nig.node.proj.core1.a",
+                    macro_op="WDQ_GEMM",
+                    stage="compute",
+                    tiling_candidate_id="cand.proj.core1.a",
+                    resource_set=["WDQ", "MXU"],
+                    buffer_binding={},
+                    barrier_in=[],
+                    barrier_out=[],
+                    depends_on=[],
+                    issue_slot=12,
+                    duration_slots=8,
+                    order_key=2,
+                    audit_ref=AuditRef(schedule_block_ids=["sched.proj.core1.a"]),
+                ),
+            ],
+        ),
+        memory_plan=_memory_plan_fixture(),
+    )
+
+    assert report.phase_attribution["projection"].occupied_slots == 28.0
+    assert report.phase_attribution["projection"].per_core_occupied_slots == {"0": 20.0, "1": 8.0}
+    assert report.phase_attribution["projection"].per_core_span_slots == {"0": 25.0, "1": 8.0}
+    assert report.phase_attribution["projection"].occupied_slot_imbalance_slots == 12.0
+    assert report.phase_attribution["projection"].occupied_slot_balance_ratio == 8.0 / 20.0
+    assert report.phase_attribution["projection"].span_imbalance_slots == 17.0
+    assert report.phase_attribution["projection"].span_balance_ratio == 8.0 / 25.0
 
 
 def test_build_perf_summary_report_propagates_peak_bytes_by_backing_store() -> None:
