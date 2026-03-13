@@ -17,6 +17,9 @@ from llm_sched.contracts.sweep_report import (
     SweepScalarDelta,
 )
 
+_PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
+_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+
 
 def build_sweep_delta_report(
     sweep_name: str,
@@ -232,6 +235,20 @@ def _metric_value(run: SweepRunRecord, metric_name: str) -> float:
     return float(run.metrics.get(metric_name, 0.0))
 
 
+def _build_phase_balance_scalar_deltas(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> dict[str, SweepScalarDelta]:
+    return {
+        f"{phase_name}_{metric_name}": _build_scalar_delta(
+            _metric_value(baseline_run, f"{phase_name}_{metric_name}"),
+            _metric_value(candidate_run, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_BALANCE_METRIC_NAMES
+    }
+
+
 def _build_prefill_compare_summary(
     baseline_run: SweepRunRecord,
     candidate_run: SweepRunRecord,
@@ -267,6 +284,7 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "projection_cycle_share"),
             _metric_value(candidate_run, "projection_cycle_share"),
         ),
+        **_build_phase_balance_scalar_deltas(baseline_run, candidate_run),
         kv_io_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
@@ -405,6 +423,7 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "projection_cycle_share"),
             _metric_value(candidate_run, "projection_cycle_share"),
         ),
+        **_build_phase_balance_scalar_deltas(baseline_run, candidate_run),
         kv_io_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),

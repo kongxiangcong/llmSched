@@ -9,6 +9,9 @@ from llm_sched.contracts.phase_d_compare_report import (
 )
 from llm_sched.contracts.sweep_report import SweepDeltaReport
 
+_PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
+_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+
 
 def build_phase_d_compare_report(
     *,
@@ -36,6 +39,7 @@ def build_phase_d_compare_report(
                     projection_byte_share=comparison.prefill_compare.projection_byte_share,
                     projection_bytes_per_cycle=comparison.prefill_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.prefill_compare.projection_cycle_share,
+                    **_phase_balance_compare_row_fields(comparison.prefill_compare),
                     kv_io_cycles=comparison.prefill_compare.kv_io_cycles,
                     kv_io_bytes=comparison.prefill_compare.kv_io_bytes,
                     kv_io_byte_share=comparison.prefill_compare.kv_io_byte_share,
@@ -80,6 +84,7 @@ def build_phase_d_compare_report(
                     projection_byte_share=comparison.decode_compare.projection_byte_share,
                     projection_bytes_per_cycle=comparison.decode_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.decode_compare.projection_cycle_share,
+                    **_phase_balance_compare_row_fields(comparison.decode_compare),
                     kv_io_cycles=comparison.decode_compare.kv_io_cycles,
                     kv_io_bytes=comparison.decode_compare.kv_io_bytes,
                     kv_io_byte_share=comparison.decode_compare.kv_io_byte_share,
@@ -120,3 +125,11 @@ def build_phase_d_compare_report(
         decode_compares=decode_compares,
         issues=list(sweep_report.issues),
     )
+
+
+def _phase_balance_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_BALANCE_METRIC_NAMES
+    }

@@ -1,6 +1,8 @@
+from types import SimpleNamespace
+
 import pytest
 
-from llm_sched.contracts.sweep_report import SweepDeltaReport
+from llm_sched.contracts.sweep_report import SweepDeltaReport, SweepScalarDelta
 
 
 def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> None:
@@ -42,6 +44,155 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.decode_compares[0].kv_related_cycle_share.delta_value < 0.0
     assert report.decode_compares[0].layer_delta_count == 2
     assert report.issues[0].code == "run_failed"
+
+
+def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.phase-balance",
+        sweep_report=SimpleNamespace(
+            sweep_name="phase-balance",
+            baseline_target_profile_name="riscv_npu_single_core_v1",
+            completed_run_count=2,
+            failed_run_count=0,
+            issues=[],
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name="prefill_seq128",
+                    mode="prefill",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    prefill_compare=SimpleNamespace(
+                        baseline_schedule_kind="single-core",
+                        candidate_schedule_kind="dual-core",
+                        estimated_cycles=_scalar_delta(4096.0, 3072.0),
+                        critical_path_cycles=_scalar_delta(3584.0, 2304.0),
+                        projection_cycles=_scalar_delta(1536.0, 1024.0),
+                        projection_bytes=_scalar_delta(65536.0, 49152.0),
+                        projection_byte_share=_scalar_delta(0.25, 0.25),
+                        projection_bytes_per_cycle=_scalar_delta(42.6666666667, 48.0),
+                        projection_cycle_share=_scalar_delta(0.375, 0.3333333333),
+                        projection_occupied_slot_imbalance_slots=_scalar_delta(0.0, 256.0),
+                        projection_span_balance_ratio=_scalar_delta(1.0, 0.5),
+                        kv_io_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_bytes=_scalar_delta(0.0, 0.0),
+                        kv_io_byte_share=_scalar_delta(0.0, 0.0),
+                        kv_io_bytes_per_cycle=_scalar_delta(0.0, 0.0),
+                        kv_io_cycle_share=_scalar_delta(0.0, 0.0),
+                        kv_io_occupied_slot_imbalance_slots=_scalar_delta(0.0, 0.0),
+                        kv_io_span_balance_ratio=_scalar_delta(1.0, 1.0),
+                        attention_cycles=_scalar_delta(2048.0, 1792.0),
+                        attention_bytes=_scalar_delta(163840.0, 131072.0),
+                        attention_byte_share=_scalar_delta(0.625, 0.6666666667),
+                        attention_bytes_per_cycle=_scalar_delta(80.0, 73.1428571429),
+                        attention_cycle_share=_scalar_delta(0.5, 0.5833333333),
+                        attention_occupied_slot_imbalance_slots=_scalar_delta(0.0, 128.0),
+                        attention_span_balance_ratio=_scalar_delta(1.0, 0.75),
+                        sync_cycles=_scalar_delta(0.0, 0.0),
+                        sync_bytes=_scalar_delta(0.0, 0.0),
+                        sync_byte_share=_scalar_delta(0.0, 0.0),
+                        sync_bytes_per_cycle=_scalar_delta(0.0, 0.0),
+                        sync_cycle_share=_scalar_delta(0.0, 0.0),
+                        sync_occupied_slot_imbalance_slots=_scalar_delta(0.0, 0.0),
+                        sync_span_balance_ratio=_scalar_delta(1.0, 1.0),
+                        other_cycles=_scalar_delta(512.0, 256.0),
+                        other_bytes=_scalar_delta(32768.0, 16384.0),
+                        other_byte_share=_scalar_delta(0.125, 0.0833333333),
+                        other_bytes_per_cycle=_scalar_delta(64.0, 64.0),
+                        other_cycle_share=_scalar_delta(0.125, 0.0833333333),
+                        other_occupied_slot_imbalance_slots=_scalar_delta(0.0, 64.0),
+                        other_span_balance_ratio=_scalar_delta(1.0, 0.5),
+                        tokens_per_cycle=_scalar_delta(0.03125, 0.0416666667),
+                        tokens_per_critical_path_cycle=_scalar_delta(0.0357142857, 0.0555555556),
+                        cycles_per_token=_scalar_delta(32.0, 24.0),
+                        bytes_per_cycle=_scalar_delta(64.0, 64.0),
+                        max_region_utilization=_scalar_delta(0.75, 0.5),
+                    ),
+                    decode_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv2048",
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    prefill_compare=None,
+                    decode_compare=SimpleNamespace(
+                        baseline_schedule_kind="single-core",
+                        candidate_schedule_kind="dual-core",
+                        estimated_cycles=_scalar_delta(3200.0, 2800.0),
+                        critical_path_cycles=_scalar_delta(2880.0, 2240.0),
+                        projection_cycles=_scalar_delta(980.0, 780.0),
+                        projection_bytes=_scalar_delta(48000.0, 36000.0),
+                        projection_byte_share=_scalar_delta(0.25, 0.2045454545),
+                        projection_bytes_per_cycle=_scalar_delta(48.9795918367, 46.1538461538),
+                        projection_cycle_share=_scalar_delta(0.30625, 0.2785714286),
+                        projection_occupied_slot_imbalance_slots=_scalar_delta(0.0, 96.0),
+                        projection_span_balance_ratio=_scalar_delta(1.0, 0.6),
+                        kv_io_cycles=_scalar_delta(900.0, 700.0),
+                        kv_io_bytes=_scalar_delta(96000.0, 96000.0),
+                        kv_io_byte_share=_scalar_delta(0.5, 0.5454545455),
+                        kv_io_bytes_per_cycle=_scalar_delta(106.6666666667, 137.1428571429),
+                        kv_io_cycle_share=_scalar_delta(0.28125, 0.25),
+                        kv_io_occupied_slot_imbalance_slots=_scalar_delta(0.0, 192.0),
+                        kv_io_span_balance_ratio=_scalar_delta(1.0, 0.4),
+                        attention_cycles=_scalar_delta(820.0, 900.0),
+                        attention_bytes=_scalar_delta(24000.0, 32000.0),
+                        attention_byte_share=_scalar_delta(0.125, 0.1818181818),
+                        attention_bytes_per_cycle=_scalar_delta(29.2682926829, 35.5555555556),
+                        attention_cycle_share=_scalar_delta(0.25625, 0.3214285714),
+                        attention_occupied_slot_imbalance_slots=_scalar_delta(0.0, 64.0),
+                        attention_span_balance_ratio=_scalar_delta(1.0, 0.8),
+                        cycles_per_token=_scalar_delta(3200.0, 2800.0),
+                        critical_path_cycles_per_token=_scalar_delta(2880.0, 2240.0),
+                        kv_related_cycle_share=_scalar_delta(0.28125, 0.25),
+                        kv_related_bytes=_scalar_delta(96000.0, 96000.0),
+                        sync_cycles=_scalar_delta(120.0, 80.0),
+                        sync_bytes=_scalar_delta(8000.0, 4000.0),
+                        sync_byte_share=_scalar_delta(0.0416666667, 0.0227272727),
+                        sync_bytes_per_cycle=_scalar_delta(66.6666666667, 50.0),
+                        sync_cycle_share=_scalar_delta(0.0375, 0.0285714286),
+                        sync_occupied_slot_imbalance_slots=_scalar_delta(0.0, 32.0),
+                        sync_span_balance_ratio=_scalar_delta(1.0, 0.5),
+                        other_cycles=_scalar_delta(280.0, 240.0),
+                        other_bytes=_scalar_delta(16000.0, 8000.0),
+                        other_byte_share=_scalar_delta(0.0833333333, 0.0454545455),
+                        other_bytes_per_cycle=_scalar_delta(57.1428571429, 33.3333333333),
+                        other_cycle_share=_scalar_delta(0.0875, 0.0857142857),
+                        other_occupied_slot_imbalance_slots=_scalar_delta(0.0, 16.0),
+                        other_span_balance_ratio=_scalar_delta(1.0, 0.75),
+                    ),
+                ),
+            ],
+        ),
+    )
+
+    prefill_payload = report.prefill_compares[0].model_dump(mode="json")
+    decode_payload = report.decode_compares[0].model_dump(mode="json")
+
+    assert "projection_occupied_slot_imbalance_slots" in prefill_payload
+    assert prefill_payload["projection_occupied_slot_imbalance_slots"]["delta_value"] == 256.0
+    assert "other_span_balance_ratio" in prefill_payload
+    assert prefill_payload["other_span_balance_ratio"]["delta_value"] == -0.5
+    assert "kv_io_occupied_slot_imbalance_slots" in decode_payload
+    assert decode_payload["kv_io_occupied_slot_imbalance_slots"]["delta_value"] == 192.0
+    assert "sync_span_balance_ratio" in decode_payload
+    assert decode_payload["sync_span_balance_ratio"]["delta_value"] == -0.5
+
+
+def _scalar_delta(baseline_value: float, candidate_value: float) -> SweepScalarDelta:
+    delta_value = candidate_value - baseline_value
+    delta_ratio = (delta_value / baseline_value) if baseline_value != 0.0 else 0.0
+    return SweepScalarDelta(
+        baseline_value=baseline_value,
+        candidate_value=candidate_value,
+        delta_value=delta_value,
+        delta_ratio=delta_ratio,
+    )
 
 
 def _sweep_report() -> SweepDeltaReport:

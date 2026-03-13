@@ -42,6 +42,10 @@ class SweepAnalysisResult(BaseModel):
     diagnostics: list[Diagnostic] = []
 
 
+_PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
+_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+
+
 def _phase_cycle_share(phase_cycles: float, estimated_cycles: float) -> float:
     if estimated_cycles <= 0.0:
         return 0.0
@@ -58,6 +62,17 @@ def _phase_bytes_per_cycle(phase_bytes: float, phase_cycles: float) -> float:
     if phase_cycles <= 0.0:
         return 0.0
     return float(phase_bytes) / float(phase_cycles)
+
+
+def _phase_balance_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        for metric_name in _PHASE_BALANCE_METRIC_NAMES:
+            metrics[f"{phase_name}_{metric_name}"] = float(
+                getattr(phase_summary, metric_name, 0.0)
+            )
+    return metrics
 
 
 def run_sweep_analysis(
@@ -265,6 +280,7 @@ def _execute_run_root(
                 "cycles_per_token": report.throughput.cycles_per_token,
                 "bytes_per_cycle": report.throughput.bytes_per_cycle,
                 "max_region_utilization": report.memory_summary.max_region_utilization,
+                **_phase_balance_metrics(report.throughput.phase_attribution),
             },
             macro_hotspots=[
                 SweepMacroPoint(
@@ -382,6 +398,7 @@ def _execute_run_root(
                 report.token_latency.other_cycles,
                 estimated_cycles,
             ),
+            **_phase_balance_metrics(report.token_latency.phase_attribution),
         },
         macro_hotspots=[
             SweepMacroPoint(

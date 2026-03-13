@@ -47,6 +47,7 @@ from llm_sched.ir.schedule_ir import ScheduleIR
 
 
 _PHASE_METRIC_PREFIXES = ("projection", "kv_io", "attention", "sync", "other")
+_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
 
 
 def build_visualization_bundle(
@@ -484,6 +485,7 @@ def _build_compare_summary(
             _build_scalar_delta("projection_byte_share", compare_row.projection_byte_share),
             _build_scalar_delta("projection_bytes_per_cycle", compare_row.projection_bytes_per_cycle),
             _build_scalar_delta("projection_cycle_share", compare_row.projection_cycle_share),
+            *_build_phase_balance_scalar_deltas(compare_row),
             _build_scalar_delta("kv_io_cycles", compare_row.kv_io_cycles),
             _build_scalar_delta("kv_io_bytes", compare_row.kv_io_bytes),
             _build_scalar_delta("kv_io_byte_share", compare_row.kv_io_byte_share),
@@ -530,6 +532,7 @@ def _build_compare_summary(
             _build_scalar_delta("projection_byte_share", compare_row.projection_byte_share),
             _build_scalar_delta("projection_bytes_per_cycle", compare_row.projection_bytes_per_cycle),
             _build_scalar_delta("projection_cycle_share", compare_row.projection_cycle_share),
+            *_build_phase_balance_scalar_deltas(compare_row),
             _build_scalar_delta("kv_io_cycles", compare_row.kv_io_cycles),
             _build_scalar_delta("kv_io_bytes", compare_row.kv_io_bytes),
             _build_scalar_delta("kv_io_byte_share", compare_row.kv_io_byte_share),
@@ -638,6 +641,19 @@ def _select_phase_metric_highlight(
     if not ranked_candidates:
         return None
     return ranked_candidates[0]
+
+
+def _build_phase_balance_scalar_deltas(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        _build_scalar_delta(
+            f"{phase_name}_{metric_name}",
+            getattr(compare_row, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in _PHASE_BALANCE_METRIC_NAMES
+    ]
 
 
 def _build_scalar_delta(

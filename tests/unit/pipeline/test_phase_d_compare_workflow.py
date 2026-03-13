@@ -22,6 +22,12 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     report = PhaseDCompareReport.model_validate_json(result.report_path.read_text(encoding="utf-8"))
     assert report.prefill_compare_count == 1
     assert report.decode_compare_count == 1
+    prefill_payload = report.prefill_compares[0].model_dump(mode="json")
+    decode_payload = report.decode_compares[0].model_dump(mode="json")
+    assert "projection_occupied_slot_imbalance_slots" in prefill_payload
+    assert "projection_span_balance_ratio" in prefill_payload
+    assert "kv_io_occupied_slot_imbalance_slots" in decode_payload
+    assert "other_span_balance_ratio" in decode_payload
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0

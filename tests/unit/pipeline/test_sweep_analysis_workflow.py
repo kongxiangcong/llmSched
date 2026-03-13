@@ -56,9 +56,16 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert "attention_bytes_per_cycle" in report.run_records[0].metrics
     assert "projection_cycle_share" in report.run_records[0].metrics
     assert "attention_cycle_share" in report.run_records[0].metrics
+    assert "projection_occupied_slot_imbalance_slots" in report.run_records[0].metrics
+    assert "attention_occupied_slot_imbalance_slots" in report.run_records[0].metrics
+    assert "projection_span_balance_ratio" in report.run_records[0].metrics
+    assert "attention_span_balance_ratio" in report.run_records[0].metrics
     metric_delta = next(
         delta for delta in report.comparisons[0].metric_deltas if delta.metric_name == "estimated_cycles"
     )
+    metric_names = {delta.metric_name for delta in report.comparisons[0].metric_deltas}
+    assert "projection_occupied_slot_imbalance_slots" in metric_names
+    assert "attention_span_balance_ratio" in metric_names
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == metric_delta.delta_value
     assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value < 0.0
     assert report.comparisons[0].prefill_compare.projection_cycles.baseline_value > 0.0
@@ -71,6 +78,11 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.comparisons[0].prefill_compare.attention_bytes_per_cycle.candidate_value > 0.0
     assert report.comparisons[0].prefill_compare.projection_cycle_share.baseline_value > 0.0
     assert report.comparisons[0].prefill_compare.attention_cycle_share.candidate_value > 0.0
+    prefill_compare_payload = report.comparisons[0].prefill_compare.model_dump(mode="json")
+    assert "projection_occupied_slot_imbalance_slots" in prefill_compare_payload
+    assert "attention_occupied_slot_imbalance_slots" in prefill_compare_payload
+    assert "projection_span_balance_ratio" in prefill_compare_payload
+    assert "attention_span_balance_ratio" in prefill_compare_payload
     assert report.comparisons[0].layer_deltas[0].baseline_cycle_share > 0.0
     assert report.comparisons[0].layer_deltas[0].change_direction in {"up", "down", "flat"}
 

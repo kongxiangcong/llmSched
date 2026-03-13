@@ -159,6 +159,19 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.other_cycle_share.delta_value == pytest.approx(
         (256.0 / 3072.0) - (512.0 / 4096.0)
     )
+    prefill_compare_payload = prefill_comparison.prefill_compare.model_dump(mode="json")
+    assert "projection_occupied_slot_imbalance_slots" in prefill_compare_payload
+    assert "projection_span_balance_ratio" in prefill_compare_payload
+    assert "attention_occupied_slot_imbalance_slots" in prefill_compare_payload
+    assert "other_span_balance_ratio" in prefill_compare_payload
+    assert (
+        prefill_comparison.prefill_compare.projection_occupied_slot_imbalance_slots.delta_value == 256.0
+    )
+    assert prefill_comparison.prefill_compare.projection_span_balance_ratio.delta_value == -0.5
+    assert (
+        prefill_comparison.prefill_compare.attention_occupied_slot_imbalance_slots.delta_value == 128.0
+    )
+    assert prefill_comparison.prefill_compare.other_span_balance_ratio.delta_value == -0.5
     assert prefill_comparison.prefill_compare.tokens_per_cycle.delta_value == (
         (128.0 / 3072.0) - (128.0 / 4096.0)
     )
@@ -229,6 +242,15 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.other_cycle_share.delta_value == pytest.approx(
         (240.0 / 2800.0) - (280.0 / 3200.0)
     )
+    decode_compare_payload = decode_comparison.decode_compare.model_dump(mode="json")
+    assert "projection_occupied_slot_imbalance_slots" in decode_compare_payload
+    assert "kv_io_span_balance_ratio" in decode_compare_payload
+    assert "sync_occupied_slot_imbalance_slots" in decode_compare_payload
+    assert "other_span_balance_ratio" in decode_compare_payload
+    assert decode_comparison.decode_compare.projection_occupied_slot_imbalance_slots.delta_value == 96.0
+    assert decode_comparison.decode_compare.kv_io_span_balance_ratio.delta_value == -0.6
+    assert decode_comparison.decode_compare.sync_occupied_slot_imbalance_slots.delta_value == 32.0
+    assert decode_comparison.decode_compare.other_span_balance_ratio.delta_value == -0.25
     assert decode_comparison.decode_compare.kv_related_cycle_share.delta_value == pytest.approx(
         (700.0 / 2800.0) - (900.0 / 3200.0)
     )
@@ -312,6 +334,22 @@ def _completed_prefill_run(
                 "sync_cycle_share": 0.0,
                 "other_cycle_share": (512.0 if schedule_kind == "single-core" else 256.0)
                 / estimated_cycles,
+                "projection_occupied_slot_imbalance_slots": 0.0
+                if schedule_kind == "single-core"
+                else 256.0,
+                "projection_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.5,
+                "kv_io_occupied_slot_imbalance_slots": 0.0,
+                "kv_io_span_balance_ratio": 1.0,
+                "attention_occupied_slot_imbalance_slots": 0.0
+                if schedule_kind == "single-core"
+                else 128.0,
+                "attention_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.75,
+                "sync_occupied_slot_imbalance_slots": 0.0,
+                "sync_span_balance_ratio": 1.0,
+                "other_occupied_slot_imbalance_slots": 0.0
+                if schedule_kind == "single-core"
+                else 64.0,
+                "other_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.5,
                 "tokens_per_cycle": 128.0 / estimated_cycles,
                 "tokens_per_critical_path_cycle": 128.0
                 / (estimated_cycles - 512.0 if schedule_kind == "single-core" else estimated_cycles - 768.0),
@@ -371,6 +409,16 @@ def _completed_decode_run(
                 "kv_io_cycle_share": kvload_cycles / estimated_cycles,
                 "attention_cycle_share": (820.0 if schedule_kind == "single-core" else 900.0)
                 / estimated_cycles,
+                "projection_occupied_slot_imbalance_slots": 0.0
+                if schedule_kind == "single-core"
+                else 96.0,
+                "projection_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.6,
+                "kv_io_occupied_slot_imbalance_slots": 0.0 if schedule_kind == "single-core" else 192.0,
+                "kv_io_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.4,
+                "attention_occupied_slot_imbalance_slots": 0.0
+                if schedule_kind == "single-core"
+                else 64.0,
+                "attention_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.8,
                 "cycles_per_token": estimated_cycles,
                 "critical_path_cycles_per_token": estimated_cycles - 320.0
                 if schedule_kind == "single-core"
@@ -379,6 +427,10 @@ def _completed_decode_run(
                 "kv_related_bytes": 96000.0,
                 "sync_cycles": 120.0 if schedule_kind == "single-core" else 80.0,
                 "other_cycles": 280.0 if schedule_kind == "single-core" else 240.0,
+                "sync_occupied_slot_imbalance_slots": 0.0 if schedule_kind == "single-core" else 32.0,
+                "sync_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.5,
+                "other_occupied_slot_imbalance_slots": 0.0 if schedule_kind == "single-core" else 16.0,
+                "other_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.75,
                 "sync_bytes": 8000.0 if schedule_kind == "single-core" else 4000.0,
                 "other_bytes": 16000.0 if schedule_kind == "single-core" else 8000.0,
                 "sync_byte_share": (8000.0 if schedule_kind == "single-core" else 4000.0)
