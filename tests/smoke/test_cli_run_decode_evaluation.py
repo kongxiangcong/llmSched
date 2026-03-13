@@ -54,6 +54,14 @@ def test_run_decode_evaluation_writes_report_for_single_core(
     assert report["token_latency"]["phase_attribution"]["kv_io"]["schedule_overhang_cycles"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["projection"]["occupied_slots"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["other"]["occupied_slots_per_token"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["projection"]["per_core_occupied_slots"] == {
+        "0": report["token_latency"]["phase_attribution"]["projection"]["occupied_slots"]
+    }
+    assert report["token_latency"]["phase_attribution"]["projection"]["per_core_span_slots"]["0"] >= report["token_latency"]["phase_attribution"]["projection"]["per_core_occupied_slots"]["0"]
+    assert report["token_latency"]["phase_attribution"]["projection"]["occupied_slot_imbalance_slots"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["projection"]["occupied_slot_balance_ratio"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["projection"]["span_imbalance_slots"] >= 0.0
+    assert report["token_latency"]["phase_attribution"]["projection"]["span_balance_ratio"] >= 0.0
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["read_bytes_by_address_space"], dict)
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["write_bytes_by_address_space"], dict)
     assert isinstance(report["token_latency"]["phase_attribution"]["kv_io"]["read_bytes_by_backing_store"], dict)

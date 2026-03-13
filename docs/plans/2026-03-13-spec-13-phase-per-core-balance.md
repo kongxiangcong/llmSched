@@ -177,3 +177,17 @@ Document that `SPEC-13` phase attribution now includes per-core occupied/span pr
 git add docs/development/evaluation-compiler-roadmap.md docs/plans/2026-03-13-spec-13-phase-per-core-balance.md tests/smoke/test_cli_run_performance_estimation.py tests/smoke/test_cli_run_prefill_evaluation.py tests/smoke/test_cli_run_decode_evaluation.py
 git commit -m "docs: record per-core phase balance closure"
 ```
+
+## Execution Results
+
+- Added `per_core_occupied_slots`, `per_core_span_slots`, `occupied_slot_imbalance_slots`, `occupied_slot_balance_ratio`, `span_imbalance_slots`, and `span_balance_ratio` to `PerfPhaseSummary`, preserving current aggregate `occupied_slots` semantics while exposing the underlying per-core shape directly.
+- Reworked phase schedule timing aggregation in `descriptor_estimator` so phase-local occupied slots are derived from merged same-core intervals, phase-local spans are derived from first-start to last-end on each core, and imbalance/balance is computed once from the canonical per-core maps.
+- Proved the new surface with focused contract, builder, workflow, and downstream eval-report coverage, including a dedicated dual-core regression test for asymmetric phase occupancy/span.
+- Documented the new `SPEC-13` checkpoint in the roadmap and extended performance-facing smoke tests to assert the new JSON fields end to end.
+
+### Verification
+
+- `python -m pytest tests/unit/contracts/test_perf_report.py tests/unit/contracts/test_prefill_report.py tests/unit/contracts/test_decode_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py -q`
+  - `23 passed in 0.60s`
+- `python -m pytest tests/smoke/test_cli_run_performance_estimation.py tests/smoke/test_cli_run_prefill_evaluation.py tests/smoke/test_cli_run_decode_evaluation.py -q`
+  - `6 passed in 240.43s`

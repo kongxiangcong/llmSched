@@ -2179,3 +2179,23 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase, cycle-component, schedule-compression, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-13 SPEC-13 Phase Per-Core Balance Checkpoint
+
+- plan doc: `../plans/2026-03-13-spec-13-phase-per-core-balance.md`
+- `SPEC-13` phase attribution now carries per-core occupied/span timing plus derived balance signals, so downstream consumers can inspect whether a phase is concentrated on one core, evenly split, or stretched unevenly across the schedule without reopening raw `ScheduleIR` blocks.
+- this slice stays on the existing `ScheduleIR -> PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport` chain and keeps current aggregate `occupied_slots` semantics unchanged.
+- new closure evidence:
+  - `PerfPhaseSummary` now carries `per_core_occupied_slots`, `per_core_span_slots`, `occupied_slot_imbalance_slots`, `occupied_slot_balance_ratio`, `span_imbalance_slots`, and `span_balance_ratio` with compatibility-friendly dict/zero defaults
+  - performance estimation now computes per-phase per-core occupied time from merged same-core intervals, per-phase per-core span from first-start to last-end, and derives balance/imbalance once from the canonical per-core maps
+  - dual-core schedules now preserve zero-valued inactive-core entries in phase-local per-core maps, so one-sided phases show explicit imbalance instead of disappearing into aggregate occupied-slot sums
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer phase surface automatically through their existing direct `phase_attribution` handoff, and focused unit/workflow verification remains green (`23 passed`)
+  - performance-facing smoke coverage now asserts the new JSON fields end to end (`6 passed`)
+- what this closes:
+  - one `SPEC-13` deeper-cycle gap where phase attribution still collapsed all occupied time into a single aggregate and could not explain whether dual-core work was actually balanced
+  - one schedule-shaping gap where downstream consumers could see phase compression and overhang but not whether that shape came from one core dominating or both cores participating evenly
+  - one future-consumer gap where later compare or visualization layers would otherwise have needed to reopen raw schedule blocks just to answer phase-local per-core balance questions
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase, per-core-balance, cycle-component, schedule-compression, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
