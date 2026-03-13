@@ -129,3 +129,15 @@ Append the implemented-result summary and exact verification evidence to this pl
 git add docs/development/evaluation-compiler-roadmap.md docs/plans/2026-03-13-spec-16-phase-balance-compare.md
 git commit -m "docs: record phase balance compare closure"
 ```
+
+## Execution Results
+
+- `SweepRunRecord.metrics` now carries `projection/kv_io/attention/sync/other_occupied_slot_imbalance_slots` and `projection/kv_io/attention/sync/other_span_balance_ratio`, extracted directly from top-level `phase_attribution` in prefill/decode reports.
+- `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve the same selected phase-balance rows with compatibility-friendly zero defaults for older artifacts.
+- `PhaseDCompareReport` and visualization compare summaries now forward those phase-balance deltas end to end through the existing compare chain, without adding a new workflow or frontend-only contract.
+- Focused TDD coverage now proves the path at sweep analysis, sweep compare builder, Phase D compare builder, visualization bundle builder, and workflow packaging boundaries.
+
+### Verification
+
+- `python -m pytest tests/unit/pipeline/test_sweep_analysis_workflow.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/unit/pipeline/test_visualization_packaging_workflow.py -q`
+  - `14 passed in 355.47s`
