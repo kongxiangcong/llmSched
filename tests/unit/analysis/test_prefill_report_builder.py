@@ -48,6 +48,12 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.throughput.phase_attribution["attention"].bytes_per_token == pytest.approx(1280.0)
     assert report.throughput.phase_attribution["projection"].occupied_slots == pytest.approx(1024.0)
     assert report.throughput.phase_attribution["other"].occupied_slots_per_token == pytest.approx(4.0)
+    assert report.throughput.phase_attribution["projection"].per_core_occupied_slots == {"0": 1024.0}
+    assert report.throughput.phase_attribution["projection"].per_core_span_slots == {"0": 1024.0}
+    assert report.throughput.phase_attribution["projection"].occupied_slot_imbalance_slots == pytest.approx(0.0)
+    assert report.throughput.phase_attribution["projection"].occupied_slot_balance_ratio == pytest.approx(1.0)
+    assert report.throughput.phase_attribution["projection"].span_imbalance_slots == pytest.approx(0.0)
+    assert report.throughput.phase_attribution["projection"].span_balance_ratio == pytest.approx(1.0)
     assert report.throughput.phase_attribution["projection"].read_bytes_by_address_space == {"DDR": 49152.0}
     assert report.throughput.phase_attribution["projection"].write_bytes_by_address_space == {"VMEM": 16384.0}
     assert report.throughput.phase_attribution["attention"].read_bytes_by_address_space == {
@@ -200,6 +206,12 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 512.0,
                     "occupied_slots": 1024.0,
                     "occupied_slots_per_token": 8.0,
+                    "per_core_occupied_slots": {"0": 1024.0},
+                    "per_core_span_slots": {"0": 1024.0},
+                    "occupied_slot_imbalance_slots": 0.0,
+                    "occupied_slot_balance_ratio": 1.0,
+                    "span_imbalance_slots": 0.0,
+                    "span_balance_ratio": 1.0,
                     "read_bytes_by_address_space": {"DDR": 49152.0},
                     "write_bytes_by_address_space": {"VMEM": 16384.0},
                     "read_bytes_by_backing_store": {"ddr-backed-staged": 49152.0},

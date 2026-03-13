@@ -43,6 +43,20 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
     assert report.token_latency.phase_attribution["kv_io"].bytes_per_token == pytest.approx(99000.0)
     assert report.token_latency.phase_attribution["kv_io"].occupied_slots == pytest.approx(960.0)
     assert report.token_latency.phase_attribution["other"].occupied_slots_per_token == pytest.approx(180.0)
+    assert report.token_latency.phase_attribution["projection"].per_core_occupied_slots == {
+        "0": 400.0,
+        "1": 240.0,
+    }
+    assert report.token_latency.phase_attribution["projection"].per_core_span_slots == {
+        "0": 460.0,
+        "1": 280.0,
+    }
+    assert report.token_latency.phase_attribution["projection"].occupied_slot_imbalance_slots == pytest.approx(160.0)
+    assert report.token_latency.phase_attribution["projection"].occupied_slot_balance_ratio == pytest.approx(
+        240.0 / 400.0
+    )
+    assert report.token_latency.phase_attribution["projection"].span_imbalance_slots == pytest.approx(180.0)
+    assert report.token_latency.phase_attribution["projection"].span_balance_ratio == pytest.approx(280.0 / 460.0)
     assert report.token_latency.phase_attribution["projection"].read_bytes_by_address_space == {
         "DDR": 32000.0,
         "VMEM": 8000.0,
@@ -206,6 +220,12 @@ def _perf_summary_report() -> PerfSummaryReport:
                     "bytes_per_token": 47000.0,
                     "occupied_slots": 640.0,
                     "occupied_slots_per_token": 640.0,
+                    "per_core_occupied_slots": {"0": 400.0, "1": 240.0},
+                    "per_core_span_slots": {"0": 460.0, "1": 280.0},
+                    "occupied_slot_imbalance_slots": 160.0,
+                    "occupied_slot_balance_ratio": 240.0 / 400.0,
+                    "span_imbalance_slots": 180.0,
+                    "span_balance_ratio": 280.0 / 460.0,
                     "read_bytes_by_address_space": {"DDR": 32000.0, "VMEM": 8000.0},
                     "write_bytes_by_address_space": {"VMEM": 10000.0},
                     "read_bytes_by_backing_store": {"ddr-backed-staged": 32000.0, "vmem-local": 8000.0},

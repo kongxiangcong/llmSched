@@ -41,6 +41,12 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
                         "bytes_per_token": 50000.0,
                         "occupied_slots": 640.0,
                         "occupied_slots_per_token": 640.0,
+                        "per_core_occupied_slots": {"0": 400.0, "1": 240.0},
+                        "per_core_span_slots": {"0": 460.0, "1": 280.0},
+                        "occupied_slot_imbalance_slots": 160.0,
+                        "occupied_slot_balance_ratio": 240.0 / 400.0,
+                        "span_imbalance_slots": 180.0,
+                        "span_balance_ratio": 280.0 / 460.0,
                         "read_bytes_by_address_space": {"DDR": 32000.0, "VMEM": 8000.0},
                         "write_bytes_by_address_space": {"VMEM": 10000.0},
                         "read_bytes_by_backing_store": {
@@ -221,6 +227,18 @@ def test_decode_evaluation_report_tracks_latency_kv_and_hotspots() -> None:
     assert report.token_latency.phase_attribution["sync"].bytes_per_token == 4000.0
     assert report.token_latency.phase_attribution["kv_io"].occupied_slots == 960.0
     assert report.token_latency.phase_attribution["other"].occupied_slots_per_token == 180.0
+    assert report.token_latency.phase_attribution["projection"].per_core_occupied_slots == {
+        "0": 400.0,
+        "1": 240.0,
+    }
+    assert report.token_latency.phase_attribution["projection"].per_core_span_slots == {
+        "0": 460.0,
+        "1": 280.0,
+    }
+    assert report.token_latency.phase_attribution["projection"].occupied_slot_imbalance_slots == 160.0
+    assert report.token_latency.phase_attribution["projection"].occupied_slot_balance_ratio == 240.0 / 400.0
+    assert report.token_latency.phase_attribution["projection"].span_imbalance_slots == 180.0
+    assert report.token_latency.phase_attribution["projection"].span_balance_ratio == 280.0 / 460.0
     assert report.token_latency.phase_attribution["kv_io"].read_bytes_by_address_space["DDR"] == 64000.0
     assert report.token_latency.phase_attribution["other"].write_bytes_by_address_space["DDR"] == 16000.0
     assert report.token_latency.phase_attribution["kv_io"].read_bytes_by_backing_store["ddr-persistent"] == 64000.0

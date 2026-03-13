@@ -43,6 +43,12 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.throughput.phase_attribution["projection"].schedule_overhang_cycles >= 0.0
     assert report.throughput.phase_attribution["projection"].occupied_slots > 0.0
     assert report.throughput.phase_attribution["other"].occupied_slots_per_token >= 0.0
+    assert list(report.throughput.phase_attribution["projection"].per_core_occupied_slots) == ["0"]
+    assert list(report.throughput.phase_attribution["projection"].per_core_span_slots) == ["0"]
+    assert report.throughput.phase_attribution["projection"].occupied_slot_imbalance_slots >= 0.0
+    assert report.throughput.phase_attribution["projection"].occupied_slot_balance_ratio >= 0.0
+    assert report.throughput.phase_attribution["projection"].span_imbalance_slots >= 0.0
+    assert report.throughput.phase_attribution["projection"].span_balance_ratio >= 0.0
     assert isinstance(report.throughput.phase_attribution["projection"].read_bytes_by_address_space, dict)
     assert isinstance(report.throughput.phase_attribution["projection"].write_bytes_by_address_space, dict)
     assert isinstance(report.throughput.phase_attribution["projection"].read_bytes_by_backing_store, dict)
