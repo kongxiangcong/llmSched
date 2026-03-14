@@ -683,6 +683,34 @@ function orderedGroupedScalarDeltas(scalarDeltas) {
   });
 }
 
+function buildGroupedScalarDirectionTag(group, scalarDeltas) {
+  const leadScalar = (scalarDeltas || [])[0];
+  if (!leadScalar) {
+    return "";
+  }
+  const deltaValue = Number(leadScalar.delta_value || 0);
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return '<span class="direction-tag is-neutral">steady</span>';
+  }
+  const metricName = String(leadScalar.metric_name || "");
+  const groupId = String(group.group_id || "");
+  if (groupId === "headline" || groupId === "throughput_latency") {
+    const improvesWhenHigher = (
+      metricName.includes("tokens_per_cycle")
+      || metricName.includes("bytes_per_cycle")
+    );
+    const faster = improvesWhenHigher ? deltaValue > 0 : deltaValue < 0;
+    return `<span class="direction-tag ${faster ? "is-down" : "is-up"}">${faster ? "candidate faster" : "candidate slower"}</span>`;
+  }
+  if (groupId === "memory_pressure") {
+    return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "pressure up" : "pressure down"}</span>`;
+  }
+  if (groupId === "schedule_shape") {
+    return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "schedule shifted up" : "schedule shifted down"}</span>`;
+  }
+  return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "shifted up" : "shifted down"}</span>`;
+}
+
 function renderGroupedScalarDeltaSection(group) {
   const scalarDeltas = orderedGroupedScalarDeltas(group.scalar_deltas || []);
   if (!scalarDeltas.length) {
@@ -690,6 +718,7 @@ function renderGroupedScalarDeltaSection(group) {
   }
   const visibleRows = scalarDeltas.slice(0, MAX_GROUPED_COMPARE_ROWS);
   const hiddenRows = scalarDeltas.slice(MAX_GROUPED_COMPARE_ROWS);
+  const directionTag = buildGroupedScalarDirectionTag(group, scalarDeltas);
   const overflowDetails = hiddenRows.length
     ? `
       <details class="compare-summary-details">
@@ -700,7 +729,10 @@ function renderGroupedScalarDeltaSection(group) {
     : "";
   return `
       <section class="compare-summary-group">
-        <p class="muted">${group.title || group.group_id}</p>
+        <div class="compare-group-heading">
+          <p class="muted">${group.title || group.group_id}</p>
+          ${directionTag}
+        </div>
         <ul class="metric-detail-list">${renderScalarDeltaRows(visibleRows)}</ul>
         ${overflowDetails}
       </section>
@@ -1635,6 +1667,44 @@ def _build_styles_css() -> str:
 
 .compare-summary-group + .compare-summary-group {
   margin-top: 12px;
+}
+
+.compare-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.compare-group-heading .muted {
+  margin: 0;
+}
+
+.direction-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(16, 32, 51, 0.08);
+  color: #5b6980;
+}
+
+.direction-tag.is-up {
+  background: rgba(181, 35, 35, 0.1);
+  color: #8d2424;
+}
+
+.direction-tag.is-down {
+  background: rgba(28, 181, 224, 0.14);
+  color: #0b4f6c;
+}
+
+.direction-tag.is-neutral {
+  background: rgba(16, 32, 51, 0.08);
+  color: #5b6980;
 }
 
 .compare-summary-group .compare-summary-details {

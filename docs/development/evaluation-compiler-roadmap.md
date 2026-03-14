@@ -288,6 +288,12 @@ graph TD
 - grouped compare sections in the static catalog/workbench UI now rank rows by change magnitude before applying the compact top-N cutoff.
 - current ordering rule is stable and local to the UI layer: descending `abs(delta_ratio)`, then descending `abs(delta_value)`, then ascending metric name.
 - this makes the default visible rows track the strongest compare shifts without reopening bundle/catalog contracts or changing the flat scalar detail surface.
+
+## 2026-03-14 SPEC-16 Grouped Compare Direction Tag Checkpoint
+
+- grouped compare sections in the static catalog/workbench UI now show lightweight direction tags next to each group heading.
+- the current tags are inferred from the sorted lead scalar in each group using narrow UI-local heuristics, including `candidate faster/slower` and `pressure up/down` wording where the metric family is clear enough.
+- this improves scanability without changing compare contracts, adding browser state, or replacing the underlying scalar detail rows.
   - final address-width / field-width encoding validation
   - final binary descriptor packer
 
