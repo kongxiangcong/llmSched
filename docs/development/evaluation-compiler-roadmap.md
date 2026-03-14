@@ -2404,3 +2404,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Compare Summary Tags Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-compare-summary-tags.md`
+- catalog compare workspace rows now expose compact semantic summary tags directly in the overview table, so users can scan whether each candidate is `improved`, `regressed`, or `steady` before opening the richer shared-metric details.
+- this slice stays entirely inside the catalog static builder and reuses the existing compare-row semantic helper rather than introducing new report fields, compare payloads, or persisted UI state.
+- new closure evidence:
+  - catalog `buildWorkspaceCompareSummaryTag` now derives row-level semantics from the baseline-versus-candidate primary metric delta using the same throughput-versus-latency heuristic already used for compare rows
+  - workspace compare table rows now prepend the semantic summary tag in the `Primary Delta` cell and at the start of the `Shared Metric Deltas` summary cell
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one `SPEC-19` scanability gap where catalog compare workspace users still had to interpret raw delta signs row by row with no immediate positive/negative summary cue
+  - one overview-versus-detail inconsistency where compare tray/detail panels already carried semantic tags but the workspace candidate table did not
+  - one generated-asset testing gap where workspace compare summary semantics were not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

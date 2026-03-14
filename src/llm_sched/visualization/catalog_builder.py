@@ -487,6 +487,17 @@ function buildScalarDeltaDirectionTag(scalarDelta) {
     : '<span class="direction-tag is-negative">regressed</span>';
 }
 
+function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
+  const baselineValue = Number(baselineEntry.primary_metric_value || 0);
+  const candidateValue = Number(candidateEntry.primary_metric_value || 0);
+  return buildScalarDeltaDirectionTag({
+    metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
+    baseline_value: baselineValue,
+    candidate_value: candidateValue,
+    delta_value: candidateValue - baselineValue,
+  }).replace("<span ", '<span title="workspace summary" ');
+}
+
 function renderScalarDeltaListItems(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
@@ -925,15 +936,19 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           const delta = entry.primary_metric_value - baselineEntry.primary_metric_value;
           const ratio = baselineEntry.primary_metric_value !== 0 ? entry.primary_metric_value / baselineEntry.primary_metric_value : null;
           const sweepComparison = resolveSweepComparison(baselineEntry, entry);
+          const workspaceSummaryTag = buildWorkspaceCompareSummaryTag(baselineEntry, entry);
           return `
             <tr>
               <td>${entry.run_id}</td>
               <td>${entry.schedule_kind}</td>
               <td>${entry.target_profile_name}</td>
               <td>${entry.primary_metric_name}</td>
-              <td>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</td>
+              <td>
+                ${workspaceSummaryTag}
+                <div>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</div>
+              </td>
               <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
-              <td>${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
+              <td>${workspaceSummaryTag}${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>
