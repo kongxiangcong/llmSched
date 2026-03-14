@@ -474,14 +474,18 @@ function metricImprovesWhenHigher(metricName) {
   );
 }
 
+function scalarDeltaIsPositive(metricName, deltaValue) {
+  return metricImprovesWhenHigher(metricName)
+    ? deltaValue > 0
+    : deltaValue < 0;
+}
+
 function buildScalarDeltaDirectionTag(scalarDelta) {
   const deltaValue = Number(scalarDelta.delta_value || 0);
   if (!Number.isFinite(deltaValue) || deltaValue === 0) {
     return '<span class="direction-tag is-neutral">steady</span>';
   }
-  const positive = metricImprovesWhenHigher(scalarDelta.metric_name)
-    ? deltaValue > 0
-    : deltaValue < 0;
+  const positive = scalarDeltaIsPositive(scalarDelta.metric_name, deltaValue);
   return positive
     ? '<span class="direction-tag is-positive">improved</span>'
     : '<span class="direction-tag is-negative">regressed</span>';
@@ -575,11 +579,7 @@ function buildGroupedScalarDirectionTag(group, scalarDeltas) {
   const metricName = String(leadScalar.metric_name || "");
   const groupId = String(group.group_id || "");
   if (groupId === "headline" || groupId === "throughput_latency") {
-    const improvesWhenHigher = (
-      metricName.includes("tokens_per_cycle")
-      || metricName.includes("bytes_per_cycle")
-    );
-    const faster = improvesWhenHigher ? deltaValue > 0 : deltaValue < 0;
+    const faster = scalarDeltaIsPositive(metricName, deltaValue);
     return faster
       ? '<span class="direction-tag is-positive">candidate faster</span>'
       : '<span class="direction-tag is-negative">candidate slower</span>';

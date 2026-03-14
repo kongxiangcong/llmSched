@@ -2494,3 +2494,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Scalar Delta Positive Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-scalar-delta-positive-helper.md`
+- catalog and workbench compare builders now share a dedicated `scalarDeltaIsPositive(metricName, deltaValue)` helper, so scalar-row tags and grouped headline/throughput tags derive positive-versus-negative outcomes from the same metric heuristic instead of maintaining parallel logic.
+- this slice stays entirely inside the generated static JS builders and is a pure semantic-helper refactor: it does not change compare wording, CSS classes, payload contracts, or browser state.
+- new closure evidence:
+  - both builders now expose `scalarDeltaIsPositive` next to `metricImprovesWhenHigher`
+  - `buildScalarDeltaDirectionTag` and grouped headline/throughput branches now reuse the same helper in both catalog and workbench
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one drift risk where scalar compare rows and grouped compare headline rows could have diverged on which metric directions counted as positive
+  - one catalog/workbench parity gap where the same semantic heuristic existed twice but was not explicitly factored as a shared builder-level primitive
+  - one generated-asset testing gap where the positive-direction semantic helper was not visible directly in emitted apps
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
