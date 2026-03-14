@@ -669,8 +669,22 @@ function hasScalarDeltaGroups(compareSummary) {
   );
 }
 
+function orderedGroupedScalarDeltas(scalarDeltas) {
+  return [...(scalarDeltas || [])].sort((left, right) => {
+    const ratioDiff = Math.abs(Number(right.delta_ratio || 0)) - Math.abs(Number(left.delta_ratio || 0));
+    if (ratioDiff !== 0) {
+      return ratioDiff;
+    }
+    const valueDiff = Math.abs(Number(right.delta_value || 0)) - Math.abs(Number(left.delta_value || 0));
+    if (valueDiff !== 0) {
+      return valueDiff;
+    }
+    return String(left.metric_name || "").localeCompare(String(right.metric_name || ""));
+  });
+}
+
 function renderGroupedScalarDeltaSection(group) {
-  const scalarDeltas = group.scalar_deltas || [];
+  const scalarDeltas = orderedGroupedScalarDeltas(group.scalar_deltas || []);
   if (!scalarDeltas.length) {
     return "";
   }

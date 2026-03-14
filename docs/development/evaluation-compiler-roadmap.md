@@ -282,6 +282,12 @@ graph TD
 - grouped compare sections in the static catalog/workbench UI now render a compact top-N subset by default and use native `<details>` expansion for overflow rows.
 - this keeps compare panels readable as grouped sections grow, without introducing extra browser state, new contracts, or URL-persisted UI controls.
 - the flat `All Scalar Deltas` disclosure remains available as the compatibility/full-detail path beneath grouped compare rendering.
+
+## 2026-03-14 SPEC-16 Grouped Compare Sorting Checkpoint
+
+- grouped compare sections in the static catalog/workbench UI now rank rows by change magnitude before applying the compact top-N cutoff.
+- current ordering rule is stable and local to the UI layer: descending `abs(delta_ratio)`, then descending `abs(delta_value)`, then ascending metric name.
+- this makes the default visible rows track the strongest compare shifts without reopening bundle/catalog contracts or changing the flat scalar detail surface.
   - final address-width / field-width encoding validation
   - final binary descriptor packer
 
