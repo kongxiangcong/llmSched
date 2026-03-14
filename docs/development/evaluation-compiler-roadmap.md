@@ -2440,3 +2440,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Sweep Summary Tags Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-sweep-summary-tags.md`
+- catalog compare workspace `Sweep Layer Deltas` cells now prepend compact sweep-state tags, so users can scan whether a candidate row shows `candidate regressions`, `mixed` layer outcomes, or `none` before reading the detailed metric summary or opening layer drilldowns.
+- this slice stays entirely inside the catalog static builder and derives sweep-state semantics from the existing `layer_deltas[*].delta_cycles` surface, without changing compare payloads, workbench state, or drilldown routing.
+- new closure evidence:
+  - catalog `buildWorkspaceSweepSummaryTag` now emits direct semantic tags for no-sweep, regression-only, and mixed sweep states
+  - workspace compare table rows now render the sweep summary tag at the start of the `Sweep Layer Deltas` cell ahead of the existing summary text, sweep link, and layer rows
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one workspace scanability gap where users still had to parse the full sweep summary sentence to know whether any candidate regression layers were present
+  - one overview-table consistency gap where primary delta, ratio, and shared summary cells already exposed semantic tags but the sweep summary cell did not
+  - one generated-asset testing gap where workspace sweep-state semantics were not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

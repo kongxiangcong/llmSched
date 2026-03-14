@@ -505,6 +505,22 @@ function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
   );
 }
 
+function buildWorkspaceSweepSummaryTag(sweepComparison) {
+  if (!sweepComparison || !(sweepComparison.layer_deltas || []).length) {
+    return '<span class="direction-tag is-neutral" title="workspace sweep summary">none</span>';
+  }
+  const layerDeltas = sweepComparison.layer_deltas || [];
+  const hasRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0);
+  const hasNonRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) <= 0);
+  if (hasRegressions && hasNonRegressions) {
+    return '<span class="direction-tag is-neutral" title="workspace sweep summary">mixed</span>';
+  }
+  if (hasRegressions) {
+    return '<span class="direction-tag is-negative" title="workspace sweep summary">candidate regressions</span>';
+  }
+  return '<span class="direction-tag is-neutral" title="workspace sweep summary">none</span>';
+}
+
 function renderScalarDeltaListItems(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
@@ -945,6 +961,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           const sweepComparison = resolveSweepComparison(baselineEntry, entry);
           const workspaceSummaryTag = buildWorkspaceCompareSummaryTag(baselineEntry, entry);
           const workspaceRatioSummaryTag = buildWorkspaceCompareRatioSummaryTag(baselineEntry, entry);
+          const workspaceSweepSummaryTag = buildWorkspaceSweepSummaryTag(sweepComparison);
           return `
             <tr>
               <td>${entry.run_id}</td>
@@ -960,7 +977,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 <div>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</div>
               </td>
               <td>${workspaceSummaryTag}${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
-              <td>${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
+              <td>${workspaceSweepSummaryTag}${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>
           `;
