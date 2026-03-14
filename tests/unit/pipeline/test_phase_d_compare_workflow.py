@@ -33,6 +33,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert "other_schedule_overhang_cycles" in prefill_payload
     assert "projection_read_bytes_ddr" in prefill_payload
     assert "projection_read_bytes_vmem" in prefill_payload
+    assert "projection_read_bytes_ddr_backed_staged" in prefill_payload
+    assert "projection_read_bytes_ddr_persistent" in prefill_payload
+    assert "other_write_bytes_vmem_local" in prefill_payload
     assert "projection_compute_cycles" in prefill_payload
     assert "projection_memory_cycles" in prefill_payload
     assert "projection_sync_cycles" in prefill_payload
@@ -45,6 +48,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert "sync_schedule_overhang_cycles" in decode_payload
     assert "kv_io_read_bytes_ddr" in decode_payload
     assert "attention_read_bytes_ddr" in decode_payload
+    assert "kv_io_read_bytes_ddr_persistent" in decode_payload
+    assert "attention_read_bytes_ddr_persistent" in decode_payload
+    assert "sync_write_bytes_vmem_local" in decode_payload
     assert "kv_io_compute_cycles" in decode_payload
     assert "kv_io_memory_cycles" in decode_payload
     assert "sync_sync_cycles" in decode_payload
@@ -62,11 +68,19 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
         0.0857142857 - 0.1428571429
     )
     assert report.prefill_compares[0].other_schedule_overhang_cycles.delta_value == pytest.approx(-64.0)
+    assert report.prefill_compares[0].projection_read_bytes_ddr_backed_staged.delta_value == pytest.approx(
+        -4096.0
+    )
+    assert report.prefill_compares[0].projection_read_bytes_ddr_persistent.delta_value == pytest.approx(0.0)
+    assert report.prefill_compares[0].other_write_bytes_vmem_local.delta_value == pytest.approx(-16384.0)
     assert report.decode_compares[0].kv_io_schedule_compression_cycles.delta_value == pytest.approx(32.0)
     assert report.decode_compares[0].kv_io_schedule_compression_ratio.delta_value == pytest.approx(
         0.1333333333 - 0.096
     )
     assert report.decode_compares[0].sync_schedule_overhang_cycles.delta_value == pytest.approx(8.0)
+    assert report.decode_compares[0].kv_io_read_bytes_ddr_persistent.baseline_value == pytest.approx(96000.0)
+    assert report.decode_compares[0].attention_read_bytes_ddr_persistent.delta_value == pytest.approx(4000.0)
+    assert report.decode_compares[0].sync_write_bytes_vmem_local.delta_value == pytest.approx(-1024.0)
     assert report.decode_compares[0].sync_span_imbalance_slots.delta_value == 32.0
     assert report.prefill_compares[0].projection_occupied_slots.delta_value == pytest.approx(0.0)
     assert report.prefill_compares[0].projection_occupied_slots_per_token.delta_value == pytest.approx(0.0)
@@ -201,6 +215,30 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
+                    "projection_read_bytes_ddr_backed_staged": {
+                        "baseline_value": 8192.0,
+                        "candidate_value": 4096.0,
+                        "delta_value": -4096.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "projection_read_bytes_ddr_persistent": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_read_bytes_vmem_local": {
+                        "baseline_value": 57344.0,
+                        "candidate_value": 45056.0,
+                        "delta_value": -12288.0,
+                        "delta_ratio": -0.2142857143,
+                    },
+                    "projection_write_bytes_vmem_local": {
+                        "baseline_value": 65536.0,
+                        "candidate_value": 49152.0,
+                        "delta_value": -16384.0,
+                        "delta_ratio": -0.25,
+                    },
                     "projection_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,
                         "candidate_value": 256.0,
@@ -268,6 +306,18 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_ratio": 0.0,
                     },
                     "kv_io_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_read_bytes_ddr_persistent": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_write_bytes_vmem_local": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -345,6 +395,24 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
+                    "attention_read_bytes_ddr_backed_staged": {
+                        "baseline_value": 16384.0,
+                        "candidate_value": 8192.0,
+                        "delta_value": -8192.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "attention_read_bytes_ddr_persistent": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_write_bytes_vmem_local": {
+                        "baseline_value": 163840.0,
+                        "candidate_value": 131072.0,
+                        "delta_value": -32768.0,
+                        "delta_ratio": -0.2,
+                    },
                     "attention_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,
                         "candidate_value": 128.0,
@@ -412,6 +480,12 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_ratio": 0.0,
                     },
                     "sync_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_write_bytes_vmem_local": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
@@ -487,6 +561,18 @@ def _sweep_report_payload() -> dict[str, object]:
                         "baseline_value": 128.0,
                         "candidate_value": 64.0,
                         "delta_value": -64.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_read_bytes_vmem_local": {
+                        "baseline_value": 32768.0,
+                        "candidate_value": 16384.0,
+                        "delta_value": -16384.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_write_bytes_vmem_local": {
+                        "baseline_value": 32768.0,
+                        "candidate_value": 16384.0,
+                        "delta_value": -16384.0,
                         "delta_ratio": -0.5,
                     },
                     "other_occupied_slot_imbalance_slots": {
@@ -629,6 +715,24 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
+                    "projection_read_bytes_ddr_backed_staged": {
+                        "baseline_value": 12000.0,
+                        "candidate_value": 8000.0,
+                        "delta_value": -4000.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "projection_read_bytes_ddr_persistent": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_write_bytes_vmem_local": {
+                        "baseline_value": 48000.0,
+                        "candidate_value": 36000.0,
+                        "delta_value": -12000.0,
+                        "delta_ratio": -0.25,
+                    },
                     "projection_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,
                         "candidate_value": 96.0,
@@ -698,6 +802,18 @@ def _sweep_report_payload() -> dict[str, object]:
                     "kv_io_schedule_overhang_cycles": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_read_bytes_ddr_persistent": {
+                        "baseline_value": 96000.0,
+                        "candidate_value": 96000.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_write_bytes_vmem_local": {
+                        "baseline_value": 96000.0,
+                        "candidate_value": 96000.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
@@ -773,6 +889,18 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": -16.0,
                         "delta_ratio": -0.5,
                     },
+                    "attention_read_bytes_ddr_persistent": {
+                        "baseline_value": 4000.0,
+                        "candidate_value": 8000.0,
+                        "delta_value": 4000.0,
+                        "delta_ratio": 1.0,
+                    },
+                    "attention_write_bytes_vmem_local": {
+                        "baseline_value": 24000.0,
+                        "candidate_value": 32000.0,
+                        "delta_value": 8000.0,
+                        "delta_ratio": 0.3333333333,
+                    },
                     "attention_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,
                         "candidate_value": 64.0,
@@ -844,6 +972,18 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 0.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
+                    },
+                    "other_read_bytes_vmem_local": {
+                        "baseline_value": 16000.0,
+                        "candidate_value": 8000.0,
+                        "delta_value": -8000.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_write_bytes_vmem_local": {
+                        "baseline_value": 16000.0,
+                        "candidate_value": 8000.0,
+                        "delta_value": -8000.0,
+                        "delta_ratio": -0.5,
                     },
                     "other_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,
@@ -940,6 +1080,18 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 16.0,
                         "delta_value": 8.0,
                         "delta_ratio": 1.0,
+                    },
+                    "sync_read_bytes_vmem_local": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": -1024.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "sync_write_bytes_vmem_local": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1024.0,
+                        "delta_value": -1024.0,
+                        "delta_ratio": -0.5,
                     },
                     "sync_occupied_slot_imbalance_slots": {
                         "baseline_value": 0.0,

@@ -2294,3 +2294,22 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase, per-core-balance, cycle-component, schedule-compression, occupied-slot, address-space-pressure, backing-store-pressure, memory-class-pressure, and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Phase Backing-Store Compare Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-phase-backing-store-compare.md`
+- `SPEC-16` compare now preserves fixed phase-local backing-store pressure rows, so downstream compare consumers can distinguish staged DDR reads, persistent DDR reads, and VMEM-local traffic per phase without reopening canonical perf reports or descriptor provenance.
+- this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and mirrors the current address-space compare pattern instead of introducing dynamic compare payloads.
+- new closure evidence:
+  - `SweepRunRecord.metrics` now exports fixed per-phase backing-store rows for `ddr-backed-staged`, `ddr-persistent`, and `vmem-local` across read and write directions
+  - `SweepPrefillCompareSummary` / `SweepDecodeCompareSummary` now carry the same fixed backing-store scalar deltas with compatibility-friendly zero defaults
+  - `PhaseDCompareReport` and visualization compare summaries now forward the same backing-store rows directly, keeping compare serialization stable across standalone report and workbench-facing consumers
+  - focused compare-chain verification remains green (`14 passed`)
+- what this closes:
+  - one `SPEC-16` compare gap where phase-aware compare already knew address-space pressure but still lost storage provenance once results crossed into sweep compare artifacts
+  - one standalone-report gap where `PhaseDCompareReport` could surface phase cycles, bytes, address-space pressure, schedule compression, occupied slots, and balance, but not whether DDR pressure was staged or persistent
+  - one visualization gap where compare summaries could not yet expose backing-store provenance even though canonical perf reports already carried it
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

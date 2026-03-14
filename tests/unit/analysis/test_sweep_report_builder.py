@@ -151,6 +151,10 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.projection_write_bytes_ddr.delta_value == 0.0
     assert prefill_comparison.prefill_compare.projection_read_bytes_vmem.delta_value == -12288.0
     assert prefill_comparison.prefill_compare.projection_write_bytes_vmem.delta_value == -16384.0
+    assert prefill_comparison.prefill_compare.projection_read_bytes_ddr_backed_staged.delta_value == -4096.0
+    assert prefill_comparison.prefill_compare.projection_read_bytes_ddr_persistent.delta_value == 0.0
+    assert prefill_comparison.prefill_compare.projection_read_bytes_vmem_local.delta_value == -12288.0
+    assert prefill_comparison.prefill_compare.projection_write_bytes_vmem_local.delta_value == -16384.0
     assert prefill_comparison.prefill_compare.projection_compute_cycles.delta_value == -256.0
     assert prefill_comparison.prefill_compare.projection_memory_cycles.delta_value == -256.0
     assert prefill_comparison.prefill_compare.projection_sync_cycles.delta_value == 0.0
@@ -174,6 +178,9 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.attention_write_bytes_ddr.delta_value == 0.0
     assert prefill_comparison.prefill_compare.attention_read_bytes_vmem.delta_value == -24576.0
     assert prefill_comparison.prefill_compare.attention_write_bytes_vmem.delta_value == -32768.0
+    assert prefill_comparison.prefill_compare.attention_read_bytes_ddr_backed_staged.delta_value == -8192.0
+    assert prefill_comparison.prefill_compare.attention_read_bytes_ddr_persistent.delta_value == 0.0
+    assert prefill_comparison.prefill_compare.attention_write_bytes_vmem_local.delta_value == -32768.0
     assert prefill_comparison.prefill_compare.attention_compute_cycles.delta_value == -256.0
     assert prefill_comparison.prefill_compare.attention_memory_cycles.delta_value == 0.0
     assert prefill_comparison.prefill_compare.attention_sync_cycles.delta_value == 0.0
@@ -193,6 +200,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.other_write_bytes_ddr.delta_value == 0.0
     assert prefill_comparison.prefill_compare.other_read_bytes_vmem.delta_value == -16384.0
     assert prefill_comparison.prefill_compare.other_write_bytes_vmem.delta_value == -16384.0
+    assert prefill_comparison.prefill_compare.other_read_bytes_vmem_local.delta_value == -16384.0
+    assert prefill_comparison.prefill_compare.other_write_bytes_vmem_local.delta_value == -16384.0
     assert prefill_comparison.prefill_compare.other_compute_cycles.delta_value == -128.0
     assert prefill_comparison.prefill_compare.other_memory_cycles.delta_value == -128.0
     assert prefill_comparison.prefill_compare.other_sync_cycles.delta_value == 0.0
@@ -218,6 +227,10 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "projection_write_bytes_ddr",
         "projection_read_bytes_vmem",
         "projection_write_bytes_vmem",
+        "projection_read_bytes_ddr_backed_staged",
+        "projection_read_bytes_ddr_persistent",
+        "projection_read_bytes_vmem_local",
+        "projection_write_bytes_vmem_local",
         "projection_compute_cycles",
         "projection_memory_cycles",
         "projection_sync_cycles",
@@ -234,6 +247,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "kv_io_write_bytes_ddr",
         "kv_io_read_bytes_vmem",
         "kv_io_write_bytes_vmem",
+        "kv_io_read_bytes_ddr_persistent",
+        "kv_io_write_bytes_vmem_local",
         "kv_io_compute_cycles",
         "kv_io_memory_cycles",
         "kv_io_sync_cycles",
@@ -250,6 +265,9 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "attention_write_bytes_ddr",
         "attention_read_bytes_vmem",
         "attention_write_bytes_vmem",
+        "attention_read_bytes_ddr_backed_staged",
+        "attention_read_bytes_ddr_persistent",
+        "attention_write_bytes_vmem_local",
         "attention_compute_cycles",
         "attention_memory_cycles",
         "attention_sync_cycles",
@@ -282,6 +300,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "other_write_bytes_ddr",
         "other_read_bytes_vmem",
         "other_write_bytes_vmem",
+        "other_read_bytes_vmem_local",
+        "other_write_bytes_vmem_local",
         "other_compute_cycles",
         "other_memory_cycles",
         "other_sync_cycles",
@@ -354,6 +374,9 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.projection_write_bytes_ddr.delta_value == 0.0
     assert decode_comparison.decode_compare.projection_read_bytes_vmem.delta_value == -8000.0
     assert decode_comparison.decode_compare.projection_write_bytes_vmem.delta_value == -12000.0
+    assert decode_comparison.decode_compare.projection_read_bytes_ddr_backed_staged.delta_value == -4000.0
+    assert decode_comparison.decode_compare.projection_read_bytes_ddr_persistent.delta_value == 0.0
+    assert decode_comparison.decode_compare.projection_write_bytes_vmem_local.delta_value == -12000.0
     assert decode_comparison.decode_compare.projection_compute_cycles.delta_value == -80.0
     assert decode_comparison.decode_compare.projection_memory_cycles.delta_value == -120.0
     assert decode_comparison.decode_compare.projection_sync_cycles.delta_value == 0.0
@@ -371,6 +394,10 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.kv_io_write_bytes_ddr.delta_value == 0.0
     assert decode_comparison.decode_compare.kv_io_read_bytes_vmem.delta_value == 0.0
     assert decode_comparison.decode_compare.kv_io_write_bytes_vmem.delta_value == 0.0
+    assert decode_comparison.decode_compare.kv_io_read_bytes_ddr_persistent.baseline_value == 96000.0
+    assert decode_comparison.decode_compare.kv_io_read_bytes_ddr_persistent.candidate_value == 96000.0
+    assert decode_comparison.decode_compare.kv_io_write_bytes_vmem_local.baseline_value == 96000.0
+    assert decode_comparison.decode_compare.kv_io_write_bytes_vmem_local.candidate_value == 96000.0
     assert decode_comparison.decode_compare.kv_io_compute_cycles.delta_value == 0.0
     assert decode_comparison.decode_compare.kv_io_memory_cycles.delta_value == -200.0
     assert decode_comparison.decode_compare.kv_io_sync_cycles.delta_value == 0.0
@@ -386,6 +413,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.attention_write_bytes_ddr.delta_value == 0.0
     assert decode_comparison.decode_compare.attention_read_bytes_vmem.delta_value == 4000.0
     assert decode_comparison.decode_compare.attention_write_bytes_vmem.delta_value == 8000.0
+    assert decode_comparison.decode_compare.attention_read_bytes_ddr_persistent.delta_value == 4000.0
+    assert decode_comparison.decode_compare.attention_write_bytes_vmem_local.delta_value == 8000.0
     assert decode_comparison.decode_compare.attention_compute_cycles.delta_value == 80.0
     assert decode_comparison.decode_compare.attention_memory_cycles.delta_value == 0.0
     assert decode_comparison.decode_compare.attention_sync_cycles.delta_value == 0.0
@@ -401,6 +430,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.sync_write_bytes_ddr.delta_value == 0.0
     assert decode_comparison.decode_compare.sync_read_bytes_vmem.delta_value == -1024.0
     assert decode_comparison.decode_compare.sync_write_bytes_vmem.delta_value == -1024.0
+    assert decode_comparison.decode_compare.sync_read_bytes_vmem_local.delta_value == -1024.0
+    assert decode_comparison.decode_compare.sync_write_bytes_vmem_local.delta_value == -1024.0
     assert decode_comparison.decode_compare.sync_compute_cycles.delta_value == 0.0
     assert decode_comparison.decode_compare.sync_memory_cycles.delta_value == 0.0
     assert decode_comparison.decode_compare.sync_sync_cycles.delta_value == -40.0
@@ -418,6 +449,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.other_write_bytes_ddr.delta_value == 0.0
     assert decode_comparison.decode_compare.other_read_bytes_vmem.delta_value == -8000.0
     assert decode_comparison.decode_compare.other_write_bytes_vmem.delta_value == -8000.0
+    assert decode_comparison.decode_compare.other_read_bytes_vmem_local.delta_value == -8000.0
+    assert decode_comparison.decode_compare.other_write_bytes_vmem_local.delta_value == -8000.0
     assert decode_comparison.decode_compare.other_compute_cycles.delta_value == -24.0
     assert decode_comparison.decode_compare.other_memory_cycles.delta_value == -16.0
     assert decode_comparison.decode_compare.other_sync_cycles.delta_value == 0.0
@@ -448,6 +481,9 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "projection_write_bytes_ddr",
         "projection_read_bytes_vmem",
         "projection_write_bytes_vmem",
+        "projection_read_bytes_ddr_backed_staged",
+        "projection_read_bytes_ddr_persistent",
+        "projection_write_bytes_vmem_local",
         "projection_compute_cycles",
         "projection_memory_cycles",
         "projection_sync_cycles",
@@ -464,6 +500,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "kv_io_write_bytes_ddr",
         "kv_io_read_bytes_vmem",
         "kv_io_write_bytes_vmem",
+        "kv_io_read_bytes_ddr_persistent",
+        "kv_io_write_bytes_vmem_local",
         "kv_io_compute_cycles",
         "kv_io_memory_cycles",
         "kv_io_sync_cycles",
@@ -480,6 +518,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "attention_write_bytes_ddr",
         "attention_read_bytes_vmem",
         "attention_write_bytes_vmem",
+        "attention_read_bytes_ddr_persistent",
+        "attention_write_bytes_vmem_local",
         "attention_compute_cycles",
         "attention_memory_cycles",
         "attention_sync_cycles",
@@ -496,6 +536,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "sync_write_bytes_ddr",
         "sync_read_bytes_vmem",
         "sync_write_bytes_vmem",
+        "sync_read_bytes_vmem_local",
+        "sync_write_bytes_vmem_local",
         "sync_compute_cycles",
         "sync_memory_cycles",
         "sync_sync_cycles",
@@ -512,6 +554,8 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         "other_write_bytes_ddr",
         "other_read_bytes_vmem",
         "other_write_bytes_vmem",
+        "other_read_bytes_vmem_local",
+        "other_write_bytes_vmem_local",
         "other_compute_cycles",
         "other_memory_cycles",
         "other_sync_cycles",
@@ -617,6 +661,18 @@ def _completed_prefill_run(
                 "projection_write_bytes_ddr": 0.0,
                 "projection_read_bytes_vmem": 57344.0 if schedule_kind == "single-core" else 45056.0,
                 "projection_write_bytes_vmem": 65536.0 if schedule_kind == "single-core" else 49152.0,
+                "projection_read_bytes_ddr_backed_staged": 8192.0
+                if schedule_kind == "single-core"
+                else 4096.0,
+                "projection_write_bytes_ddr_backed_staged": 0.0,
+                "projection_read_bytes_ddr_persistent": 0.0,
+                "projection_write_bytes_ddr_persistent": 0.0,
+                "projection_read_bytes_vmem_local": 57344.0
+                if schedule_kind == "single-core"
+                else 45056.0,
+                "projection_write_bytes_vmem_local": 65536.0
+                if schedule_kind == "single-core"
+                else 49152.0,
                 "projection_compute_cycles": 1024.0 if schedule_kind == "single-core" else 768.0,
                 "projection_memory_cycles": 512.0 if schedule_kind == "single-core" else 256.0,
                 "projection_sync_cycles": 0.0,
@@ -630,6 +686,12 @@ def _completed_prefill_run(
                 "kv_io_write_bytes_ddr": 0.0,
                 "kv_io_read_bytes_vmem": 0.0,
                 "kv_io_write_bytes_vmem": 0.0,
+                "kv_io_read_bytes_ddr_backed_staged": 0.0,
+                "kv_io_write_bytes_ddr_backed_staged": 0.0,
+                "kv_io_read_bytes_ddr_persistent": 0.0,
+                "kv_io_write_bytes_ddr_persistent": 0.0,
+                "kv_io_read_bytes_vmem_local": 0.0,
+                "kv_io_write_bytes_vmem_local": 0.0,
                 "kv_io_compute_cycles": 0.0,
                 "kv_io_memory_cycles": 0.0,
                 "kv_io_sync_cycles": 0.0,
@@ -648,6 +710,18 @@ def _completed_prefill_run(
                 "attention_write_bytes_ddr": 0.0,
                 "attention_read_bytes_vmem": 147456.0 if schedule_kind == "single-core" else 122880.0,
                 "attention_write_bytes_vmem": 163840.0 if schedule_kind == "single-core" else 131072.0,
+                "attention_read_bytes_ddr_backed_staged": 16384.0
+                if schedule_kind == "single-core"
+                else 8192.0,
+                "attention_write_bytes_ddr_backed_staged": 0.0,
+                "attention_read_bytes_ddr_persistent": 0.0,
+                "attention_write_bytes_ddr_persistent": 0.0,
+                "attention_read_bytes_vmem_local": 147456.0
+                if schedule_kind == "single-core"
+                else 122880.0,
+                "attention_write_bytes_vmem_local": 163840.0
+                if schedule_kind == "single-core"
+                else 131072.0,
                 "attention_compute_cycles": 1664.0 if schedule_kind == "single-core" else 1408.0,
                 "attention_memory_cycles": 384.0,
                 "attention_sync_cycles": 0.0,
@@ -661,6 +735,12 @@ def _completed_prefill_run(
                 "sync_write_bytes_ddr": 0.0,
                 "sync_read_bytes_vmem": 0.0,
                 "sync_write_bytes_vmem": 0.0,
+                "sync_read_bytes_ddr_backed_staged": 0.0,
+                "sync_write_bytes_ddr_backed_staged": 0.0,
+                "sync_read_bytes_ddr_persistent": 0.0,
+                "sync_write_bytes_ddr_persistent": 0.0,
+                "sync_read_bytes_vmem_local": 0.0,
+                "sync_write_bytes_vmem_local": 0.0,
                 "sync_compute_cycles": 0.0,
                 "sync_memory_cycles": 0.0,
                 "sync_sync_cycles": 0.0,
@@ -677,6 +757,12 @@ def _completed_prefill_run(
                 "other_write_bytes_ddr": 0.0,
                 "other_read_bytes_vmem": 32768.0 if schedule_kind == "single-core" else 16384.0,
                 "other_write_bytes_vmem": 32768.0 if schedule_kind == "single-core" else 16384.0,
+                "other_read_bytes_ddr_backed_staged": 0.0,
+                "other_write_bytes_ddr_backed_staged": 0.0,
+                "other_read_bytes_ddr_persistent": 0.0,
+                "other_write_bytes_ddr_persistent": 0.0,
+                "other_read_bytes_vmem_local": 32768.0 if schedule_kind == "single-core" else 16384.0,
+                "other_write_bytes_vmem_local": 32768.0 if schedule_kind == "single-core" else 16384.0,
                 "other_compute_cycles": 256.0 if schedule_kind == "single-core" else 128.0,
                 "other_memory_cycles": 256.0 if schedule_kind == "single-core" else 128.0,
                 "other_sync_cycles": 0.0,
@@ -775,6 +861,18 @@ def _completed_decode_run(
                 "projection_write_bytes_ddr": 0.0,
                 "projection_read_bytes_vmem": 36000.0 if schedule_kind == "single-core" else 28000.0,
                 "projection_write_bytes_vmem": 48000.0 if schedule_kind == "single-core" else 36000.0,
+                "projection_read_bytes_ddr_backed_staged": 12000.0
+                if schedule_kind == "single-core"
+                else 8000.0,
+                "projection_write_bytes_ddr_backed_staged": 0.0,
+                "projection_read_bytes_ddr_persistent": 0.0,
+                "projection_write_bytes_ddr_persistent": 0.0,
+                "projection_read_bytes_vmem_local": 36000.0
+                if schedule_kind == "single-core"
+                else 28000.0,
+                "projection_write_bytes_vmem_local": 48000.0
+                if schedule_kind == "single-core"
+                else 36000.0,
                 "projection_compute_cycles": 640.0 if schedule_kind == "single-core" else 560.0,
                 "projection_memory_cycles": 340.0 if schedule_kind == "single-core" else 220.0,
                 "projection_sync_cycles": 0.0,
@@ -792,6 +890,12 @@ def _completed_decode_run(
                 "kv_io_write_bytes_ddr": 0.0,
                 "kv_io_read_bytes_vmem": 0.0,
                 "kv_io_write_bytes_vmem": 96000.0,
+                "kv_io_read_bytes_ddr_backed_staged": 0.0,
+                "kv_io_write_bytes_ddr_backed_staged": 0.0,
+                "kv_io_read_bytes_ddr_persistent": 96000.0,
+                "kv_io_write_bytes_ddr_persistent": 0.0,
+                "kv_io_read_bytes_vmem_local": 0.0,
+                "kv_io_write_bytes_vmem_local": 96000.0,
                 "kv_io_compute_cycles": 0.0,
                 "kv_io_memory_cycles": kvload_cycles,
                 "kv_io_sync_cycles": 0.0,
@@ -808,6 +912,18 @@ def _completed_decode_run(
                 "attention_write_bytes_ddr": 0.0,
                 "attention_read_bytes_vmem": 20000.0 if schedule_kind == "single-core" else 24000.0,
                 "attention_write_bytes_vmem": 24000.0 if schedule_kind == "single-core" else 32000.0,
+                "attention_read_bytes_ddr_backed_staged": 0.0,
+                "attention_write_bytes_ddr_backed_staged": 0.0,
+                "attention_read_bytes_ddr_persistent": 4000.0
+                if schedule_kind == "single-core"
+                else 8000.0,
+                "attention_write_bytes_ddr_persistent": 0.0,
+                "attention_read_bytes_vmem_local": 20000.0
+                if schedule_kind == "single-core"
+                else 24000.0,
+                "attention_write_bytes_vmem_local": 24000.0
+                if schedule_kind == "single-core"
+                else 32000.0,
                 "attention_compute_cycles": 640.0 if schedule_kind == "single-core" else 720.0,
                 "attention_memory_cycles": 180.0,
                 "attention_sync_cycles": 0.0,
@@ -845,6 +961,12 @@ def _completed_decode_run(
                 "sync_write_bytes_ddr": 0.0,
                 "sync_read_bytes_vmem": 2048.0 if schedule_kind == "single-core" else 1024.0,
                 "sync_write_bytes_vmem": 2048.0 if schedule_kind == "single-core" else 1024.0,
+                "sync_read_bytes_ddr_backed_staged": 0.0,
+                "sync_write_bytes_ddr_backed_staged": 0.0,
+                "sync_read_bytes_ddr_persistent": 0.0,
+                "sync_write_bytes_ddr_persistent": 0.0,
+                "sync_read_bytes_vmem_local": 2048.0 if schedule_kind == "single-core" else 1024.0,
+                "sync_write_bytes_vmem_local": 2048.0 if schedule_kind == "single-core" else 1024.0,
                 "sync_compute_cycles": 0.0,
                 "sync_memory_cycles": 0.0,
                 "sync_sync_cycles": 120.0 if schedule_kind == "single-core" else 80.0,
@@ -884,6 +1006,12 @@ def _completed_decode_run(
                 "other_write_bytes_ddr": 0.0,
                 "other_read_bytes_vmem": 16000.0 if schedule_kind == "single-core" else 8000.0,
                 "other_write_bytes_vmem": 16000.0 if schedule_kind == "single-core" else 8000.0,
+                "other_read_bytes_ddr_backed_staged": 0.0,
+                "other_write_bytes_ddr_backed_staged": 0.0,
+                "other_read_bytes_ddr_persistent": 0.0,
+                "other_write_bytes_ddr_persistent": 0.0,
+                "other_read_bytes_vmem_local": 16000.0 if schedule_kind == "single-core" else 8000.0,
+                "other_write_bytes_vmem_local": 16000.0 if schedule_kind == "single-core" else 8000.0,
                 "other_compute_cycles": 120.0 if schedule_kind == "single-core" else 96.0,
                 "other_memory_cycles": 160.0 if schedule_kind == "single-core" else 144.0,
                 "other_sync_cycles": 0.0,

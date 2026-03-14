@@ -49,6 +49,14 @@ _PHASE_ADDRESS_SPACE_METRIC_NAMES = (
     "read_bytes_vmem",
     "write_bytes_vmem",
 )
+_PHASE_BACKING_STORE_METRIC_NAMES = (
+    "read_bytes_ddr_backed_staged",
+    "write_bytes_ddr_backed_staged",
+    "read_bytes_ddr_persistent",
+    "write_bytes_ddr_persistent",
+    "read_bytes_vmem_local",
+    "write_bytes_vmem_local",
+)
 _PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
     "compute_cycles",
     "memory_cycles",
@@ -110,6 +118,31 @@ def _phase_address_space_metrics(phase_attribution: dict[str, object]) -> dict[s
         metrics[f"{phase_name}_write_bytes_ddr"] = float(write_totals.get("DDR", 0.0))
         metrics[f"{phase_name}_read_bytes_vmem"] = float(read_totals.get("VMEM", 0.0))
         metrics[f"{phase_name}_write_bytes_vmem"] = float(write_totals.get("VMEM", 0.0))
+    return metrics
+
+
+def _phase_backing_store_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        read_totals = getattr(phase_summary, "read_bytes_by_backing_store", {}) or {}
+        write_totals = getattr(phase_summary, "write_bytes_by_backing_store", {}) or {}
+        metrics[f"{phase_name}_read_bytes_ddr_backed_staged"] = float(
+            read_totals.get("ddr-backed-staged", 0.0)
+        )
+        metrics[f"{phase_name}_write_bytes_ddr_backed_staged"] = float(
+            write_totals.get("ddr-backed-staged", 0.0)
+        )
+        metrics[f"{phase_name}_read_bytes_ddr_persistent"] = float(
+            read_totals.get("ddr-persistent", 0.0)
+        )
+        metrics[f"{phase_name}_write_bytes_ddr_persistent"] = float(
+            write_totals.get("ddr-persistent", 0.0)
+        )
+        metrics[f"{phase_name}_read_bytes_vmem_local"] = float(read_totals.get("vmem-local", 0.0))
+        metrics[f"{phase_name}_write_bytes_vmem_local"] = float(
+            write_totals.get("vmem-local", 0.0)
+        )
     return metrics
 
 
@@ -352,6 +385,7 @@ def _execute_run_root(
                 "bytes_per_cycle": report.throughput.bytes_per_cycle,
                 "max_region_utilization": report.memory_summary.max_region_utilization,
                 **_phase_address_space_metrics(report.throughput.phase_attribution),
+                **_phase_backing_store_metrics(report.throughput.phase_attribution),
                 **_phase_cycle_component_metrics(report.throughput.phase_attribution),
                 **_phase_schedule_compression_metrics(report.throughput.phase_attribution),
                 **_phase_occupied_slot_metrics(report.throughput.phase_attribution),
@@ -474,6 +508,7 @@ def _execute_run_root(
                 estimated_cycles,
             ),
             **_phase_address_space_metrics(report.token_latency.phase_attribution),
+            **_phase_backing_store_metrics(report.token_latency.phase_attribution),
             **_phase_cycle_component_metrics(report.token_latency.phase_attribution),
             **_phase_schedule_compression_metrics(report.token_latency.phase_attribution),
             **_phase_occupied_slot_metrics(report.token_latency.phase_attribution),

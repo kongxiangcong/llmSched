@@ -7,7 +7,7 @@ from llm_sched.contracts.phase_d_compare_report import (
     PhaseDDecodeCompareRow,
     PhaseDPrefillCompareRow,
 )
-from llm_sched.contracts.sweep_report import SweepDeltaReport
+from llm_sched.contracts.sweep_report import SweepDeltaReport, SweepScalarDelta
 
 _PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
 _PHASE_ADDRESS_SPACE_METRIC_NAMES = (
@@ -15,6 +15,14 @@ _PHASE_ADDRESS_SPACE_METRIC_NAMES = (
     "write_bytes_ddr",
     "read_bytes_vmem",
     "write_bytes_vmem",
+)
+_PHASE_BACKING_STORE_METRIC_NAMES = (
+    "read_bytes_ddr_backed_staged",
+    "write_bytes_ddr_backed_staged",
+    "read_bytes_ddr_persistent",
+    "write_bytes_ddr_persistent",
+    "read_bytes_vmem_local",
+    "write_bytes_vmem_local",
 )
 _PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
     "compute_cycles",
@@ -36,6 +44,15 @@ _PHASE_BALANCE_METRIC_NAMES = (
     "span_imbalance_slots",
     "span_balance_ratio",
 )
+
+
+def _zero_scalar_delta() -> SweepScalarDelta:
+    return SweepScalarDelta(
+        baseline_value=0.0,
+        candidate_value=0.0,
+        delta_value=0.0,
+        delta_ratio=0.0,
+    )
 
 
 def build_phase_d_compare_report(
@@ -65,6 +82,7 @@ def build_phase_d_compare_report(
                     projection_bytes_per_cycle=comparison.prefill_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.prefill_compare.projection_cycle_share,
                     **_phase_address_space_compare_row_fields(comparison.prefill_compare),
+                    **_phase_backing_store_compare_row_fields(comparison.prefill_compare),
                     **_phase_cycle_component_compare_row_fields(comparison.prefill_compare),
                     **_phase_schedule_compression_compare_row_fields(comparison.prefill_compare),
                     **_phase_occupied_slot_compare_row_fields(comparison.prefill_compare),
@@ -114,6 +132,7 @@ def build_phase_d_compare_report(
                     projection_bytes_per_cycle=comparison.decode_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.decode_compare.projection_cycle_share,
                     **_phase_address_space_compare_row_fields(comparison.decode_compare),
+                    **_phase_backing_store_compare_row_fields(comparison.decode_compare),
                     **_phase_cycle_component_compare_row_fields(comparison.decode_compare),
                     **_phase_schedule_compression_compare_row_fields(comparison.decode_compare),
                     **_phase_occupied_slot_compare_row_fields(comparison.decode_compare),
@@ -173,6 +192,18 @@ def _phase_address_space_compare_row_fields(compare_summary) -> dict[str, object
         f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
         for phase_name in _PHASE_COMPARE_NAMES
         for metric_name in _PHASE_ADDRESS_SPACE_METRIC_NAMES
+    }
+
+
+def _phase_backing_store_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(
+            compare_summary,
+            f"{phase_name}_{metric_name}",
+            _zero_scalar_delta(),
+        )
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_BACKING_STORE_METRIC_NAMES
     }
 
 

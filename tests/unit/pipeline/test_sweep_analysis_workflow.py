@@ -64,6 +64,9 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "projection_write_bytes_ddr",
         "projection_read_bytes_vmem",
         "projection_write_bytes_vmem",
+        "projection_read_bytes_ddr_backed_staged",
+        "projection_read_bytes_ddr_persistent",
+        "projection_read_bytes_vmem_local",
         "projection_compute_cycles",
         "projection_memory_cycles",
         "projection_sync_cycles",
@@ -80,6 +83,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "kv_io_write_bytes_ddr",
         "kv_io_read_bytes_vmem",
         "kv_io_write_bytes_vmem",
+        "kv_io_read_bytes_ddr_persistent",
+        "kv_io_write_bytes_vmem_local",
         "kv_io_compute_cycles",
         "kv_io_memory_cycles",
         "kv_io_sync_cycles",
@@ -128,6 +133,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "other_write_bytes_ddr",
         "other_read_bytes_vmem",
         "other_write_bytes_vmem",
+        "other_read_bytes_vmem_local",
+        "other_write_bytes_vmem_local",
         "other_compute_cycles",
         "other_memory_cycles",
         "other_sync_cycles",
@@ -150,6 +157,9 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "projection_write_bytes_ddr",
         "projection_read_bytes_vmem",
         "projection_write_bytes_vmem",
+        "projection_read_bytes_ddr_backed_staged",
+        "projection_read_bytes_ddr_persistent",
+        "projection_read_bytes_vmem_local",
         "projection_compute_cycles",
         "projection_memory_cycles",
         "projection_sync_cycles",
@@ -166,6 +176,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "kv_io_write_bytes_ddr",
         "kv_io_read_bytes_vmem",
         "kv_io_write_bytes_vmem",
+        "kv_io_read_bytes_ddr_persistent",
+        "kv_io_write_bytes_vmem_local",
         "kv_io_compute_cycles",
         "kv_io_memory_cycles",
         "kv_io_sync_cycles",
@@ -214,6 +226,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "other_write_bytes_ddr",
         "other_read_bytes_vmem",
         "other_write_bytes_vmem",
+        "other_read_bytes_vmem_local",
+        "other_write_bytes_vmem_local",
         "other_compute_cycles",
         "other_memory_cycles",
         "other_sync_cycles",
@@ -241,6 +255,9 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.comparisons[0].prefill_compare.other_schedule_overhang_cycles.candidate_value >= 0.0
     assert report.comparisons[0].prefill_compare.projection_read_bytes_ddr.baseline_value >= 0.0
     assert report.comparisons[0].prefill_compare.attention_read_bytes_vmem.candidate_value >= 0.0
+    assert report.comparisons[0].prefill_compare.projection_read_bytes_ddr_backed_staged.baseline_value >= 0.0
+    assert report.comparisons[0].prefill_compare.projection_read_bytes_ddr_persistent.delta_value == 0.0
+    assert report.comparisons[0].prefill_compare.other_write_bytes_vmem_local.candidate_value >= 0.0
     assert report.comparisons[0].prefill_compare.projection_compute_cycles.baseline_value >= 0.0
     assert report.comparisons[0].prefill_compare.attention_memory_cycles.candidate_value >= 0.0
     assert report.comparisons[0].prefill_compare.sync_sync_cycles.candidate_value >= 0.0
@@ -257,6 +274,9 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "projection_write_bytes_ddr",
         "projection_read_bytes_vmem",
         "projection_write_bytes_vmem",
+        "projection_read_bytes_ddr_backed_staged",
+        "projection_read_bytes_ddr_persistent",
+        "projection_read_bytes_vmem_local",
         "projection_compute_cycles",
         "projection_memory_cycles",
         "projection_sync_cycles",
@@ -273,6 +293,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "kv_io_write_bytes_ddr",
         "kv_io_read_bytes_vmem",
         "kv_io_write_bytes_vmem",
+        "kv_io_read_bytes_ddr_persistent",
+        "kv_io_write_bytes_vmem_local",
         "kv_io_compute_cycles",
         "kv_io_memory_cycles",
         "kv_io_sync_cycles",
@@ -321,6 +343,8 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
         "other_write_bytes_ddr",
         "other_read_bytes_vmem",
         "other_write_bytes_vmem",
+        "other_read_bytes_vmem_local",
+        "other_write_bytes_vmem_local",
         "other_compute_cycles",
         "other_memory_cycles",
         "other_sync_cycles",

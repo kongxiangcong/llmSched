@@ -82,6 +82,10 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         projection_read_bytes_vmem=_scalar_delta(57344.0, 45056.0),
                         projection_write_bytes_vmem=_scalar_delta(65536.0, 49152.0),
+                        projection_read_bytes_ddr_backed_staged=_scalar_delta(8192.0, 4096.0),
+                        projection_read_bytes_ddr_persistent=_scalar_delta(0.0, 0.0),
+                        projection_read_bytes_vmem_local=_scalar_delta(57344.0, 45056.0),
+                        projection_write_bytes_vmem_local=_scalar_delta(65536.0, 49152.0),
                         projection_compute_cycles=_scalar_delta(1024.0, 768.0),
                         projection_memory_cycles=_scalar_delta(512.0, 256.0),
                         projection_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -124,6 +128,9 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         attention_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         attention_read_bytes_vmem=_scalar_delta(147456.0, 122880.0),
                         attention_write_bytes_vmem=_scalar_delta(163840.0, 131072.0),
+                        attention_read_bytes_ddr_backed_staged=_scalar_delta(16384.0, 8192.0),
+                        attention_read_bytes_ddr_persistent=_scalar_delta(0.0, 0.0),
+                        attention_write_bytes_vmem_local=_scalar_delta(163840.0, 131072.0),
                         attention_compute_cycles=_scalar_delta(1664.0, 1408.0),
                         attention_memory_cycles=_scalar_delta(384.0, 384.0),
                         attention_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -166,6 +173,8 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         other_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         other_read_bytes_vmem=_scalar_delta(32768.0, 16384.0),
                         other_write_bytes_vmem=_scalar_delta(32768.0, 16384.0),
+                        other_read_bytes_vmem_local=_scalar_delta(32768.0, 16384.0),
+                        other_write_bytes_vmem_local=_scalar_delta(32768.0, 16384.0),
                         other_compute_cycles=_scalar_delta(256.0, 128.0),
                         other_memory_cycles=_scalar_delta(256.0, 128.0),
                         other_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -208,6 +217,9 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         projection_read_bytes_vmem=_scalar_delta(36000.0, 28000.0),
                         projection_write_bytes_vmem=_scalar_delta(48000.0, 36000.0),
+                        projection_read_bytes_ddr_backed_staged=_scalar_delta(12000.0, 8000.0),
+                        projection_read_bytes_ddr_persistent=_scalar_delta(0.0, 0.0),
+                        projection_write_bytes_vmem_local=_scalar_delta(48000.0, 36000.0),
                         projection_compute_cycles=_scalar_delta(640.0, 560.0),
                         projection_memory_cycles=_scalar_delta(340.0, 220.0),
                         projection_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -229,6 +241,8 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         kv_io_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         kv_io_read_bytes_vmem=_scalar_delta(0.0, 0.0),
                         kv_io_write_bytes_vmem=_scalar_delta(96000.0, 96000.0),
+                        kv_io_read_bytes_ddr_persistent=_scalar_delta(96000.0, 96000.0),
+                        kv_io_write_bytes_vmem_local=_scalar_delta(96000.0, 96000.0),
                         kv_io_compute_cycles=_scalar_delta(0.0, 0.0),
                         kv_io_memory_cycles=_scalar_delta(900.0, 700.0),
                         kv_io_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -250,6 +264,8 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         attention_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         attention_read_bytes_vmem=_scalar_delta(20000.0, 24000.0),
                         attention_write_bytes_vmem=_scalar_delta(24000.0, 32000.0),
+                        attention_read_bytes_ddr_persistent=_scalar_delta(4000.0, 8000.0),
+                        attention_write_bytes_vmem_local=_scalar_delta(24000.0, 32000.0),
                         attention_compute_cycles=_scalar_delta(640.0, 720.0),
                         attention_memory_cycles=_scalar_delta(180.0, 180.0),
                         attention_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -275,6 +291,8 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         sync_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         sync_read_bytes_vmem=_scalar_delta(2048.0, 1024.0),
                         sync_write_bytes_vmem=_scalar_delta(2048.0, 1024.0),
+                        sync_read_bytes_vmem_local=_scalar_delta(2048.0, 1024.0),
+                        sync_write_bytes_vmem_local=_scalar_delta(2048.0, 1024.0),
                         sync_compute_cycles=_scalar_delta(0.0, 0.0),
                         sync_memory_cycles=_scalar_delta(0.0, 0.0),
                         sync_sync_cycles=_scalar_delta(120.0, 80.0),
@@ -296,6 +314,8 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         other_write_bytes_ddr=_scalar_delta(0.0, 0.0),
                         other_read_bytes_vmem=_scalar_delta(16000.0, 8000.0),
                         other_write_bytes_vmem=_scalar_delta(16000.0, 8000.0),
+                        other_read_bytes_vmem_local=_scalar_delta(16000.0, 8000.0),
+                        other_write_bytes_vmem_local=_scalar_delta(16000.0, 8000.0),
                         other_compute_cycles=_scalar_delta(120.0, 96.0),
                         other_memory_cycles=_scalar_delta(160.0, 144.0),
                         other_sync_cycles=_scalar_delta(0.0, 0.0),
@@ -328,6 +348,12 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
     assert prefill_payload["projection_read_bytes_ddr"]["delta_value"] == -4096.0
     assert "projection_read_bytes_vmem" in prefill_payload
     assert prefill_payload["projection_read_bytes_vmem"]["delta_value"] == -12288.0
+    assert "projection_read_bytes_ddr_backed_staged" in prefill_payload
+    assert prefill_payload["projection_read_bytes_ddr_backed_staged"]["delta_value"] == -4096.0
+    assert "projection_read_bytes_ddr_persistent" in prefill_payload
+    assert prefill_payload["projection_read_bytes_ddr_persistent"]["delta_value"] == 0.0
+    assert "other_write_bytes_vmem_local" in prefill_payload
+    assert prefill_payload["other_write_bytes_vmem_local"]["delta_value"] == -16384.0
     assert "projection_compute_cycles" in prefill_payload
     assert prefill_payload["projection_compute_cycles"]["delta_value"] == -256.0
     assert "projection_memory_cycles" in prefill_payload
@@ -358,6 +384,12 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
     assert decode_payload["kv_io_read_bytes_ddr"]["delta_value"] == 0.0
     assert "attention_read_bytes_ddr" in decode_payload
     assert decode_payload["attention_read_bytes_ddr"]["delta_value"] == 4000.0
+    assert "kv_io_read_bytes_ddr_persistent" in decode_payload
+    assert decode_payload["kv_io_read_bytes_ddr_persistent"]["baseline_value"] == 96000.0
+    assert "attention_read_bytes_ddr_persistent" in decode_payload
+    assert decode_payload["attention_read_bytes_ddr_persistent"]["delta_value"] == 4000.0
+    assert "sync_write_bytes_vmem_local" in decode_payload
+    assert decode_payload["sync_write_bytes_vmem_local"]["delta_value"] == -1024.0
     assert "kv_io_compute_cycles" in decode_payload
     assert decode_payload["kv_io_compute_cycles"]["delta_value"] == 0.0
     assert "kv_io_memory_cycles" in decode_payload
