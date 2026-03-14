@@ -576,6 +576,10 @@ function renderWorkspaceSummaryCell(tagMarkup, contentMarkup) {
   return `<td>${renderWorkspaceSummaryStack(tagMarkup, contentMarkup)}</td>`;
 }
 
+function buildWorkspaceSweepSummaryContent(baselineEntry, candidateEntry, sweepComparison) {
+  return `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}`;
+}
+
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {
   return `
       <div class="summary-stack">
@@ -1042,7 +1046,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 )}
                 ${renderWorkspaceSummaryCell(
                   workspaceSweepSummaryTag,
-                  `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}`
+                  buildWorkspaceSweepSummaryContent(baselineEntry, entry, sweepComparison)
                 )}
                 <td>${buildComparePanelLinks(entry)}</td>
               </tr>
