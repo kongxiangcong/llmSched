@@ -57,6 +57,14 @@ _PHASE_BACKING_STORE_METRIC_NAMES = (
     "read_bytes_vmem_local",
     "write_bytes_vmem_local",
 )
+_PHASE_MEMORY_CLASS_METRIC_NAMES = (
+    "read_bytes_activation",
+    "write_bytes_activation",
+    "read_bytes_weight",
+    "write_bytes_weight",
+    "read_bytes_kv_cache",
+    "write_bytes_kv_cache",
+)
 _PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
     "compute_cycles",
     "memory_cycles",
@@ -142,6 +150,25 @@ def _phase_backing_store_metrics(phase_attribution: dict[str, object]) -> dict[s
         metrics[f"{phase_name}_read_bytes_vmem_local"] = float(read_totals.get("vmem-local", 0.0))
         metrics[f"{phase_name}_write_bytes_vmem_local"] = float(
             write_totals.get("vmem-local", 0.0)
+        )
+    return metrics
+
+
+def _phase_memory_class_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        read_totals = getattr(phase_summary, "read_bytes_by_memory_class", {}) or {}
+        write_totals = getattr(phase_summary, "write_bytes_by_memory_class", {}) or {}
+        metrics[f"{phase_name}_read_bytes_activation"] = float(read_totals.get("ACTIVATION", 0.0))
+        metrics[f"{phase_name}_write_bytes_activation"] = float(
+            write_totals.get("ACTIVATION", 0.0)
+        )
+        metrics[f"{phase_name}_read_bytes_weight"] = float(read_totals.get("WEIGHT", 0.0))
+        metrics[f"{phase_name}_write_bytes_weight"] = float(write_totals.get("WEIGHT", 0.0))
+        metrics[f"{phase_name}_read_bytes_kv_cache"] = float(read_totals.get("KV_CACHE", 0.0))
+        metrics[f"{phase_name}_write_bytes_kv_cache"] = float(
+            write_totals.get("KV_CACHE", 0.0)
         )
     return metrics
 
@@ -386,6 +413,7 @@ def _execute_run_root(
                 "max_region_utilization": report.memory_summary.max_region_utilization,
                 **_phase_address_space_metrics(report.throughput.phase_attribution),
                 **_phase_backing_store_metrics(report.throughput.phase_attribution),
+                **_phase_memory_class_metrics(report.throughput.phase_attribution),
                 **_phase_cycle_component_metrics(report.throughput.phase_attribution),
                 **_phase_schedule_compression_metrics(report.throughput.phase_attribution),
                 **_phase_occupied_slot_metrics(report.throughput.phase_attribution),
@@ -509,6 +537,7 @@ def _execute_run_root(
             ),
             **_phase_address_space_metrics(report.token_latency.phase_attribution),
             **_phase_backing_store_metrics(report.token_latency.phase_attribution),
+            **_phase_memory_class_metrics(report.token_latency.phase_attribution),
             **_phase_cycle_component_metrics(report.token_latency.phase_attribution),
             **_phase_schedule_compression_metrics(report.token_latency.phase_attribution),
             **_phase_occupied_slot_metrics(report.token_latency.phase_attribution),

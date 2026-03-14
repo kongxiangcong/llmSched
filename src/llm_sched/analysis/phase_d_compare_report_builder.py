@@ -24,6 +24,14 @@ _PHASE_BACKING_STORE_METRIC_NAMES = (
     "read_bytes_vmem_local",
     "write_bytes_vmem_local",
 )
+_PHASE_MEMORY_CLASS_METRIC_NAMES = (
+    "read_bytes_activation",
+    "write_bytes_activation",
+    "read_bytes_weight",
+    "write_bytes_weight",
+    "read_bytes_kv_cache",
+    "write_bytes_kv_cache",
+)
 _PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
     "compute_cycles",
     "memory_cycles",
@@ -83,6 +91,7 @@ def build_phase_d_compare_report(
                     projection_cycle_share=comparison.prefill_compare.projection_cycle_share,
                     **_phase_address_space_compare_row_fields(comparison.prefill_compare),
                     **_phase_backing_store_compare_row_fields(comparison.prefill_compare),
+                    **_phase_memory_class_compare_row_fields(comparison.prefill_compare),
                     **_phase_cycle_component_compare_row_fields(comparison.prefill_compare),
                     **_phase_schedule_compression_compare_row_fields(comparison.prefill_compare),
                     **_phase_occupied_slot_compare_row_fields(comparison.prefill_compare),
@@ -133,6 +142,7 @@ def build_phase_d_compare_report(
                     projection_cycle_share=comparison.decode_compare.projection_cycle_share,
                     **_phase_address_space_compare_row_fields(comparison.decode_compare),
                     **_phase_backing_store_compare_row_fields(comparison.decode_compare),
+                    **_phase_memory_class_compare_row_fields(comparison.decode_compare),
                     **_phase_cycle_component_compare_row_fields(comparison.decode_compare),
                     **_phase_schedule_compression_compare_row_fields(comparison.decode_compare),
                     **_phase_occupied_slot_compare_row_fields(comparison.decode_compare),
@@ -204,6 +214,18 @@ def _phase_backing_store_compare_row_fields(compare_summary) -> dict[str, object
         )
         for phase_name in _PHASE_COMPARE_NAMES
         for metric_name in _PHASE_BACKING_STORE_METRIC_NAMES
+    }
+
+
+def _phase_memory_class_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(
+            compare_summary,
+            f"{phase_name}_{metric_name}",
+            _zero_scalar_delta(),
+        )
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_MEMORY_CLASS_METRIC_NAMES
     }
 
 

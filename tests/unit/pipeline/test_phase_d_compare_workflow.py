@@ -36,6 +36,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert "projection_read_bytes_ddr_backed_staged" in prefill_payload
     assert "projection_read_bytes_ddr_persistent" in prefill_payload
     assert "other_write_bytes_vmem_local" in prefill_payload
+    assert "projection_read_bytes_weight" in prefill_payload
+    assert "attention_read_bytes_kv_cache" in prefill_payload
+    assert "other_write_bytes_activation" in prefill_payload
     assert "projection_compute_cycles" in prefill_payload
     assert "projection_memory_cycles" in prefill_payload
     assert "projection_sync_cycles" in prefill_payload
@@ -51,6 +54,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert "kv_io_read_bytes_ddr_persistent" in decode_payload
     assert "attention_read_bytes_ddr_persistent" in decode_payload
     assert "sync_write_bytes_vmem_local" in decode_payload
+    assert "kv_io_read_bytes_kv_cache" in decode_payload
+    assert "attention_write_bytes_activation" in decode_payload
+    assert "sync_write_bytes_activation" in decode_payload
     assert "kv_io_compute_cycles" in decode_payload
     assert "kv_io_memory_cycles" in decode_payload
     assert "sync_sync_cycles" in decode_payload
@@ -73,6 +79,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     )
     assert report.prefill_compares[0].projection_read_bytes_ddr_persistent.delta_value == pytest.approx(0.0)
     assert report.prefill_compares[0].other_write_bytes_vmem_local.delta_value == pytest.approx(-16384.0)
+    assert report.prefill_compares[0].projection_read_bytes_weight.delta_value == pytest.approx(0.0)
+    assert report.prefill_compares[0].attention_read_bytes_kv_cache.delta_value == pytest.approx(0.0)
+    assert report.prefill_compares[0].other_write_bytes_activation.delta_value == pytest.approx(0.0)
     assert report.decode_compares[0].kv_io_schedule_compression_cycles.delta_value == pytest.approx(32.0)
     assert report.decode_compares[0].kv_io_schedule_compression_ratio.delta_value == pytest.approx(
         0.1333333333 - 0.096
@@ -81,6 +90,9 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert report.decode_compares[0].kv_io_read_bytes_ddr_persistent.baseline_value == pytest.approx(96000.0)
     assert report.decode_compares[0].attention_read_bytes_ddr_persistent.delta_value == pytest.approx(4000.0)
     assert report.decode_compares[0].sync_write_bytes_vmem_local.delta_value == pytest.approx(-1024.0)
+    assert report.decode_compares[0].kv_io_read_bytes_kv_cache.baseline_value == pytest.approx(0.0)
+    assert report.decode_compares[0].attention_write_bytes_activation.delta_value == pytest.approx(0.0)
+    assert report.decode_compares[0].sync_write_bytes_activation.delta_value == pytest.approx(0.0)
     assert report.decode_compares[0].sync_span_imbalance_slots.delta_value == 32.0
     assert report.prefill_compares[0].projection_occupied_slots.delta_value == pytest.approx(0.0)
     assert report.prefill_compares[0].projection_occupied_slots_per_token.delta_value == pytest.approx(0.0)

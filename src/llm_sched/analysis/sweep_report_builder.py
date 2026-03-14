@@ -32,6 +32,14 @@ _PHASE_BACKING_STORE_METRIC_NAMES = (
     "read_bytes_vmem_local",
     "write_bytes_vmem_local",
 )
+_PHASE_MEMORY_CLASS_METRIC_NAMES = (
+    "read_bytes_activation",
+    "write_bytes_activation",
+    "read_bytes_weight",
+    "write_bytes_weight",
+    "read_bytes_kv_cache",
+    "write_bytes_kv_cache",
+)
 _PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
     "compute_cycles",
     "memory_cycles",
@@ -310,6 +318,20 @@ def _build_phase_backing_store_scalar_deltas(
     }
 
 
+def _build_phase_memory_class_scalar_deltas(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> dict[str, SweepScalarDelta]:
+    return {
+        f"{phase_name}_{metric_name}": _build_scalar_delta(
+            _metric_value(baseline_run, f"{phase_name}_{metric_name}"),
+            _metric_value(candidate_run, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_MEMORY_CLASS_METRIC_NAMES
+    }
+
+
 def _build_phase_cycle_component_scalar_deltas(
     baseline_run: SweepRunRecord,
     candidate_run: SweepRunRecord,
@@ -389,6 +411,7 @@ def _build_prefill_compare_summary(
         ),
         **_build_phase_address_space_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_backing_store_scalar_deltas(baseline_run, candidate_run),
+        **_build_phase_memory_class_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_cycle_component_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_schedule_compression_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_occupied_slot_scalar_deltas(baseline_run, candidate_run),
@@ -533,6 +556,7 @@ def _build_decode_compare_summary(
         ),
         **_build_phase_address_space_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_backing_store_scalar_deltas(baseline_run, candidate_run),
+        **_build_phase_memory_class_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_cycle_component_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_schedule_compression_scalar_deltas(baseline_run, candidate_run),
         **_build_phase_occupied_slot_scalar_deltas(baseline_run, candidate_run),
