@@ -213,6 +213,8 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "buildWorkspaceCompareRatioSummaryTag(baselineEntry, entry)" in files["catalog/assets/app.js"]
     assert "function buildWorkspaceSweepSummaryTag" in files["catalog/assets/app.js"]
     assert "buildWorkspaceSweepSummaryTag(sweepComparison)" in files["catalog/assets/app.js"]
+    assert "function renderWorkspaceSummaryStack" in files["catalog/assets/app.js"]
+    assert "renderWorkspaceSummaryStack(" in files["catalog/assets/app.js"]
     assert 'class="summary-stack"' in files["catalog/assets/app.js"]
     assert 'class="summary-stack-value"' in files["catalog/assets/app.js"]
     assert "MAX_SWEEP_LAYER_DELTA_ROWS" in files["catalog/assets/app.js"]

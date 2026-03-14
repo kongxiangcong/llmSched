@@ -521,6 +521,15 @@ function buildWorkspaceSweepSummaryTag(sweepComparison) {
   return '<span class="direction-tag is-neutral" title="workspace sweep summary">none</span>';
 }
 
+function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {
+  return `
+    <div class="summary-stack">
+      ${tagMarkup}
+      <div class="summary-stack-value">${contentMarkup}</div>
+    </div>
+  `;
+}
+
 function renderScalarDeltaListItems(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
@@ -968,30 +977,22 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${entry.schedule_kind}</td>
               <td>${entry.target_profile_name}</td>
               <td>${entry.primary_metric_name}</td>
-              <td>
-                <div class="summary-stack">
-                  ${workspaceSummaryTag}
-                  <div class="summary-stack-value">${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</div>
-                </div>
-              </td>
-              <td>
-                <div class="summary-stack">
-                  ${workspaceRatioSummaryTag}
-                  <div class="summary-stack-value">${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</div>
-                </div>
-              </td>
-              <td>
-                <div class="summary-stack">
-                  ${workspaceSummaryTag}
-                  <div class="summary-stack-value">${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</div>
-                </div>
-              </td>
-              <td>
-                <div class="summary-stack">
-                  ${workspaceSweepSummaryTag}
-                  <div class="summary-stack-value">${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</div>
-                </div>
-              </td>
+              <td>${renderWorkspaceSummaryStack(
+                workspaceSummaryTag,
+                sameMetric ? formatMetricDelta(delta) : "metric mismatch"
+              )}</td>
+              <td>${renderWorkspaceSummaryStack(
+                workspaceRatioSummaryTag,
+                sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"
+              )}</td>
+              <td>${renderWorkspaceSummaryStack(
+                workspaceSummaryTag,
+                buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
+              )}</td>
+              <td>${renderWorkspaceSummaryStack(
+                workspaceSweepSummaryTag,
+                `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}`
+              )}</td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>
           `;
