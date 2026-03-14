@@ -75,35 +75,105 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_byte_share=_scalar_delta(0.25, 0.25),
                         projection_bytes_per_cycle=_scalar_delta(42.6666666667, 48.0),
                         projection_cycle_share=_scalar_delta(0.375, 0.3333333333),
+                        projection_schedule_compression_cycles=_scalar_delta(256.0, 96.0),
+                        projection_schedule_compression_ratio=_scalar_delta(0.1428571429, 0.0857142857),
+                        projection_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        projection_read_bytes_ddr=_scalar_delta(8192.0, 4096.0),
+                        projection_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        projection_read_bytes_vmem=_scalar_delta(57344.0, 45056.0),
+                        projection_write_bytes_vmem=_scalar_delta(65536.0, 49152.0),
+                        projection_compute_cycles=_scalar_delta(1024.0, 768.0),
+                        projection_memory_cycles=_scalar_delta(512.0, 256.0),
+                        projection_sync_cycles=_scalar_delta(0.0, 0.0),
+                        projection_occupied_slots=_scalar_delta(1664.0, 1280.0),
+                        projection_occupied_slots_per_token=_scalar_delta(13.0, 10.0),
                         projection_occupied_slot_imbalance_slots=_scalar_delta(0.0, 256.0),
+                        projection_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.5),
+                        projection_span_imbalance_slots=_scalar_delta(0.0, 256.0),
                         projection_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         kv_io_cycles=_scalar_delta(0.0, 0.0),
                         kv_io_bytes=_scalar_delta(0.0, 0.0),
                         kv_io_byte_share=_scalar_delta(0.0, 0.0),
                         kv_io_bytes_per_cycle=_scalar_delta(0.0, 0.0),
                         kv_io_cycle_share=_scalar_delta(0.0, 0.0),
+                        kv_io_schedule_compression_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_schedule_compression_ratio=_scalar_delta(0.0, 0.0),
+                        kv_io_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_read_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        kv_io_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        kv_io_read_bytes_vmem=_scalar_delta(0.0, 0.0),
+                        kv_io_write_bytes_vmem=_scalar_delta(0.0, 0.0),
+                        kv_io_compute_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_memory_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_sync_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_occupied_slots=_scalar_delta(0.0, 0.0),
+                        kv_io_occupied_slots_per_token=_scalar_delta(0.0, 0.0),
                         kv_io_occupied_slot_imbalance_slots=_scalar_delta(0.0, 0.0),
+                        kv_io_occupied_slot_balance_ratio=_scalar_delta(1.0, 1.0),
+                        kv_io_span_imbalance_slots=_scalar_delta(0.0, 0.0),
                         kv_io_span_balance_ratio=_scalar_delta(1.0, 1.0),
                         attention_cycles=_scalar_delta(2048.0, 1792.0),
                         attention_bytes=_scalar_delta(163840.0, 131072.0),
                         attention_byte_share=_scalar_delta(0.625, 0.6666666667),
                         attention_bytes_per_cycle=_scalar_delta(80.0, 73.1428571429),
                         attention_cycle_share=_scalar_delta(0.5, 0.5833333333),
+                        attention_schedule_compression_cycles=_scalar_delta(128.0, 192.0),
+                        attention_schedule_compression_ratio=_scalar_delta(0.0588235294, 0.1),
+                        attention_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        attention_read_bytes_ddr=_scalar_delta(16384.0, 8192.0),
+                        attention_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        attention_read_bytes_vmem=_scalar_delta(147456.0, 122880.0),
+                        attention_write_bytes_vmem=_scalar_delta(163840.0, 131072.0),
+                        attention_compute_cycles=_scalar_delta(1664.0, 1408.0),
+                        attention_memory_cycles=_scalar_delta(384.0, 384.0),
+                        attention_sync_cycles=_scalar_delta(0.0, 0.0),
+                        attention_occupied_slots=_scalar_delta(2176.0, 1920.0),
+                        attention_occupied_slots_per_token=_scalar_delta(17.0, 15.0),
                         attention_occupied_slot_imbalance_slots=_scalar_delta(0.0, 128.0),
+                        attention_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.75),
+                        attention_span_imbalance_slots=_scalar_delta(0.0, 128.0),
                         attention_span_balance_ratio=_scalar_delta(1.0, 0.75),
                         sync_cycles=_scalar_delta(0.0, 0.0),
                         sync_bytes=_scalar_delta(0.0, 0.0),
                         sync_byte_share=_scalar_delta(0.0, 0.0),
                         sync_bytes_per_cycle=_scalar_delta(0.0, 0.0),
                         sync_cycle_share=_scalar_delta(0.0, 0.0),
+                        sync_schedule_compression_cycles=_scalar_delta(0.0, 0.0),
+                        sync_schedule_compression_ratio=_scalar_delta(0.0, 0.0),
+                        sync_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        sync_read_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        sync_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        sync_read_bytes_vmem=_scalar_delta(0.0, 0.0),
+                        sync_write_bytes_vmem=_scalar_delta(0.0, 0.0),
+                        sync_compute_cycles=_scalar_delta(0.0, 0.0),
+                        sync_memory_cycles=_scalar_delta(0.0, 0.0),
+                        sync_sync_cycles=_scalar_delta(0.0, 0.0),
+                        sync_occupied_slots=_scalar_delta(0.0, 0.0),
+                        sync_occupied_slots_per_token=_scalar_delta(0.0, 0.0),
                         sync_occupied_slot_imbalance_slots=_scalar_delta(0.0, 0.0),
+                        sync_occupied_slot_balance_ratio=_scalar_delta(1.0, 1.0),
+                        sync_span_imbalance_slots=_scalar_delta(0.0, 0.0),
                         sync_span_balance_ratio=_scalar_delta(1.0, 1.0),
                         other_cycles=_scalar_delta(512.0, 256.0),
                         other_bytes=_scalar_delta(32768.0, 16384.0),
                         other_byte_share=_scalar_delta(0.125, 0.0833333333),
                         other_bytes_per_cycle=_scalar_delta(64.0, 64.0),
                         other_cycle_share=_scalar_delta(0.125, 0.0833333333),
+                        other_schedule_compression_cycles=_scalar_delta(0.0, 0.0),
+                        other_schedule_compression_ratio=_scalar_delta(0.0, 0.0),
+                        other_schedule_overhang_cycles=_scalar_delta(128.0, 64.0),
+                        other_read_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        other_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        other_read_bytes_vmem=_scalar_delta(32768.0, 16384.0),
+                        other_write_bytes_vmem=_scalar_delta(32768.0, 16384.0),
+                        other_compute_cycles=_scalar_delta(256.0, 128.0),
+                        other_memory_cycles=_scalar_delta(256.0, 128.0),
+                        other_sync_cycles=_scalar_delta(0.0, 0.0),
+                        other_occupied_slots=_scalar_delta(640.0, 320.0),
+                        other_occupied_slots_per_token=_scalar_delta(5.0, 2.5),
                         other_occupied_slot_imbalance_slots=_scalar_delta(0.0, 64.0),
+                        other_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.5),
+                        other_span_imbalance_slots=_scalar_delta(0.0, 64.0),
                         other_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         tokens_per_cycle=_scalar_delta(0.03125, 0.0416666667),
                         tokens_per_critical_path_cycle=_scalar_delta(0.0357142857, 0.0555555556),
@@ -131,21 +201,63 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_byte_share=_scalar_delta(0.25, 0.2045454545),
                         projection_bytes_per_cycle=_scalar_delta(48.9795918367, 46.1538461538),
                         projection_cycle_share=_scalar_delta(0.30625, 0.2785714286),
+                        projection_schedule_compression_cycles=_scalar_delta(64.0, 48.0),
+                        projection_schedule_compression_ratio=_scalar_delta(0.0576923077, 0.05),
+                        projection_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        projection_read_bytes_ddr=_scalar_delta(12000.0, 8000.0),
+                        projection_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        projection_read_bytes_vmem=_scalar_delta(36000.0, 28000.0),
+                        projection_write_bytes_vmem=_scalar_delta(48000.0, 36000.0),
+                        projection_compute_cycles=_scalar_delta(640.0, 560.0),
+                        projection_memory_cycles=_scalar_delta(340.0, 220.0),
+                        projection_sync_cycles=_scalar_delta(0.0, 0.0),
+                        projection_occupied_slots=_scalar_delta(1040.0, 832.0),
+                        projection_occupied_slots_per_token=_scalar_delta(1040.0, 832.0),
                         projection_occupied_slot_imbalance_slots=_scalar_delta(0.0, 96.0),
+                        projection_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.6),
+                        projection_span_imbalance_slots=_scalar_delta(0.0, 96.0),
                         projection_span_balance_ratio=_scalar_delta(1.0, 0.6),
                         kv_io_cycles=_scalar_delta(900.0, 700.0),
                         kv_io_bytes=_scalar_delta(96000.0, 96000.0),
                         kv_io_byte_share=_scalar_delta(0.5, 0.5454545455),
                         kv_io_bytes_per_cycle=_scalar_delta(106.6666666667, 137.1428571429),
                         kv_io_cycle_share=_scalar_delta(0.28125, 0.25),
+                        kv_io_schedule_compression_cycles=_scalar_delta(96.0, 128.0),
+                        kv_io_schedule_compression_ratio=_scalar_delta(0.096, 0.1333333333),
+                        kv_io_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_read_bytes_ddr=_scalar_delta(96000.0, 96000.0),
+                        kv_io_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        kv_io_read_bytes_vmem=_scalar_delta(0.0, 0.0),
+                        kv_io_write_bytes_vmem=_scalar_delta(96000.0, 96000.0),
+                        kv_io_compute_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_memory_cycles=_scalar_delta(900.0, 700.0),
+                        kv_io_sync_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_occupied_slots=_scalar_delta(928.0, 736.0),
+                        kv_io_occupied_slots_per_token=_scalar_delta(928.0, 736.0),
                         kv_io_occupied_slot_imbalance_slots=_scalar_delta(0.0, 192.0),
+                        kv_io_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.4),
+                        kv_io_span_imbalance_slots=_scalar_delta(0.0, 192.0),
                         kv_io_span_balance_ratio=_scalar_delta(1.0, 0.4),
                         attention_cycles=_scalar_delta(820.0, 900.0),
                         attention_bytes=_scalar_delta(24000.0, 32000.0),
                         attention_byte_share=_scalar_delta(0.125, 0.1818181818),
                         attention_bytes_per_cycle=_scalar_delta(29.2682926829, 35.5555555556),
                         attention_cycle_share=_scalar_delta(0.25625, 0.3214285714),
+                        attention_schedule_compression_cycles=_scalar_delta(0.0, 0.0),
+                        attention_schedule_compression_ratio=_scalar_delta(0.0, 0.0),
+                        attention_schedule_overhang_cycles=_scalar_delta(32.0, 16.0),
+                        attention_read_bytes_ddr=_scalar_delta(4000.0, 8000.0),
+                        attention_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        attention_read_bytes_vmem=_scalar_delta(20000.0, 24000.0),
+                        attention_write_bytes_vmem=_scalar_delta(24000.0, 32000.0),
+                        attention_compute_cycles=_scalar_delta(640.0, 720.0),
+                        attention_memory_cycles=_scalar_delta(180.0, 180.0),
+                        attention_sync_cycles=_scalar_delta(0.0, 0.0),
+                        attention_occupied_slots=_scalar_delta(832.0, 912.0),
+                        attention_occupied_slots_per_token=_scalar_delta(832.0, 912.0),
                         attention_occupied_slot_imbalance_slots=_scalar_delta(0.0, 64.0),
+                        attention_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.8),
+                        attention_span_imbalance_slots=_scalar_delta(0.0, 64.0),
                         attention_span_balance_ratio=_scalar_delta(1.0, 0.8),
                         cycles_per_token=_scalar_delta(3200.0, 2800.0),
                         critical_path_cycles_per_token=_scalar_delta(2880.0, 2240.0),
@@ -156,14 +268,42 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         sync_byte_share=_scalar_delta(0.0416666667, 0.0227272727),
                         sync_bytes_per_cycle=_scalar_delta(66.6666666667, 50.0),
                         sync_cycle_share=_scalar_delta(0.0375, 0.0285714286),
+                        sync_schedule_compression_cycles=_scalar_delta(0.0, 0.0),
+                        sync_schedule_compression_ratio=_scalar_delta(0.0, 0.0),
+                        sync_schedule_overhang_cycles=_scalar_delta(8.0, 16.0),
+                        sync_read_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        sync_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        sync_read_bytes_vmem=_scalar_delta(2048.0, 1024.0),
+                        sync_write_bytes_vmem=_scalar_delta(2048.0, 1024.0),
+                        sync_compute_cycles=_scalar_delta(0.0, 0.0),
+                        sync_memory_cycles=_scalar_delta(0.0, 0.0),
+                        sync_sync_cycles=_scalar_delta(120.0, 80.0),
+                        sync_occupied_slots=_scalar_delta(128.0, 96.0),
+                        sync_occupied_slots_per_token=_scalar_delta(128.0, 96.0),
                         sync_occupied_slot_imbalance_slots=_scalar_delta(0.0, 32.0),
+                        sync_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.5),
+                        sync_span_imbalance_slots=_scalar_delta(0.0, 32.0),
                         sync_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         other_cycles=_scalar_delta(280.0, 240.0),
                         other_bytes=_scalar_delta(16000.0, 8000.0),
                         other_byte_share=_scalar_delta(0.0833333333, 0.0454545455),
                         other_bytes_per_cycle=_scalar_delta(57.1428571429, 33.3333333333),
                         other_cycle_share=_scalar_delta(0.0875, 0.0857142857),
+                        other_schedule_compression_cycles=_scalar_delta(24.0, 0.0),
+                        other_schedule_compression_ratio=_scalar_delta(0.0769230769, 0.0),
+                        other_schedule_overhang_cycles=_scalar_delta(0.0, 0.0),
+                        other_read_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        other_write_bytes_ddr=_scalar_delta(0.0, 0.0),
+                        other_read_bytes_vmem=_scalar_delta(16000.0, 8000.0),
+                        other_write_bytes_vmem=_scalar_delta(16000.0, 8000.0),
+                        other_compute_cycles=_scalar_delta(120.0, 96.0),
+                        other_memory_cycles=_scalar_delta(160.0, 144.0),
+                        other_sync_cycles=_scalar_delta(0.0, 0.0),
+                        other_occupied_slots=_scalar_delta(288.0, 240.0),
+                        other_occupied_slots_per_token=_scalar_delta(288.0, 240.0),
                         other_occupied_slot_imbalance_slots=_scalar_delta(0.0, 16.0),
+                        other_occupied_slot_balance_ratio=_scalar_delta(1.0, 0.75),
+                        other_span_imbalance_slots=_scalar_delta(0.0, 16.0),
                         other_span_balance_ratio=_scalar_delta(1.0, 0.75),
                     ),
                 ),
@@ -176,10 +316,64 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
 
     assert "projection_occupied_slot_imbalance_slots" in prefill_payload
     assert prefill_payload["projection_occupied_slot_imbalance_slots"]["delta_value"] == 256.0
+    assert "projection_occupied_slot_balance_ratio" in prefill_payload
+    assert prefill_payload["projection_occupied_slot_balance_ratio"]["delta_value"] == -0.5
+    assert "projection_schedule_compression_cycles" in prefill_payload
+    assert prefill_payload["projection_schedule_compression_cycles"]["delta_value"] == -160.0
+    assert "projection_schedule_compression_ratio" in prefill_payload
+    assert prefill_payload["projection_schedule_compression_ratio"]["delta_value"] == pytest.approx(
+        0.0857142857 - 0.1428571429
+    )
+    assert "projection_read_bytes_ddr" in prefill_payload
+    assert prefill_payload["projection_read_bytes_ddr"]["delta_value"] == -4096.0
+    assert "projection_read_bytes_vmem" in prefill_payload
+    assert prefill_payload["projection_read_bytes_vmem"]["delta_value"] == -12288.0
+    assert "projection_compute_cycles" in prefill_payload
+    assert prefill_payload["projection_compute_cycles"]["delta_value"] == -256.0
+    assert "projection_memory_cycles" in prefill_payload
+    assert prefill_payload["projection_memory_cycles"]["delta_value"] == -256.0
+    assert "projection_sync_cycles" in prefill_payload
+    assert prefill_payload["projection_sync_cycles"]["delta_value"] == 0.0
+    assert "projection_occupied_slots" in prefill_payload
+    assert prefill_payload["projection_occupied_slots"]["delta_value"] == -384.0
+    assert "projection_occupied_slots_per_token" in prefill_payload
+    assert prefill_payload["projection_occupied_slots_per_token"]["delta_value"] == -3.0
+    assert "other_schedule_overhang_cycles" in prefill_payload
+    assert prefill_payload["other_schedule_overhang_cycles"]["delta_value"] == -64.0
+    assert "other_span_imbalance_slots" in prefill_payload
+    assert prefill_payload["other_span_imbalance_slots"]["delta_value"] == 64.0
     assert "other_span_balance_ratio" in prefill_payload
     assert prefill_payload["other_span_balance_ratio"]["delta_value"] == -0.5
     assert "kv_io_occupied_slot_imbalance_slots" in decode_payload
     assert decode_payload["kv_io_occupied_slot_imbalance_slots"]["delta_value"] == 192.0
+    assert "kv_io_occupied_slot_balance_ratio" in decode_payload
+    assert decode_payload["kv_io_occupied_slot_balance_ratio"]["delta_value"] == -0.6
+    assert "kv_io_schedule_compression_cycles" in decode_payload
+    assert decode_payload["kv_io_schedule_compression_cycles"]["delta_value"] == 32.0
+    assert "kv_io_schedule_compression_ratio" in decode_payload
+    assert decode_payload["kv_io_schedule_compression_ratio"]["delta_value"] == pytest.approx(
+        0.1333333333 - 0.096
+    )
+    assert "kv_io_read_bytes_ddr" in decode_payload
+    assert decode_payload["kv_io_read_bytes_ddr"]["delta_value"] == 0.0
+    assert "attention_read_bytes_ddr" in decode_payload
+    assert decode_payload["attention_read_bytes_ddr"]["delta_value"] == 4000.0
+    assert "kv_io_compute_cycles" in decode_payload
+    assert decode_payload["kv_io_compute_cycles"]["delta_value"] == 0.0
+    assert "kv_io_memory_cycles" in decode_payload
+    assert decode_payload["kv_io_memory_cycles"]["delta_value"] == -200.0
+    assert "kv_io_sync_cycles" in decode_payload
+    assert decode_payload["kv_io_sync_cycles"]["delta_value"] == 0.0
+    assert "kv_io_occupied_slots" in decode_payload
+    assert decode_payload["kv_io_occupied_slots"]["delta_value"] == -192.0
+    assert "kv_io_occupied_slots_per_token" in decode_payload
+    assert decode_payload["kv_io_occupied_slots_per_token"]["delta_value"] == -192.0
+    assert "sync_schedule_overhang_cycles" in decode_payload
+    assert decode_payload["sync_schedule_overhang_cycles"]["delta_value"] == 8.0
+    assert "sync_sync_cycles" in decode_payload
+    assert decode_payload["sync_sync_cycles"]["delta_value"] == -40.0
+    assert "sync_span_imbalance_slots" in decode_payload
+    assert decode_payload["sync_span_imbalance_slots"]["delta_value"] == 32.0
     assert "sync_span_balance_ratio" in decode_payload
     assert decode_payload["sync_span_balance_ratio"]["delta_value"] == -0.5
 

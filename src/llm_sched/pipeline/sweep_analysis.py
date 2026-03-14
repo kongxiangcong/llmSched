@@ -43,7 +43,32 @@ class SweepAnalysisResult(BaseModel):
 
 
 _PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
-_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+_PHASE_ADDRESS_SPACE_METRIC_NAMES = (
+    "read_bytes_ddr",
+    "write_bytes_ddr",
+    "read_bytes_vmem",
+    "write_bytes_vmem",
+)
+_PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
+    "compute_cycles",
+    "memory_cycles",
+    "sync_cycles",
+)
+_PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES = (
+    "schedule_compression_cycles",
+    "schedule_compression_ratio",
+    "schedule_overhang_cycles",
+)
+_PHASE_OCCUPIED_SLOT_METRIC_NAMES = (
+    "occupied_slots",
+    "occupied_slots_per_token",
+)
+_PHASE_BALANCE_METRIC_NAMES = (
+    "occupied_slot_imbalance_slots",
+    "occupied_slot_balance_ratio",
+    "span_imbalance_slots",
+    "span_balance_ratio",
+)
 
 
 def _phase_cycle_share(phase_cycles: float, estimated_cycles: float) -> float:
@@ -62,6 +87,52 @@ def _phase_bytes_per_cycle(phase_bytes: float, phase_cycles: float) -> float:
     if phase_cycles <= 0.0:
         return 0.0
     return float(phase_bytes) / float(phase_cycles)
+
+
+def _phase_schedule_compression_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        for metric_name in _PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES:
+            metrics[f"{phase_name}_{metric_name}"] = float(
+                getattr(phase_summary, metric_name, 0.0)
+            )
+    return metrics
+
+
+def _phase_address_space_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        read_totals = getattr(phase_summary, "read_bytes_by_address_space", {}) or {}
+        write_totals = getattr(phase_summary, "write_bytes_by_address_space", {}) or {}
+        metrics[f"{phase_name}_read_bytes_ddr"] = float(read_totals.get("DDR", 0.0))
+        metrics[f"{phase_name}_write_bytes_ddr"] = float(write_totals.get("DDR", 0.0))
+        metrics[f"{phase_name}_read_bytes_vmem"] = float(read_totals.get("VMEM", 0.0))
+        metrics[f"{phase_name}_write_bytes_vmem"] = float(write_totals.get("VMEM", 0.0))
+    return metrics
+
+
+def _phase_cycle_component_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        for metric_name in _PHASE_CYCLE_COMPONENT_METRIC_NAMES:
+            metrics[f"{phase_name}_{metric_name}"] = float(
+                getattr(phase_summary, metric_name, 0.0)
+            )
+    return metrics
+
+
+def _phase_occupied_slot_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for phase_name in _PHASE_COMPARE_NAMES:
+        phase_summary = phase_attribution.get(phase_name)
+        for metric_name in _PHASE_OCCUPIED_SLOT_METRIC_NAMES:
+            metrics[f"{phase_name}_{metric_name}"] = float(
+                getattr(phase_summary, metric_name, 0.0)
+            )
+    return metrics
 
 
 def _phase_balance_metrics(phase_attribution: dict[str, object]) -> dict[str, float]:
@@ -280,6 +351,10 @@ def _execute_run_root(
                 "cycles_per_token": report.throughput.cycles_per_token,
                 "bytes_per_cycle": report.throughput.bytes_per_cycle,
                 "max_region_utilization": report.memory_summary.max_region_utilization,
+                **_phase_address_space_metrics(report.throughput.phase_attribution),
+                **_phase_cycle_component_metrics(report.throughput.phase_attribution),
+                **_phase_schedule_compression_metrics(report.throughput.phase_attribution),
+                **_phase_occupied_slot_metrics(report.throughput.phase_attribution),
                 **_phase_balance_metrics(report.throughput.phase_attribution),
             },
             macro_hotspots=[
@@ -398,6 +473,10 @@ def _execute_run_root(
                 report.token_latency.other_cycles,
                 estimated_cycles,
             ),
+            **_phase_address_space_metrics(report.token_latency.phase_attribution),
+            **_phase_cycle_component_metrics(report.token_latency.phase_attribution),
+            **_phase_schedule_compression_metrics(report.token_latency.phase_attribution),
+            **_phase_occupied_slot_metrics(report.token_latency.phase_attribution),
             **_phase_balance_metrics(report.token_latency.phase_attribution),
         },
         macro_hotspots=[

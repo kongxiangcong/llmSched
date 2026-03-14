@@ -47,7 +47,32 @@ from llm_sched.ir.schedule_ir import ScheduleIR
 
 
 _PHASE_METRIC_PREFIXES = ("projection", "kv_io", "attention", "sync", "other")
-_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+_PHASE_ADDRESS_SPACE_METRIC_NAMES = (
+    "read_bytes_ddr",
+    "write_bytes_ddr",
+    "read_bytes_vmem",
+    "write_bytes_vmem",
+)
+_PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
+    "compute_cycles",
+    "memory_cycles",
+    "sync_cycles",
+)
+_PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES = (
+    "schedule_compression_cycles",
+    "schedule_compression_ratio",
+    "schedule_overhang_cycles",
+)
+_PHASE_OCCUPIED_SLOT_METRIC_NAMES = (
+    "occupied_slots",
+    "occupied_slots_per_token",
+)
+_PHASE_BALANCE_METRIC_NAMES = (
+    "occupied_slot_imbalance_slots",
+    "occupied_slot_balance_ratio",
+    "span_imbalance_slots",
+    "span_balance_ratio",
+)
 
 
 def build_visualization_bundle(
@@ -485,6 +510,10 @@ def _build_compare_summary(
             _build_scalar_delta("projection_byte_share", compare_row.projection_byte_share),
             _build_scalar_delta("projection_bytes_per_cycle", compare_row.projection_bytes_per_cycle),
             _build_scalar_delta("projection_cycle_share", compare_row.projection_cycle_share),
+            *_build_phase_address_space_scalar_deltas(compare_row),
+            *_build_phase_cycle_component_scalar_deltas(compare_row),
+            *_build_phase_schedule_compression_scalar_deltas(compare_row),
+            *_build_phase_occupied_slot_scalar_deltas(compare_row),
             *_build_phase_balance_scalar_deltas(compare_row),
             _build_scalar_delta("kv_io_cycles", compare_row.kv_io_cycles),
             _build_scalar_delta("kv_io_bytes", compare_row.kv_io_bytes),
@@ -532,6 +561,10 @@ def _build_compare_summary(
             _build_scalar_delta("projection_byte_share", compare_row.projection_byte_share),
             _build_scalar_delta("projection_bytes_per_cycle", compare_row.projection_bytes_per_cycle),
             _build_scalar_delta("projection_cycle_share", compare_row.projection_cycle_share),
+            *_build_phase_address_space_scalar_deltas(compare_row),
+            *_build_phase_cycle_component_scalar_deltas(compare_row),
+            *_build_phase_schedule_compression_scalar_deltas(compare_row),
+            *_build_phase_occupied_slot_scalar_deltas(compare_row),
             *_build_phase_balance_scalar_deltas(compare_row),
             _build_scalar_delta("kv_io_cycles", compare_row.kv_io_cycles),
             _build_scalar_delta("kv_io_bytes", compare_row.kv_io_bytes),
@@ -653,6 +686,58 @@ def _build_phase_balance_scalar_deltas(
         )
         for phase_name in _PHASE_METRIC_PREFIXES
         for metric_name in _PHASE_BALANCE_METRIC_NAMES
+    ]
+
+
+def _build_phase_address_space_scalar_deltas(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        _build_scalar_delta(
+            f"{phase_name}_{metric_name}",
+            getattr(compare_row, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in _PHASE_ADDRESS_SPACE_METRIC_NAMES
+    ]
+
+
+def _build_phase_cycle_component_scalar_deltas(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        _build_scalar_delta(
+            f"{phase_name}_{metric_name}",
+            getattr(compare_row, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in _PHASE_CYCLE_COMPONENT_METRIC_NAMES
+    ]
+
+
+def _build_phase_schedule_compression_scalar_deltas(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        _build_scalar_delta(
+            f"{phase_name}_{metric_name}",
+            getattr(compare_row, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in _PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES
+    ]
+
+
+def _build_phase_occupied_slot_scalar_deltas(
+    compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        _build_scalar_delta(
+            f"{phase_name}_{metric_name}",
+            getattr(compare_row, f"{phase_name}_{metric_name}"),
+        )
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in _PHASE_OCCUPIED_SLOT_METRIC_NAMES
     ]
 
 

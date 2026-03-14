@@ -25,9 +25,53 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     prefill_payload = report.prefill_compares[0].model_dump(mode="json")
     decode_payload = report.decode_compares[0].model_dump(mode="json")
     assert "projection_occupied_slot_imbalance_slots" in prefill_payload
+    assert "projection_occupied_slot_balance_ratio" in prefill_payload
+    assert "projection_span_imbalance_slots" in prefill_payload
     assert "projection_span_balance_ratio" in prefill_payload
+    assert "projection_schedule_compression_cycles" in prefill_payload
+    assert "projection_schedule_compression_ratio" in prefill_payload
+    assert "other_schedule_overhang_cycles" in prefill_payload
+    assert "projection_read_bytes_ddr" in prefill_payload
+    assert "projection_read_bytes_vmem" in prefill_payload
+    assert "projection_compute_cycles" in prefill_payload
+    assert "projection_memory_cycles" in prefill_payload
+    assert "projection_sync_cycles" in prefill_payload
+    assert "projection_occupied_slots" in prefill_payload
+    assert "projection_occupied_slots_per_token" in prefill_payload
     assert "kv_io_occupied_slot_imbalance_slots" in decode_payload
+    assert "kv_io_occupied_slot_balance_ratio" in decode_payload
+    assert "kv_io_schedule_compression_cycles" in decode_payload
+    assert "kv_io_schedule_compression_ratio" in decode_payload
+    assert "sync_schedule_overhang_cycles" in decode_payload
+    assert "kv_io_read_bytes_ddr" in decode_payload
+    assert "attention_read_bytes_ddr" in decode_payload
+    assert "kv_io_compute_cycles" in decode_payload
+    assert "kv_io_memory_cycles" in decode_payload
+    assert "sync_sync_cycles" in decode_payload
+    assert "sync_span_imbalance_slots" in decode_payload
     assert "other_span_balance_ratio" in decode_payload
+    assert "kv_io_occupied_slots" in decode_payload
+    assert "kv_io_occupied_slots_per_token" in decode_payload
+    assert report.prefill_compares[0].projection_occupied_slot_balance_ratio.delta_value == pytest.approx(-0.5)
+    assert report.prefill_compares[0].attention_span_imbalance_slots.delta_value == 128.0
+    assert report.decode_compares[0].kv_io_occupied_slot_balance_ratio.delta_value == pytest.approx(-0.6)
+    assert report.prefill_compares[0].projection_schedule_compression_cycles.delta_value == pytest.approx(
+        -160.0
+    )
+    assert report.prefill_compares[0].projection_schedule_compression_ratio.delta_value == pytest.approx(
+        0.0857142857 - 0.1428571429
+    )
+    assert report.prefill_compares[0].other_schedule_overhang_cycles.delta_value == pytest.approx(-64.0)
+    assert report.decode_compares[0].kv_io_schedule_compression_cycles.delta_value == pytest.approx(32.0)
+    assert report.decode_compares[0].kv_io_schedule_compression_ratio.delta_value == pytest.approx(
+        0.1333333333 - 0.096
+    )
+    assert report.decode_compares[0].sync_schedule_overhang_cycles.delta_value == pytest.approx(8.0)
+    assert report.decode_compares[0].sync_span_imbalance_slots.delta_value == 32.0
+    assert report.prefill_compares[0].projection_occupied_slots.delta_value == pytest.approx(0.0)
+    assert report.prefill_compares[0].projection_occupied_slots_per_token.delta_value == pytest.approx(0.0)
+    assert report.decode_compares[0].kv_io_occupied_slots.delta_value == pytest.approx(0.0)
+    assert report.decode_compares[0].kv_io_occupied_slots_per_token.delta_value == pytest.approx(0.0)
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
@@ -139,6 +183,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": -0.0416666667,
                         "delta_ratio": -0.1111111111,
                     },
+                    "projection_schedule_compression_cycles": {
+                        "baseline_value": 256.0,
+                        "candidate_value": 96.0,
+                        "delta_value": -160.0,
+                        "delta_ratio": -0.625,
+                    },
+                    "projection_schedule_compression_ratio": {
+                        "baseline_value": 0.1428571429,
+                        "candidate_value": 0.0857142857,
+                        "delta_value": -0.0571428572,
+                        "delta_ratio": -0.4000000006,
+                    },
+                    "projection_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 256.0,
+                        "delta_value": 256.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
+                    },
+                    "projection_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 256.0,
+                        "delta_value": 256.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
+                    },
                     "kv_io_cycles": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
@@ -166,6 +252,48 @@ def _sweep_report_payload() -> dict[str, object]:
                     "kv_io_cycle_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_schedule_compression_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_schedule_compression_ratio": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 1.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 1.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
@@ -199,6 +327,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": 0.0833333333,
                         "delta_ratio": 0.1666666667,
                     },
+                    "attention_schedule_compression_cycles": {
+                        "baseline_value": 128.0,
+                        "candidate_value": 192.0,
+                        "delta_value": 64.0,
+                        "delta_ratio": 0.5,
+                    },
+                    "attention_schedule_compression_ratio": {
+                        "baseline_value": 0.0588235294,
+                        "candidate_value": 0.1,
+                        "delta_value": 0.0411764706,
+                        "delta_ratio": 0.7,
+                    },
+                    "attention_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 128.0,
+                        "delta_value": 128.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.75,
+                        "delta_value": -0.25,
+                        "delta_ratio": -0.25,
+                    },
+                    "attention_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 128.0,
+                        "delta_value": 128.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.75,
+                        "delta_value": -0.25,
+                        "delta_ratio": -0.25,
+                    },
                     "sync_cycles": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
@@ -226,6 +396,48 @@ def _sweep_report_payload() -> dict[str, object]:
                     "sync_cycle_share": {
                         "baseline_value": 0.0,
                         "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_schedule_compression_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_schedule_compression_ratio": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 1.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 1.0,
                         "delta_value": 0.0,
                         "delta_ratio": 0.0,
                     },
@@ -258,6 +470,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 0.0833333333,
                         "delta_value": -0.0416666667,
                         "delta_ratio": -0.3333333333,
+                    },
+                    "other_schedule_compression_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_schedule_compression_ratio": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_schedule_overhang_cycles": {
+                        "baseline_value": 128.0,
+                        "candidate_value": 64.0,
+                        "delta_value": -64.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 64.0,
+                        "delta_value": 64.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
+                    },
+                    "other_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 64.0,
+                        "delta_value": 64.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
                     },
                     "tokens_per_cycle": {
                         "baseline_value": 0.03125,
@@ -357,6 +611,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": -0.0276785714,
                         "delta_ratio": -0.0903790087,
                     },
+                    "projection_schedule_compression_cycles": {
+                        "baseline_value": 64.0,
+                        "candidate_value": 48.0,
+                        "delta_value": -16.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "projection_schedule_compression_ratio": {
+                        "baseline_value": 0.0576923077,
+                        "candidate_value": 0.05,
+                        "delta_value": -0.0076923077,
+                        "delta_ratio": -0.1333333333,
+                    },
+                    "projection_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 96.0,
+                        "delta_value": 96.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.6,
+                        "delta_value": -0.4,
+                        "delta_ratio": -0.4,
+                    },
+                    "projection_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 96.0,
+                        "delta_value": 96.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "projection_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.6,
+                        "delta_value": -0.4,
+                        "delta_ratio": -0.4,
+                    },
                     "kv_io_cycles": {
                         "baseline_value": 900.0,
                         "candidate_value": 700.0,
@@ -386,6 +682,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 0.25,
                         "delta_value": -0.03125,
                         "delta_ratio": -0.1111111111,
+                    },
+                    "kv_io_schedule_compression_cycles": {
+                        "baseline_value": 96.0,
+                        "candidate_value": 128.0,
+                        "delta_value": 32.0,
+                        "delta_ratio": 0.3333333333,
+                    },
+                    "kv_io_schedule_compression_ratio": {
+                        "baseline_value": 0.096,
+                        "candidate_value": 0.1333333333,
+                        "delta_value": 0.0373333333,
+                        "delta_ratio": 0.3888888885,
+                    },
+                    "kv_io_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 192.0,
+                        "delta_value": 192.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.4,
+                        "delta_value": -0.6,
+                        "delta_ratio": -0.6,
+                    },
+                    "kv_io_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 192.0,
+                        "delta_value": 192.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "kv_io_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.4,
+                        "delta_value": -0.6,
+                        "delta_ratio": -0.6,
                     },
                     "attention_cycles": {
                         "baseline_value": 820.0,
@@ -417,6 +755,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "delta_value": 0.0651785714,
                         "delta_ratio": 0.2543554007,
                     },
+                    "attention_schedule_compression_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_schedule_compression_ratio": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_schedule_overhang_cycles": {
+                        "baseline_value": 32.0,
+                        "candidate_value": 16.0,
+                        "delta_value": -16.0,
+                        "delta_ratio": -0.5,
+                    },
+                    "attention_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 64.0,
+                        "delta_value": 64.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.8,
+                        "delta_value": -0.2,
+                        "delta_ratio": -0.2,
+                    },
+                    "attention_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 64.0,
+                        "delta_value": 64.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.8,
+                        "delta_value": -0.2,
+                        "delta_ratio": -0.2,
+                    },
                     "other_cycles": {
                         "baseline_value": 280.0,
                         "candidate_value": 240.0,
@@ -446,6 +826,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 0.0857142857,
                         "delta_value": -0.0017857143,
                         "delta_ratio": -0.0204081633,
+                    },
+                    "other_schedule_compression_cycles": {
+                        "baseline_value": 24.0,
+                        "candidate_value": 0.0,
+                        "delta_value": -24.0,
+                        "delta_ratio": -1.0,
+                    },
+                    "other_schedule_compression_ratio": {
+                        "baseline_value": 0.0769230769,
+                        "candidate_value": 0.0,
+                        "delta_value": -0.0769230769,
+                        "delta_ratio": -1.0,
+                    },
+                    "other_schedule_overhang_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 16.0,
+                        "delta_value": 16.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.75,
+                        "delta_value": -0.25,
+                        "delta_ratio": -0.25,
+                    },
+                    "other_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 16.0,
+                        "delta_value": 16.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.75,
+                        "delta_value": -0.25,
+                        "delta_ratio": -0.25,
                     },
                     "cycles_per_token": {
                         "baseline_value": 3200.0,
@@ -500,6 +922,48 @@ def _sweep_report_payload() -> dict[str, object]:
                         "candidate_value": 0.0285714286,
                         "delta_value": -0.0089285714,
                         "delta_ratio": -0.2380952381,
+                    },
+                    "sync_schedule_compression_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_schedule_compression_ratio": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_schedule_overhang_cycles": {
+                        "baseline_value": 8.0,
+                        "candidate_value": 16.0,
+                        "delta_value": 8.0,
+                        "delta_ratio": 1.0,
+                    },
+                    "sync_occupied_slot_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 32.0,
+                        "delta_value": 32.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_occupied_slot_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
+                    },
+                    "sync_span_imbalance_slots": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 32.0,
+                        "delta_value": 32.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_span_balance_ratio": {
+                        "baseline_value": 1.0,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.5,
+                        "delta_ratio": -0.5,
                     },
                 },
             },

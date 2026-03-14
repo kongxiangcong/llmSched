@@ -10,7 +10,32 @@ from llm_sched.contracts.phase_d_compare_report import (
 from llm_sched.contracts.sweep_report import SweepDeltaReport
 
 _PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
-_PHASE_BALANCE_METRIC_NAMES = ("occupied_slot_imbalance_slots", "span_balance_ratio")
+_PHASE_ADDRESS_SPACE_METRIC_NAMES = (
+    "read_bytes_ddr",
+    "write_bytes_ddr",
+    "read_bytes_vmem",
+    "write_bytes_vmem",
+)
+_PHASE_CYCLE_COMPONENT_METRIC_NAMES = (
+    "compute_cycles",
+    "memory_cycles",
+    "sync_cycles",
+)
+_PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES = (
+    "schedule_compression_cycles",
+    "schedule_compression_ratio",
+    "schedule_overhang_cycles",
+)
+_PHASE_OCCUPIED_SLOT_METRIC_NAMES = (
+    "occupied_slots",
+    "occupied_slots_per_token",
+)
+_PHASE_BALANCE_METRIC_NAMES = (
+    "occupied_slot_imbalance_slots",
+    "occupied_slot_balance_ratio",
+    "span_imbalance_slots",
+    "span_balance_ratio",
+)
 
 
 def build_phase_d_compare_report(
@@ -39,6 +64,10 @@ def build_phase_d_compare_report(
                     projection_byte_share=comparison.prefill_compare.projection_byte_share,
                     projection_bytes_per_cycle=comparison.prefill_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.prefill_compare.projection_cycle_share,
+                    **_phase_address_space_compare_row_fields(comparison.prefill_compare),
+                    **_phase_cycle_component_compare_row_fields(comparison.prefill_compare),
+                    **_phase_schedule_compression_compare_row_fields(comparison.prefill_compare),
+                    **_phase_occupied_slot_compare_row_fields(comparison.prefill_compare),
                     **_phase_balance_compare_row_fields(comparison.prefill_compare),
                     kv_io_cycles=comparison.prefill_compare.kv_io_cycles,
                     kv_io_bytes=comparison.prefill_compare.kv_io_bytes,
@@ -84,6 +113,10 @@ def build_phase_d_compare_report(
                     projection_byte_share=comparison.decode_compare.projection_byte_share,
                     projection_bytes_per_cycle=comparison.decode_compare.projection_bytes_per_cycle,
                     projection_cycle_share=comparison.decode_compare.projection_cycle_share,
+                    **_phase_address_space_compare_row_fields(comparison.decode_compare),
+                    **_phase_cycle_component_compare_row_fields(comparison.decode_compare),
+                    **_phase_schedule_compression_compare_row_fields(comparison.decode_compare),
+                    **_phase_occupied_slot_compare_row_fields(comparison.decode_compare),
                     **_phase_balance_compare_row_fields(comparison.decode_compare),
                     kv_io_cycles=comparison.decode_compare.kv_io_cycles,
                     kv_io_bytes=comparison.decode_compare.kv_io_bytes,
@@ -132,4 +165,36 @@ def _phase_balance_compare_row_fields(compare_summary) -> dict[str, object]:
         f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
         for phase_name in _PHASE_COMPARE_NAMES
         for metric_name in _PHASE_BALANCE_METRIC_NAMES
+    }
+
+
+def _phase_address_space_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_ADDRESS_SPACE_METRIC_NAMES
+    }
+
+
+def _phase_cycle_component_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_CYCLE_COMPONENT_METRIC_NAMES
+    }
+
+
+def _phase_schedule_compression_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES
+    }
+
+
+def _phase_occupied_slot_compare_row_fields(compare_summary) -> dict[str, object]:
+    return {
+        f"{phase_name}_{metric_name}": getattr(compare_summary, f"{phase_name}_{metric_name}")
+        for phase_name in _PHASE_COMPARE_NAMES
+        for metric_name in _PHASE_OCCUPIED_SLOT_METRIC_NAMES
     }

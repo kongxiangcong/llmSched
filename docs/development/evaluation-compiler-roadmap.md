@@ -46,7 +46,7 @@
 | SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
 | SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
 | SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
-| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-bytes-per-cycle 与 selected phase-balance rows；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
+| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution；`sweep_view.comparisons` 现在也已直接带结构化 `layer_deltas`。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
 | SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 metric-plus-layer summary compare 的更强 compare modes。 |
@@ -164,7 +164,7 @@ graph TD
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
 | M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
-| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得第一条 formal top-level compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-density/selected-phase-balance richer compare rows，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator和更强的 top-level report compare surface。 |
+| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得第一条 formal top-level compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator和更强的 top-level report compare surface。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
@@ -2047,18 +2047,94 @@ graph TD
 
 ## 2026-03-13 SPEC-16 Phase Balance Compare Checkpoint
 
-- plan doc: `../plans/2026-03-13-spec-16-phase-balance-compare.md`
-- `SPEC-16` compare-grade outputs now preserve selected phase balance signals, so sweep compare can show which phases become more dual-core imbalanced without reopening raw per-core maps from canonical `phase_attribution`.
+- plan doc: `../plans/2026-03-13-spec-16-balance-compare-remaining-signals.md`
+- `SPEC-16` compare-grade outputs now preserve all four selected phase balance scalar families, so sweep compare can show which phases became more or less dual-core balanced without reopening raw per-core maps from canonical `phase_attribution`.
 - this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and adds no new workflow, artifact, or UI-specific state model.
 - new closure evidence:
-  - sweep analysis now extracts `projection/kv_io/attention/sync/other_occupied_slot_imbalance_slots` and `projection/kv_io/attention/sync/other_span_balance_ratio` from top-level phase attribution into `SweepRunRecord.metrics`
-  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve the same phase-balance deltas with compatibility-friendly zero defaults for older sweep artifacts
-  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same selected balance rows end to end through the existing compare path
-  - focused unit/workflow verification remains green (`14 passed`)
+  - sweep analysis now extracts `projection/kv_io/attention/sync/other_occupied_slot_imbalance_slots`, `projection/kv_io/attention/sync/other_occupied_slot_balance_ratio`, `projection/kv_io/attention/sync/other_span_imbalance_slots`, and `projection/kv_io/attention/sync/other_span_balance_ratio` from top-level phase attribution into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve all four selected phase-balance scalar families with compatibility-friendly zero defaults for older sweep artifacts
+  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same four balance scalar families end to end through the existing compare path
+  - focused compare-chain verification remains green, and the previously blocked workflow tests now pass locally after upgrading the ignored `models/gemma3_1b/model_q4f16.onnx` fixture to include layer-tagged projection plus attention/transfer coverage
 - what this closes:
   - one `SPEC-16` compare-surface gap where new per-core-balance signals from `SPEC-13` still disappeared once reports entered sweep compare
   - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where dual-core imbalance semantics remained trapped inside structured phase attribution instead of flowing into compare-grade artifacts
   - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw phase maps just to answer which phase became less balanced across cores
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Phase Occupied-Slots Compare Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-phase-occupied-slots-compare.md`
+- `SPEC-16` compare-grade outputs now preserve per-phase `occupied_slots` and `occupied_slots_per_token` rows, so sweep compare can show schedule occupancy movement by phase without reopening raw `phase_attribution` payloads.
+- this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and adds no new workflow, artifact, or UI-specific state model.
+- new closure evidence:
+  - sweep analysis now extracts `projection/kv_io/attention/sync/other_occupied_slots` and `projection/kv_io/attention/sync/other_occupied_slots_per_token` from top-level phase attribution into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve both occupied-slot scalar families with compatibility-friendly zero defaults for older sweep artifacts
+  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same occupied-slot rows end to end through the existing compare path
+  - focused compare-chain verification remains green (`14 passed`)
+- what this closes:
+  - one `SPEC-16` compare-surface gap where schedule-aware phase occupied-slot signals from `SPEC-13` still disappeared once reports entered sweep compare
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where canonical phase occupancy semantics remained trapped inside structured phase attribution instead of flowing into compare-grade artifacts
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer which phase became more or less occupancy-heavy
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Phase Schedule-Compression Compare Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-phase-schedule-compression-compare.md`
+- `SPEC-16` compare-grade outputs now preserve per-phase `schedule_compression_cycles`, `schedule_compression_ratio`, and `schedule_overhang_cycles` rows, so sweep compare can show how phase-local modeled work compresses under the current schedule or spills beyond it without reopening raw `phase_attribution` payloads.
+- this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and adds no new workflow, artifact, or UI-specific state model.
+- new closure evidence:
+  - sweep analysis now extracts `projection/kv_io/attention/sync/other_schedule_compression_cycles`, `projection/kv_io/attention/sync/other_schedule_compression_ratio`, and `projection/kv_io/attention/sync/other_schedule_overhang_cycles` from top-level phase attribution into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve all three schedule-compression scalar families with compatibility-friendly zero defaults for older sweep artifacts
+  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same schedule-compression rows end to end through the existing compare path
+  - focused compare-chain verification remains green (`14 passed`)
+- what this closes:
+  - one `SPEC-16` compare-surface gap where phase-local schedule-fitting signals from `SPEC-13` still disappeared once reports entered sweep compare
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where canonical compression/overhang semantics remained trapped inside structured phase attribution instead of flowing into compare-grade artifacts
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer which phase became more compressed or more overhung under a target change
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Phase Cycle-Components Compare Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-phase-cycle-components-compare.md`
+- `SPEC-16` compare-grade outputs now preserve per-phase `compute_cycles`, `memory_cycles`, and `sync_cycles` rows, so sweep compare can show whether a target change moved work between compute, memory movement, and explicit synchronization within each phase without reopening raw `phase_attribution` payloads.
+- this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and adds no new workflow, artifact, or UI-specific state model.
+- new closure evidence:
+  - sweep analysis now extracts `projection/kv_io/attention/sync/other_compute_cycles`, `projection/kv_io/attention/sync/other_memory_cycles`, and `projection/kv_io/attention/sync/other_sync_cycles` from top-level phase attribution into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve all three phase cycle-component scalar families with compatibility-friendly zero defaults for older sweep artifacts
+  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same cycle-component rows end to end through the existing compare path
+  - focused compare-chain verification remains green (`14 passed`)
+- what this closes:
+  - one `SPEC-16` compare-surface gap where canonical phase-local cycle-component signals from `SPEC-13` still disappeared once reports entered sweep compare
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where phase-local compute versus memory versus synchronization semantics remained trapped inside structured phase attribution instead of flowing into compare-grade artifacts
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer which phase became more compute-heavy, more memory-heavy, or more sync-heavy under a target change
+- what still remains for `M3`:
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Phase Address-Space Compare Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-phase-address-space-compare.md`
+- `SPEC-16` compare-grade outputs now preserve selected per-phase address-space rows, so sweep compare can show whether a target change moved phase-local pressure between `DDR` and `VMEM` without reopening raw `phase_attribution` payloads.
+- this slice stays on the existing `PerfSummaryReport.phase_attribution -> Prefill/DecodeEvaluationReport -> SweepRunRecord.metrics -> Sweep*CompareSummary -> PhaseDCompareReport -> Visualization compare summary` chain and adds no new workflow, artifact, or UI-specific state model.
+- new closure evidence:
+  - sweep analysis now extracts `projection/kv_io/attention/sync/other_read_bytes_ddr`, `projection/kv_io/attention/sync/other_write_bytes_ddr`, `projection/kv_io/attention/sync/other_read_bytes_vmem`, and `projection/kv_io/attention/sync/other_write_bytes_vmem` from top-level phase attribution into `SweepRunRecord.metrics`
+  - `SweepPrefillCompareSummary` and `SweepDecodeCompareSummary` now preserve all four selected address-space scalar families with compatibility-friendly zero defaults for older sweep artifacts
+  - `PhaseDPrefillCompareRow` / `PhaseDDecodeCompareRow` and visualization compare `scalar_deltas` forward the same address-space rows end to end through the existing compare path
+  - focused compare-chain verification remains green (`14 passed`)
+- what this closes:
+  - one `SPEC-16` compare-surface gap where canonical phase-local address-space pressure from `SPEC-13` still disappeared once reports entered sweep compare
+  - one `SPEC-13 -> SPEC-14/15 -> SPEC-16` handoff gap where per-phase `DDR` versus `VMEM` semantics remained trapped inside structured phase attribution instead of flowing into compare-grade artifacts
+  - one downstream-consumer gap where `SPEC-18/19` would otherwise have needed to reopen raw perf artifacts just to answer which phase became more DDR-heavy or more VMEM-heavy under a target change
 - what still remains for `M3`:
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-phase-density-plus-highlight-plus-layer contract
