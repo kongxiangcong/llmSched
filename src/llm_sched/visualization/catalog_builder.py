@@ -969,15 +969,29 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
               <td>${entry.target_profile_name}</td>
               <td>${entry.primary_metric_name}</td>
               <td>
-                ${workspaceSummaryTag}
-                <div>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</div>
+                <div class="summary-stack">
+                  ${workspaceSummaryTag}
+                  <div class="summary-stack-value">${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</div>
+                </div>
               </td>
               <td>
-                ${workspaceRatioSummaryTag}
-                <div>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</div>
+                <div class="summary-stack">
+                  ${workspaceRatioSummaryTag}
+                  <div class="summary-stack-value">${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</div>
+                </div>
               </td>
-              <td>${workspaceSummaryTag}${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
-              <td>${workspaceSweepSummaryTag}${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
+              <td>
+                <div class="summary-stack">
+                  ${workspaceSummaryTag}
+                  <div class="summary-stack-value">${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</div>
+                </div>
+              </td>
+              <td>
+                <div class="summary-stack">
+                  ${workspaceSweepSummaryTag}
+                  <div class="summary-stack-value">${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</div>
+                </div>
+              </td>
               <td>${buildComparePanelLinks(entry)}</td>
             </tr>
           `;
@@ -1273,6 +1287,17 @@ def _build_styles_css() -> str:
   display: grid;
   justify-items: end;
   gap: 2px;
+}
+
+.summary-stack {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.summary-stack-value {
+  display: grid;
+  gap: 6px;
 }
 
 .compare-summary-group + .compare-summary-group {
