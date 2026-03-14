@@ -700,15 +700,23 @@ function buildGroupedScalarDirectionTag(group, scalarDeltas) {
       || metricName.includes("bytes_per_cycle")
     );
     const faster = improvesWhenHigher ? deltaValue > 0 : deltaValue < 0;
-    return `<span class="direction-tag ${faster ? "is-down" : "is-up"}">${faster ? "candidate faster" : "candidate slower"}</span>`;
+    return faster
+      ? '<span class="direction-tag is-positive">candidate faster</span>'
+      : '<span class="direction-tag is-negative">candidate slower</span>';
   }
   if (groupId === "memory_pressure") {
-    return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "pressure up" : "pressure down"}</span>`;
+    return deltaValue > 0
+      ? '<span class="direction-tag is-negative">pressure up</span>'
+      : '<span class="direction-tag is-positive">pressure down</span>';
   }
   if (groupId === "schedule_shape") {
-    return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "schedule shifted up" : "schedule shifted down"}</span>`;
+    return deltaValue > 0
+      ? '<span class="direction-tag is-neutral">schedule shifted up</span>'
+      : '<span class="direction-tag is-neutral">schedule shifted down</span>';
   }
-  return `<span class="direction-tag ${deltaValue > 0 ? "is-up" : "is-down"}">${deltaValue > 0 ? "shifted up" : "shifted down"}</span>`;
+  return deltaValue > 0
+    ? '<span class="direction-tag is-neutral">shifted up</span>'
+    : '<span class="direction-tag is-neutral">shifted down</span>';
 }
 
 function renderGroupedScalarDeltaSection(group) {
@@ -1692,14 +1700,14 @@ def _build_styles_css() -> str:
   color: #5b6980;
 }
 
-.direction-tag.is-up {
-  background: rgba(181, 35, 35, 0.1);
-  color: #8d2424;
-}
-
-.direction-tag.is-down {
+.direction-tag.is-positive {
   background: rgba(28, 181, 224, 0.14);
   color: #0b4f6c;
+}
+
+.direction-tag.is-negative {
+  background: rgba(181, 35, 35, 0.1);
+  color: #8d2424;
 }
 
 .direction-tag.is-neutral {

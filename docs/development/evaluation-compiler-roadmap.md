@@ -2368,3 +2368,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Grouped Compare Tag Semantics Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-grouped-compare-tag-semantics.md`
+- grouped compare tags in both catalog and workbench now use shared semantic classes `is-positive`, `is-negative`, and `is-neutral`, so equivalent outcomes such as `candidate faster` and `pressure down` render with the same positive treatment while ambiguous shape-only shifts stay neutral.
+- this slice stays entirely inside the existing static visualization builders and preserves current grouped-compare wording plus compare payload contracts instead of introducing new report fields or client state.
+- new closure evidence:
+  - `buildGroupedScalarDirectionTag` in catalog/workbench now emits direct semantic tag literals for headline, throughput/latency, memory-pressure, and shape-oriented groups
+  - builder CSS now exposes `.direction-tag.is-positive`, `.direction-tag.is-negative`, and `.direction-tag.is-neutral` while retiring the old `.is-up` / `.is-down` styling split
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one `SPEC-19` UI consistency gap where semantically positive grouped compare outcomes still depended on directional `up/down` color mapping
+  - one compare-readability gap where pressure and throughput improvements did not share a common visual language across catalog and workbench
+  - one generated-asset testing gap where semantic intent was not visible directly in emitted `app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
