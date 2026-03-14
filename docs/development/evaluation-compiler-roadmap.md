@@ -2584,3 +2584,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Primary Scalar Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-primary-scalar-helper.md`
+- catalog workspace summary and ratio tags now share `resolveWorkspacePrimaryScalarDelta(baselineEntry, candidateEntry)`, so both columns consume the same primary-metric scalar-delta payload instead of rebuilding it separately before passing into the titled scalar helper.
+- this slice stays entirely inside the catalog static JS builder and is a pure helper refactor: it preserves current titles, semantic classes, labels, ratio behavior, and workspace compare rendering.
+- new closure evidence:
+  - catalog now exposes `resolveWorkspacePrimaryScalarDelta` alongside the titled scalar and sweep-state helpers
+  - `buildWorkspaceCompareSummaryTag` and `buildWorkspaceCompareRatioSummaryTag` now both delegate baseline/candidate primary-metric extraction to that resolver
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one duplication gap where workspace summary and ratio tags still rebuilt the same primary scalar-delta object after semantic markup had already been shared
+  - one drift risk where future primary-metric extraction changes could have updated one workspace column but missed the other
+  - one generated-asset testing gap where the shared primary scalar resolver was not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

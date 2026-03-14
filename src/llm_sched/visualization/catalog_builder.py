@@ -522,26 +522,29 @@ function buildTitledScalarDeltaDirectionTag(title, scalarDelta) {
     : buildTitledDirectionTagMarkup(title, "is-negative", "regressed");
 }
 
-function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
+function resolveWorkspacePrimaryScalarDelta(baselineEntry, candidateEntry) {
   const baselineValue = Number(baselineEntry.primary_metric_value || 0);
   const candidateValue = Number(candidateEntry.primary_metric_value || 0);
-  return buildTitledScalarDeltaDirectionTag("workspace summary", {
+  return {
     metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
     baseline_value: baselineValue,
     candidate_value: candidateValue,
     delta_value: candidateValue - baselineValue,
-  });
+  };
+}
+
+function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
+  return buildTitledScalarDeltaDirectionTag(
+    "workspace summary",
+    resolveWorkspacePrimaryScalarDelta(baselineEntry, candidateEntry),
+  );
 }
 
 function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
-  const baselineValue = Number(baselineEntry.primary_metric_value || 0);
-  const candidateValue = Number(candidateEntry.primary_metric_value || 0);
-  return buildTitledScalarDeltaDirectionTag("workspace ratio summary", {
-    metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
-    baseline_value: baselineValue,
-    candidate_value: candidateValue,
-    delta_value: candidateValue - baselineValue,
-  });
+  return buildTitledScalarDeltaDirectionTag(
+    "workspace ratio summary",
+    resolveWorkspacePrimaryScalarDelta(baselineEntry, candidateEntry),
+  );
 }
 
 function resolveWorkspaceSweepSummaryState(sweepComparison) {
