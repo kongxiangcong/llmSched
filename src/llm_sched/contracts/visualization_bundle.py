@@ -6,6 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 VisualizationViewName = Literal["graph", "timeline", "kv", "vmem", "coverage", "sweep"]
+VisualizationCompareGroupId = Literal[
+    "headline",
+    "throughput_latency",
+    "phase_shape",
+    "memory_pressure",
+    "schedule_shape",
+]
 
 
 class VisualizationBundleMetadata(BaseModel):
@@ -205,6 +212,14 @@ class VisualizationSweepCompareScalarDeltaView(BaseModel):
     delta_ratio: float
 
 
+class VisualizationSweepCompareScalarDeltaGroupView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: VisualizationCompareGroupId
+    title: str
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
+
+
 class VisualizationSweepCompareSummaryView(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -213,6 +228,9 @@ class VisualizationSweepCompareSummaryView(BaseModel):
     profile_diff_fields: list[str] = Field(default_factory=list)
     highlighted_scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
     scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
+    scalar_delta_groups: list[VisualizationSweepCompareScalarDeltaGroupView] = Field(
+        default_factory=list
+    )
 
 
 class VisualizationSweepComparisonView(BaseModel):

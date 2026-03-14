@@ -258,6 +258,18 @@ graph TD
   - descriptor-generation workflow and Phase C descriptor smoke remain green
 - Remaining `SPEC-12` closure gap:
   - target-facing field packing specialization
+
+## 2026-03-14 SPEC-16 Grouped Compare Summary Checkpoint
+
+- `SPEC-16` visualization-facing compare summaries now expose fixed `scalar_delta_groups` in addition to legacy `highlighted_scalar_deltas` and `scalar_deltas`.
+- Current grouped compare sections are:
+  - `headline`
+  - `throughput_latency`
+  - `phase_shape`
+  - `memory_pressure`
+  - `schedule_shape`
+- The grouping is built entirely from existing `PhaseDCompareReport` scalar rows; this slice does not add new estimator math or reopen upstream compare contracts.
+- `VisualizationBundle` and `VisualizationCatalogArtifact` now carry the same grouped compare surface so static workbench/catalog consumers can evolve toward richer multi-metric compare views without breaking current summary-grade consumers.
   - final address-width / field-width encoding validation
   - final binary descriptor packer
 

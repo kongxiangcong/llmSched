@@ -18,6 +18,7 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogEntry,
     VisualizationCatalogPhaseCGateSummary,
     VisualizationCatalogSweepCompareScalarDelta,
+    VisualizationCatalogSweepCompareScalarDeltaGroup,
     VisualizationCatalogSweepCompareSummary,
     VisualizationCatalogSweepComparison,
     VisualizationCatalogSweepLayerDelta,
@@ -183,6 +184,23 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                             delta_ratio=scalar_delta.delta_ratio,
                         )
                         for scalar_delta in comparison.compare_summary.scalar_deltas
+                    ],
+                    scalar_delta_groups=[
+                        VisualizationCatalogSweepCompareScalarDeltaGroup(
+                            group_id=scalar_delta_group.group_id,
+                            title=scalar_delta_group.title,
+                            scalar_deltas=[
+                                VisualizationCatalogSweepCompareScalarDelta(
+                                    metric_name=scalar_delta.metric_name,
+                                    baseline_value=scalar_delta.baseline_value,
+                                    candidate_value=scalar_delta.candidate_value,
+                                    delta_value=scalar_delta.delta_value,
+                                    delta_ratio=scalar_delta.delta_ratio,
+                                )
+                                for scalar_delta in scalar_delta_group.scalar_deltas
+                            ],
+                        )
+                        for scalar_delta_group in comparison.compare_summary.scalar_delta_groups
                     ],
                 )
                 if comparison.compare_summary is not None

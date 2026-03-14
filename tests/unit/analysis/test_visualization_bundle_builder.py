@@ -201,6 +201,33 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         "other_byte_share",
         "projection_bytes_per_cycle",
     ]
+    assert [
+        group.group_id
+        for group in bundle.sweep_view.comparisons[0].compare_summary.scalar_delta_groups
+    ] == [
+        "headline",
+        "throughput_latency",
+        "phase_shape",
+        "memory_pressure",
+        "schedule_shape",
+    ]
+    grouped_scalars = {
+        group.group_id: [scalar.metric_name for scalar in group.scalar_deltas]
+        for group in bundle.sweep_view.comparisons[0].compare_summary.scalar_delta_groups
+    }
+    assert grouped_scalars["headline"] == [
+        "estimated_cycles",
+        "critical_path_cycles",
+        "tokens_per_critical_path_cycle",
+        "tokens_per_cycle",
+        "bytes_per_cycle",
+        "max_region_utilization",
+    ]
+    assert "projection_cycle_share" in grouped_scalars["phase_shape"]
+    assert "projection_read_bytes_ddr" in grouped_scalars["memory_pressure"]
+    assert "projection_read_bytes_weight" in grouped_scalars["memory_pressure"]
+    assert "projection_schedule_compression_cycles" in grouped_scalars["schedule_shape"]
+    assert "projection_occupied_slot_balance_ratio" in grouped_scalars["schedule_shape"]
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5

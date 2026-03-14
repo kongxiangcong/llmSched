@@ -13,6 +13,13 @@ from llm_sched.contracts.phase_c_acceptance_report import PhaseCCaseId
 
 CatalogSortKey = Literal["primary_metric", "run_id", "scenario_name"]
 PhaseCGateStatus = Literal["in_progress", "ready_for_acceptance"]
+VisualizationCatalogCompareGroupId = Literal[
+    "headline",
+    "throughput_latency",
+    "phase_shape",
+    "memory_pressure",
+    "schedule_shape",
+]
 PhaseCBlockedCaseKind = Literal[
     "planner",
     "downstream",
@@ -102,6 +109,14 @@ class VisualizationCatalogSweepCompareScalarDelta(BaseModel):
     delta_ratio: float
 
 
+class VisualizationCatalogSweepCompareScalarDeltaGroup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: VisualizationCatalogCompareGroupId
+    title: str
+    scalar_deltas: list[VisualizationCatalogSweepCompareScalarDelta] = Field(default_factory=list)
+
+
 class VisualizationCatalogSweepCompareSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -112,6 +127,9 @@ class VisualizationCatalogSweepCompareSummary(BaseModel):
         default_factory=list
     )
     scalar_deltas: list[VisualizationCatalogSweepCompareScalarDelta] = Field(default_factory=list)
+    scalar_delta_groups: list[VisualizationCatalogSweepCompareScalarDeltaGroup] = Field(
+        default_factory=list
+    )
 
 
 class VisualizationCatalogSweepComparison(BaseModel):

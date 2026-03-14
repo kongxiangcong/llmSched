@@ -122,6 +122,34 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
                                         "delta_ratio": 0.3333333344,
                                     },
                                 ],
+                                "scalar_delta_groups": [
+                                    {
+                                        "group_id": "headline",
+                                        "title": "Headline",
+                                        "scalar_deltas": [
+                                            {
+                                                "metric_name": "estimated_cycles",
+                                                "baseline_value": 4096.0,
+                                                "candidate_value": 3072.0,
+                                                "delta_value": -1024.0,
+                                                "delta_ratio": -0.25,
+                                            }
+                                        ],
+                                    },
+                                    {
+                                        "group_id": "throughput_latency",
+                                        "title": "Throughput / Latency",
+                                        "scalar_deltas": [
+                                            {
+                                                "metric_name": "tokens_per_cycle",
+                                                "baseline_value": 0.03125,
+                                                "candidate_value": 0.0416666667,
+                                                "delta_value": 0.0104166667,
+                                                "delta_ratio": 0.3333333344,
+                                            }
+                                        ],
+                                    },
+                                ],
                             },
                             "layer_deltas": [
                                 {
@@ -163,6 +191,18 @@ def test_visualization_catalog_contract_accepts_sweep_compare_summaries() -> Non
     ]
     assert artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_deltas[0].delta_value == (
         -1024.0
+    )
+    assert [
+        group.group_id
+        for group in artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_delta_groups
+    ] == ["headline", "throughput_latency"]
+    assert (
+        artifact.entries[0]
+        .sweep_comparisons[0]
+        .compare_summary.scalar_delta_groups[1]
+        .scalar_deltas[0]
+        .metric_name
+        == "tokens_per_cycle"
     )
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25

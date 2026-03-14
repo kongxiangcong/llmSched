@@ -31,6 +31,7 @@ from llm_sched.contracts.visualization_bundle import (
     VisualizationKVView,
     VisualizationReportSummary,
     VisualizationSweepCompareScalarDeltaView,
+    VisualizationSweepCompareScalarDeltaGroupView,
     VisualizationSweepCompareSummaryView,
     VisualizationSweepComparisonView,
     VisualizationSweepLayerDeltaView,
@@ -88,6 +89,36 @@ _PHASE_BALANCE_METRIC_NAMES = (
     "occupied_slot_balance_ratio",
     "span_imbalance_slots",
     "span_balance_ratio",
+)
+_COMPARE_GROUP_TITLES = {
+    "headline": "Headline",
+    "throughput_latency": "Throughput / Latency",
+    "phase_shape": "Phase Shape",
+    "memory_pressure": "Memory Pressure",
+    "schedule_shape": "Schedule Shape",
+}
+_PREFILL_THROUGHPUT_LATENCY_METRIC_NAMES = (
+    "estimated_cycles",
+    "critical_path_cycles",
+    "tokens_per_critical_path_cycle",
+    "tokens_per_cycle",
+    "cycles_per_token",
+    "bytes_per_cycle",
+)
+_DECODE_THROUGHPUT_LATENCY_METRIC_NAMES = (
+    "estimated_cycles",
+    "critical_path_cycles",
+    "critical_path_cycles_per_token",
+    "cycles_per_token",
+    "kv_related_cycle_share",
+    "kv_related_bytes",
+)
+_PHASE_SHAPE_METRIC_NAMES = (
+    "cycles",
+    "bytes",
+    "cycle_share",
+    "byte_share",
+    "bytes_per_cycle",
 )
 
 
@@ -518,6 +549,7 @@ def _build_compare_summary(
     compare_row: PhaseDPrefillCompareRow | PhaseDDecodeCompareRow,
 ) -> VisualizationSweepCompareSummaryView:
     if isinstance(compare_row, PhaseDPrefillCompareRow):
+        compare_mode = "prefill"
         scalar_deltas = [
             _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
             _build_scalar_delta("critical_path_cycles", compare_row.critical_path_cycles),
@@ -571,6 +603,7 @@ def _build_compare_summary(
             "max_region_utilization",
         )
     else:
+        compare_mode = "decode"
         scalar_deltas = [
             _build_scalar_delta("estimated_cycles", compare_row.estimated_cycles),
             _build_scalar_delta("critical_path_cycles", compare_row.critical_path_cycles),
@@ -632,6 +665,11 @@ def _build_compare_summary(
             headline_metric_names=headline_metric_names,
         ),
         scalar_deltas=scalar_deltas,
+        scalar_delta_groups=_build_scalar_delta_groups(
+            scalar_deltas,
+            compare_mode=compare_mode,
+            headline_metric_names=headline_metric_names,
+        ),
     )
 
 
@@ -694,6 +732,109 @@ def _select_phase_metric_highlight(
     if not ranked_candidates:
         return None
     return ranked_candidates[0]
+
+
+def _build_scalar_delta_groups(
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView],
+    *,
+    compare_mode: str,
+    headline_metric_names: tuple[str, ...],
+) -> list[VisualizationSweepCompareScalarDeltaGroupView]:
+    throughput_latency_metric_names = (
+        _PREFILL_THROUGHPUT_LATENCY_METRIC_NAMES
+        if compare_mode == "prefill"
+        else _DECODE_THROUGHPUT_LATENCY_METRIC_NAMES
+    )
+    memory_pressure_metric_names = {"max_region_utilization"}
+    if compare_mode == "decode":
+        memory_pressure_metric_names.add("kv_related_bytes")
+
+    grouped_scalar_deltas = [
+        (
+            "headline",
+            _select_scalar_deltas_by_ordered_names(
+                scalar_deltas,
+                headline_metric_names,
+            ),
+        ),
+        (
+            "throughput_latency",
+            _select_scalar_deltas_by_ordered_names(
+                scalar_deltas,
+                throughput_latency_metric_names,
+            ),
+        ),
+        (
+            "phase_shape",
+            _select_scalar_deltas_by_name(
+                scalar_deltas,
+                _build_phase_metric_name_set(_PHASE_SHAPE_METRIC_NAMES),
+            ),
+        ),
+        (
+            "memory_pressure",
+            _select_scalar_deltas_by_name(
+                scalar_deltas,
+                memory_pressure_metric_names
+                | _build_phase_metric_name_set(_PHASE_ADDRESS_SPACE_METRIC_NAMES)
+                | _build_phase_metric_name_set(_PHASE_BACKING_STORE_METRIC_NAMES)
+                | _build_phase_metric_name_set(_PHASE_MEMORY_CLASS_METRIC_NAMES),
+            ),
+        ),
+        (
+            "schedule_shape",
+            _select_scalar_deltas_by_name(
+                scalar_deltas,
+                _build_phase_metric_name_set(_PHASE_CYCLE_COMPONENT_METRIC_NAMES)
+                | _build_phase_metric_name_set(_PHASE_SCHEDULE_COMPRESSION_METRIC_NAMES)
+                | _build_phase_metric_name_set(_PHASE_OCCUPIED_SLOT_METRIC_NAMES)
+                | _build_phase_metric_name_set(_PHASE_BALANCE_METRIC_NAMES),
+            ),
+        ),
+    ]
+    return [
+        VisualizationSweepCompareScalarDeltaGroupView(
+            group_id=group_id,
+            title=_COMPARE_GROUP_TITLES[group_id],
+            scalar_deltas=group_rows,
+        )
+        for group_id, group_rows in grouped_scalar_deltas
+        if group_rows
+    ]
+
+
+def _select_scalar_deltas_by_name(
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView],
+    metric_names: set[str],
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    return [
+        scalar_delta
+        for scalar_delta in scalar_deltas
+        if scalar_delta.metric_name in metric_names
+    ]
+
+
+def _select_scalar_deltas_by_ordered_names(
+    scalar_deltas: list[VisualizationSweepCompareScalarDeltaView],
+    metric_names: tuple[str, ...],
+) -> list[VisualizationSweepCompareScalarDeltaView]:
+    scalar_by_name = {
+        scalar_delta.metric_name: scalar_delta
+        for scalar_delta in scalar_deltas
+    }
+    return [
+        scalar_by_name[metric_name]
+        for metric_name in metric_names
+        if metric_name in scalar_by_name
+    ]
+
+
+def _build_phase_metric_name_set(metric_names: tuple[str, ...]) -> set[str]:
+    return {
+        f"{phase_name}_{metric_name}"
+        for phase_name in _PHASE_METRIC_PREFIXES
+        for metric_name in metric_names
+    }
 
 
 def _build_phase_balance_scalar_deltas(

@@ -55,6 +55,24 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
         scalar.metric_name
         for scalar in artifact.entries[0].sweep_comparisons[0].compare_summary.highlighted_scalar_deltas
     ] == ["estimated_cycles", "tokens_per_cycle"]
+    assert [
+        group.group_id
+        for group in artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_delta_groups
+    ] == [
+        "headline",
+        "throughput_latency",
+        "phase_shape",
+        "memory_pressure",
+        "schedule_shape",
+    ]
+    assert (
+        artifact.entries[0]
+        .sweep_comparisons[0]
+        .compare_summary.scalar_delta_groups[0]
+        .scalar_deltas[0]
+        .metric_name
+        == "estimated_cycles"
+    )
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
     assert artifact.entries[0].sweep_comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
@@ -655,6 +673,73 @@ def _bundle_payload(
                                     "candidate_value": 0.0416666667,
                                     "delta_value": 0.0104166667,
                                     "delta_ratio": 0.3333333344,
+                                },
+                            ],
+                            "scalar_delta_groups": [
+                                {
+                                    "group_id": "headline",
+                                    "title": "Headline",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "estimated_cycles",
+                                            "baseline_value": 4096.0,
+                                            "candidate_value": 3072.0,
+                                            "delta_value": -1024.0,
+                                            "delta_ratio": -0.25,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "throughput_latency",
+                                    "title": "Throughput / Latency",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "tokens_per_cycle",
+                                            "baseline_value": 0.03125,
+                                            "candidate_value": 0.0416666667,
+                                            "delta_value": 0.0104166667,
+                                            "delta_ratio": 0.3333333344,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "phase_shape",
+                                    "title": "Phase Shape",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "projection_cycle_share",
+                                            "baseline_value": 0.375,
+                                            "candidate_value": 0.3333333333,
+                                            "delta_value": -0.0416666667,
+                                            "delta_ratio": -0.1111111112,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "memory_pressure",
+                                    "title": "Memory Pressure",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "projection_read_bytes_ddr",
+                                            "baseline_value": 32768.0,
+                                            "candidate_value": 24576.0,
+                                            "delta_value": -8192.0,
+                                            "delta_ratio": -0.25,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "schedule_shape",
+                                    "title": "Schedule Shape",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "projection_schedule_compression_cycles",
+                                            "baseline_value": 384.0,
+                                            "candidate_value": 192.0,
+                                            "delta_value": -192.0,
+                                            "delta_ratio": -0.5,
+                                        }
+                                    ],
                                 },
                             ],
                         },
