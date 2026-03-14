@@ -490,6 +490,16 @@ function buildDirectionTagMarkup(semanticClass, label) {
   return `<span class="direction-tag is-neutral">${label}</span>`;
 }
 
+function buildTitledDirectionTagMarkup(title, semanticClass, label) {
+  if (semanticClass === "is-positive") {
+    return `<span class="direction-tag is-positive" title="${title}">${label}</span>`;
+  }
+  if (semanticClass === "is-negative") {
+    return `<span class="direction-tag is-negative" title="${title}">${label}</span>`;
+  }
+  return `<span class="direction-tag is-neutral" title="${title}">${label}</span>`;
+}
+
 function buildScalarDeltaDirectionTag(scalarDelta) {
   const deltaValue = Number(scalarDelta.delta_value || 0);
   if (!Number.isFinite(deltaValue) || deltaValue === 0) {
@@ -504,35 +514,45 @@ function buildScalarDeltaDirectionTag(scalarDelta) {
 function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
   const baselineValue = Number(baselineEntry.primary_metric_value || 0);
   const candidateValue = Number(candidateEntry.primary_metric_value || 0);
-  return buildScalarDeltaDirectionTag({
-    metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
-    baseline_value: baselineValue,
-    candidate_value: candidateValue,
-    delta_value: candidateValue - baselineValue,
-  }).replace("<span ", '<span title="workspace summary" ');
+  const metricName = candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "";
+  const deltaValue = candidateValue - baselineValue;
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return buildTitledDirectionTagMarkup("workspace summary", "is-neutral", "steady");
+  }
+  const positive = scalarDeltaIsPositive(metricName, deltaValue);
+  return positive
+    ? buildTitledDirectionTagMarkup("workspace summary", "is-positive", "improved")
+    : buildTitledDirectionTagMarkup("workspace summary", "is-negative", "regressed");
 }
 
 function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
-  return buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry).replace(
-    'title="workspace summary"',
-    'title="workspace ratio summary"'
-  );
+  const baselineValue = Number(baselineEntry.primary_metric_value || 0);
+  const candidateValue = Number(candidateEntry.primary_metric_value || 0);
+  const metricName = candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "";
+  const deltaValue = candidateValue - baselineValue;
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return buildTitledDirectionTagMarkup("workspace ratio summary", "is-neutral", "steady");
+  }
+  const positive = scalarDeltaIsPositive(metricName, deltaValue);
+  return positive
+    ? buildTitledDirectionTagMarkup("workspace ratio summary", "is-positive", "improved")
+    : buildTitledDirectionTagMarkup("workspace ratio summary", "is-negative", "regressed");
 }
 
 function buildWorkspaceSweepSummaryTag(sweepComparison) {
   if (!sweepComparison || !(sweepComparison.layer_deltas || []).length) {
-    return '<span class="direction-tag is-neutral" title="workspace sweep summary">none</span>';
+    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "none");
   }
   const layerDeltas = sweepComparison.layer_deltas || [];
   const hasRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0);
   const hasNonRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) <= 0);
   if (hasRegressions && hasNonRegressions) {
-    return '<span class="direction-tag is-neutral" title="workspace sweep summary">mixed</span>';
+    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "mixed");
   }
   if (hasRegressions) {
-    return '<span class="direction-tag is-negative" title="workspace sweep summary">candidate regressions</span>';
+    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-negative", "candidate regressions");
   }
-  return '<span class="direction-tag is-neutral" title="workspace sweep summary">none</span>';
+  return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "none");
 }
 
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {

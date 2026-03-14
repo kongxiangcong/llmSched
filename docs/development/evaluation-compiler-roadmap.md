@@ -2530,3 +2530,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Direction Tag Titles Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-direction-tag-titles.md`
+- catalog workspace compare tags now share a dedicated `buildTitledDirectionTagMarkup(title, semanticClass, label)` helper, so summary, ratio, and sweep title attributes no longer depend on brittle string replacement or repeated inline span templates.
+- this slice stays entirely inside the catalog static JS builder and is a pure markup-hardening refactor: it preserves current semantic classes, labels, title strings, payload contracts, and workspace compare layout.
+- new closure evidence:
+  - catalog now exposes `buildTitledDirectionTagMarkup` beside the existing direction-tag helpers
+  - `buildWorkspaceCompareSummaryTag`, `buildWorkspaceCompareRatioSummaryTag`, and `buildWorkspaceSweepSummaryTag` now call the titled helper directly with `workspace summary`, `workspace ratio summary`, and `workspace sweep summary`
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one maintenance gap where workspace summary and ratio tags depended on `.replace(...)` against another helper's emitted markup
+  - one drift risk where future direction-tag template changes could have silently stripped or misplaced workspace-specific title attributes
+  - one generated-asset testing gap where titled workspace direction-tag construction was not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
