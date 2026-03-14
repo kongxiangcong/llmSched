@@ -511,32 +511,37 @@ function buildScalarDeltaDirectionTag(scalarDelta) {
     : '<span class="direction-tag is-negative">regressed</span>';
 }
 
+function buildTitledScalarDeltaDirectionTag(title, scalarDelta) {
+  const deltaValue = Number(scalarDelta.delta_value || 0);
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return buildTitledDirectionTagMarkup(title, "is-neutral", "steady");
+  }
+  const positive = scalarDeltaIsPositive(scalarDelta.metric_name, deltaValue);
+  return positive
+    ? buildTitledDirectionTagMarkup(title, "is-positive", "improved")
+    : buildTitledDirectionTagMarkup(title, "is-negative", "regressed");
+}
+
 function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
   const baselineValue = Number(baselineEntry.primary_metric_value || 0);
   const candidateValue = Number(candidateEntry.primary_metric_value || 0);
-  const metricName = candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "";
-  const deltaValue = candidateValue - baselineValue;
-  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
-    return buildTitledDirectionTagMarkup("workspace summary", "is-neutral", "steady");
-  }
-  const positive = scalarDeltaIsPositive(metricName, deltaValue);
-  return positive
-    ? buildTitledDirectionTagMarkup("workspace summary", "is-positive", "improved")
-    : buildTitledDirectionTagMarkup("workspace summary", "is-negative", "regressed");
+  return buildTitledScalarDeltaDirectionTag("workspace summary", {
+    metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
+    baseline_value: baselineValue,
+    candidate_value: candidateValue,
+    delta_value: candidateValue - baselineValue,
+  });
 }
 
 function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
   const baselineValue = Number(baselineEntry.primary_metric_value || 0);
   const candidateValue = Number(candidateEntry.primary_metric_value || 0);
-  const metricName = candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "";
-  const deltaValue = candidateValue - baselineValue;
-  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
-    return buildTitledDirectionTagMarkup("workspace ratio summary", "is-neutral", "steady");
-  }
-  const positive = scalarDeltaIsPositive(metricName, deltaValue);
-  return positive
-    ? buildTitledDirectionTagMarkup("workspace ratio summary", "is-positive", "improved")
-    : buildTitledDirectionTagMarkup("workspace ratio summary", "is-negative", "regressed");
+  return buildTitledScalarDeltaDirectionTag("workspace ratio summary", {
+    metric_name: candidateEntry.primary_metric_name || baselineEntry.primary_metric_name || "",
+    baseline_value: baselineValue,
+    candidate_value: candidateValue,
+    delta_value: candidateValue - baselineValue,
+  });
 }
 
 function buildWorkspaceSweepSummaryTag(sweepComparison) {
