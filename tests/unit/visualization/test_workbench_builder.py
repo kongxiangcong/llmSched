@@ -92,6 +92,8 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "function scalarDeltaIsPositive" in files["workbench/assets/app.js"]
     assert "scalarDeltaIsPositive(scalarDelta.metric_name, deltaValue)" in files["workbench/assets/app.js"]
     assert "scalarDeltaIsPositive(metricName, deltaValue)" in files["workbench/assets/app.js"]
+    assert "function buildDirectionTagMarkup" in files["workbench/assets/app.js"]
+    assert 'buildDirectionTagMarkup("is-positive", "candidate faster")' in files["workbench/assets/app.js"]
     assert "function buildScalarDeltaDirectionTag" in files["workbench/assets/app.js"]
     assert "buildScalarDeltaDirectionTag(scalarDelta)" in files["workbench/assets/app.js"]
     assert "function renderScalarDeltaGroups" in files["workbench/assets/app.js"]

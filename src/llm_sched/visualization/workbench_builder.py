@@ -681,6 +681,16 @@ function scalarDeltaIsPositive(metricName, deltaValue) {
     : deltaValue < 0;
 }
 
+function buildDirectionTagMarkup(semanticClass, label) {
+  if (semanticClass === "is-positive") {
+    return `<span class="direction-tag is-positive">${label}</span>`;
+  }
+  if (semanticClass === "is-negative") {
+    return `<span class="direction-tag is-negative">${label}</span>`;
+  }
+  return `<span class="direction-tag is-neutral">${label}</span>`;
+}
+
 function buildScalarDeltaDirectionTag(scalarDelta) {
   const deltaValue = Number(scalarDelta.delta_value || 0);
   if (!Number.isFinite(deltaValue) || deltaValue === 0) {
@@ -719,29 +729,29 @@ function buildGroupedScalarDirectionTag(group, scalarDeltas) {
   }
   const deltaValue = Number(leadScalar.delta_value || 0);
   if (!Number.isFinite(deltaValue) || deltaValue === 0) {
-    return '<span class="direction-tag is-neutral">steady</span>';
+    return buildDirectionTagMarkup("is-neutral", "steady");
   }
   const metricName = String(leadScalar.metric_name || "");
   const groupId = String(group.group_id || "");
   if (groupId === "headline" || groupId === "throughput_latency") {
     const faster = scalarDeltaIsPositive(metricName, deltaValue);
     return faster
-      ? '<span class="direction-tag is-positive">candidate faster</span>'
-      : '<span class="direction-tag is-negative">candidate slower</span>';
+      ? buildDirectionTagMarkup("is-positive", "candidate faster")
+      : buildDirectionTagMarkup("is-negative", "candidate slower");
   }
   if (groupId === "memory_pressure") {
     return deltaValue > 0
-      ? '<span class="direction-tag is-negative">pressure up</span>'
-      : '<span class="direction-tag is-positive">pressure down</span>';
+      ? buildDirectionTagMarkup("is-negative", "pressure up")
+      : buildDirectionTagMarkup("is-positive", "pressure down");
   }
   if (groupId === "schedule_shape") {
     return deltaValue > 0
-      ? '<span class="direction-tag is-neutral">schedule shifted up</span>'
-      : '<span class="direction-tag is-neutral">schedule shifted down</span>';
+      ? buildDirectionTagMarkup("is-neutral", "schedule shifted up")
+      : buildDirectionTagMarkup("is-neutral", "schedule shifted down");
   }
   return deltaValue > 0
-    ? '<span class="direction-tag is-neutral">shifted up</span>'
-    : '<span class="direction-tag is-neutral">shifted down</span>';
+    ? buildDirectionTagMarkup("is-neutral", "shifted up")
+    : buildDirectionTagMarkup("is-neutral", "shifted down");
 }
 
 function renderGroupedScalarDeltaSection(group) {

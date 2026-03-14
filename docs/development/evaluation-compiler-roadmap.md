@@ -2512,3 +2512,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Direction Tag Markup Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-direction-tag-markup-helper.md`
+- catalog and workbench grouped compare builders now share a dedicated `buildDirectionTagMarkup(semanticClass, label)` helper, so grouped compare tag branches no longer inline repeated `<span class="direction-tag ...">...</span>` templates.
+- this slice is a pure grouped-tag markup refactor inside the static JS builders: it preserves all current labels, semantic classes, scalar-row tag output, compare payloads, and styles.
+- new closure evidence:
+  - both builders now expose `buildDirectionTagMarkup`
+  - grouped compare tag rendering now routes `steady`, `candidate faster/slower`, `pressure up/down`, `schedule shifted up/down`, and generic `shifted up/down` through the helper
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one grouped-compare maintenance gap where five semantic branches repeated the same direction-tag span template in both catalog and workbench
+  - one drift risk where future grouped tag wording or class edits could have missed one branch even though the HTML shape was identical
+  - one generated-asset testing gap where the grouped tag markup helper itself was not visible directly in emitted apps
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
