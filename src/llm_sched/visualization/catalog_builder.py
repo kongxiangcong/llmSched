@@ -544,20 +544,29 @@ function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
   });
 }
 
-function buildWorkspaceSweepSummaryTag(sweepComparison) {
+function resolveWorkspaceSweepSummaryState(sweepComparison) {
   if (!sweepComparison || !(sweepComparison.layer_deltas || []).length) {
-    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "none");
+    return { semanticClass: "is-neutral", label: "none" };
   }
   const layerDeltas = sweepComparison.layer_deltas || [];
   const hasRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0);
   const hasNonRegressions = layerDeltas.some((layerDelta) => Number(layerDelta.delta_cycles || 0) <= 0);
   if (hasRegressions && hasNonRegressions) {
-    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "mixed");
+    return { semanticClass: "is-neutral", label: "mixed" };
   }
   if (hasRegressions) {
-    return buildTitledDirectionTagMarkup("workspace sweep summary", "is-negative", "candidate regressions");
+    return { semanticClass: "is-negative", label: "candidate regressions" };
   }
-  return buildTitledDirectionTagMarkup("workspace sweep summary", "is-neutral", "none");
+  return { semanticClass: "is-neutral", label: "none" };
+}
+
+function buildWorkspaceSweepSummaryTag(sweepComparison) {
+  const summaryState = resolveWorkspaceSweepSummaryState(sweepComparison);
+  return buildTitledDirectionTagMarkup(
+    "workspace sweep summary",
+    summaryState.semanticClass,
+    summaryState.label,
+  );
 }
 
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {

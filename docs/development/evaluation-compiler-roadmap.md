@@ -2566,3 +2566,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Sweep State Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-sweep-state-helper.md`
+- catalog workspace sweep tags now separate sweep-state detection into `resolveWorkspaceSweepSummaryState(sweepComparison)`, so the titled tag builder no longer owns both state classification and markup emission in one branchy helper.
+- this slice stays entirely inside the catalog static JS builder and is a pure refactor: it preserves the current `workspace sweep summary` title, `none` / `mixed` / `candidate regressions` labels, semantic classes, and workspace compare rendering.
+- new closure evidence:
+  - catalog now exposes `resolveWorkspaceSweepSummaryState` beside the existing workspace summary helpers
+  - `buildWorkspaceSweepSummaryTag` now delegates state classification to that helper and only maps the result through `buildTitledDirectionTagMarkup`
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one cohesion gap where workspace sweep summary logic mixed layer-delta classification and titled tag markup in the same helper
+  - one drift risk where future sweep-state additions could have required touching markup flow instead of extending a dedicated state resolver
+  - one generated-asset testing gap where workspace sweep-state classification was not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
