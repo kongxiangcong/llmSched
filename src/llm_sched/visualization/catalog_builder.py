@@ -572,11 +572,15 @@ function buildWorkspaceSweepSummaryTag(sweepComparison) {
   );
 }
 
+function renderWorkspaceSummaryCell(tagMarkup, contentMarkup) {
+  return `<td>${renderWorkspaceSummaryStack(tagMarkup, contentMarkup)}</td>`;
+}
+
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {
   return `
-    <div class="summary-stack">
-      ${tagMarkup}
-      <div class="summary-stack-value">${contentMarkup}</div>
+      <div class="summary-stack">
+        ${tagMarkup}
+        <div class="summary-stack-value">${contentMarkup}</div>
     </div>
   `;
 }
@@ -1018,32 +1022,32 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           const workspaceSummaryTag = buildWorkspaceCompareSummaryTag(baselineEntry, entry);
           const workspaceRatioSummaryTag = buildWorkspaceCompareRatioSummaryTag(baselineEntry, entry);
           const workspaceSweepSummaryTag = buildWorkspaceSweepSummaryTag(sweepComparison);
-          return `
-            <tr>
-              <td>${entry.run_id}</td>
-              <td>${entry.schedule_kind}</td>
-              <td>${entry.target_profile_name}</td>
-              <td>${entry.primary_metric_name}</td>
-              <td>${renderWorkspaceSummaryStack(
-                workspaceSummaryTag,
-                sameMetric ? formatMetricDelta(delta) : "metric mismatch"
-              )}</td>
-              <td>${renderWorkspaceSummaryStack(
-                workspaceRatioSummaryTag,
-                sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"
-              )}</td>
-              <td>${renderWorkspaceSummaryStack(
-                workspaceSummaryTag,
-                buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
-              )}</td>
-              <td>${renderWorkspaceSummaryStack(
-                workspaceSweepSummaryTag,
-                `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}`
-              )}</td>
-              <td>${buildComparePanelLinks(entry)}</td>
-            </tr>
-          `;
-        }).join("")}
+            return `
+              <tr>
+                <td>${entry.run_id}</td>
+                <td>${entry.schedule_kind}</td>
+                <td>${entry.target_profile_name}</td>
+                <td>${entry.primary_metric_name}</td>
+                ${renderWorkspaceSummaryCell(
+                  workspaceSummaryTag,
+                  sameMetric ? formatMetricDelta(delta) : "metric mismatch"
+                )}
+                ${renderWorkspaceSummaryCell(
+                  workspaceRatioSummaryTag,
+                  sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"
+                )}
+                ${renderWorkspaceSummaryCell(
+                  workspaceSummaryTag,
+                  buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
+                )}
+                ${renderWorkspaceSummaryCell(
+                  workspaceSweepSummaryTag,
+                  `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}`
+                )}
+                <td>${buildComparePanelLinks(entry)}</td>
+              </tr>
+            `;
+          }).join("")}
       </tbody>
     </table>
   `;

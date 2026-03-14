@@ -2602,3 +2602,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Summary Cell Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-summary-cell-helper.md`
+- catalog workspace compare rows now share `renderWorkspaceSummaryCell(tagMarkup, contentMarkup)`, so the four summary-oriented columns no longer repeat local `<td>${renderWorkspaceSummaryStack(...)}</td>` wrappers around otherwise identical stack markup.
+- this slice stays entirely inside the catalog static JS builder and is a pure rendering refactor: it preserves current summary tags, inner content, links, table columns, and summary-stack markup.
+- new closure evidence:
+  - catalog now exposes `renderWorkspaceSummaryCell` above the existing `renderWorkspaceSummaryStack`
+  - `buildWorkspaceCompareRows` now routes `Primary Delta`, `Primary Ratio`, `Shared Metric Deltas`, and `Sweep Layer Deltas` through the new cell helper
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one cell-level duplication gap where four workspace compare columns still repeated the same table-cell wrapper even after their inner stack markup had been unified
+  - one drift risk where future summary-cell wrapper changes could have updated some columns but missed others
+  - one generated-asset testing gap where the cell-level workspace summary primitive was not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
