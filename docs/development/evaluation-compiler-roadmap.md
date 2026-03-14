@@ -2386,3 +2386,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Compare Row Tag Semantics Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-compare-row-tag-semantics.md`
+- compare summary fallback rows in both catalog and workbench now prepend the same semantic `direction-tag` treatment used by grouped compare sections, so highlighted scalar shifts, all-scalar details, and shared summary metric rows all expose consistent `improved` / `regressed` / `steady` cues.
+- this slice stays entirely inside the static visualization builders and derives row semantics from existing metric names plus delta direction, without changing sweep compare contracts, report payloads, or persisted UI state.
+- new closure evidence:
+  - catalog `buildSharedMetricDeltaRows` now wraps each shared summary row with the new scalar compare-row semantic tag helper
+  - catalog/workbench scalar-delta list renderers now emit direct semantic tag literals ahead of fallback highlighted rows and full scalar-detail rows
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one `SPEC-19` compare consistency gap where grouped compare rows used semantic tags but highlighted fallback rows and shared metric rows still relied on raw numbers alone
+  - one scanability gap where users had to infer whether a compare row was beneficial or harmful from metric sign without any visual cue
+  - one generated-asset testing gap where non-grouped compare semantics were not visible directly in emitted `app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

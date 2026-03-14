@@ -444,10 +444,17 @@ function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
     const candidateValue = Number(candidateMetrics[name]);
     const delta = candidateValue - baselineValue;
     const ratio = baselineValue !== 0 ? candidateValue / baselineValue : null;
+    const scalarDelta = {
+      metric_name: name,
+      baseline_value: baselineValue,
+      candidate_value: candidateValue,
+      delta_value: delta,
+    };
     return `
       <li>
         <span>${name}</span>
         <div class="metric-detail-values">
+          ${buildScalarDeltaDirectionTag(scalarDelta)}
           <strong>${formatMetricDelta(delta)}</strong>
           <em>${ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</em>
         </div>
@@ -456,11 +463,36 @@ function buildSharedMetricDeltaRows(baselineEntry, candidateEntry) {
   }).join("")}</ul>`;
 }
 
+function metricImprovesWhenHigher(metricName) {
+  const normalized = String(metricName || "").toLowerCase();
+  return (
+    normalized.includes("tokens_per_cycle")
+    || normalized.includes("bytes_per_cycle")
+    || normalized.includes("tokens_per_second")
+    || normalized.includes("bytes_per_second")
+    || normalized.includes("throughput")
+  );
+}
+
+function buildScalarDeltaDirectionTag(scalarDelta) {
+  const deltaValue = Number(scalarDelta.delta_value || 0);
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return '<span class="direction-tag is-neutral">steady</span>';
+  }
+  const positive = metricImprovesWhenHigher(scalarDelta.metric_name)
+    ? deltaValue > 0
+    : deltaValue < 0;
+  return positive
+    ? '<span class="direction-tag is-positive">improved</span>'
+    : '<span class="direction-tag is-negative">regressed</span>';
+}
+
 function renderScalarDeltaListItems(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
         <span>${scalarDelta.metric_name}</span>
         <div class="metric-detail-values">
+          ${buildScalarDeltaDirectionTag(scalarDelta)}
           <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
           <em>${formatMetricValue(scalarDelta.baseline_value)} -> ${formatMetricValue(scalarDelta.candidate_value)}</em>
         </div>

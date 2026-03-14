@@ -656,11 +656,36 @@ function renderScalarDeltaRows(scalarDeltas) {
       <li>
         <span>${scalarDelta.metric_name}</span>
         <div class="metric-detail-values">
+          ${buildScalarDeltaDirectionTag(scalarDelta)}
           <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
           <em>${formatNumber(scalarDelta.baseline_value)} -> ${formatNumber(scalarDelta.candidate_value)}</em>
         </div>
       </li>
     `).join("");
+}
+
+function metricImprovesWhenHigher(metricName) {
+  const normalized = String(metricName || "").toLowerCase();
+  return (
+    normalized.includes("tokens_per_cycle")
+    || normalized.includes("bytes_per_cycle")
+    || normalized.includes("tokens_per_second")
+    || normalized.includes("bytes_per_second")
+    || normalized.includes("throughput")
+  );
+}
+
+function buildScalarDeltaDirectionTag(scalarDelta) {
+  const deltaValue = Number(scalarDelta.delta_value || 0);
+  if (!Number.isFinite(deltaValue) || deltaValue === 0) {
+    return '<span class="direction-tag is-neutral">steady</span>';
+  }
+  const positive = metricImprovesWhenHigher(scalarDelta.metric_name)
+    ? deltaValue > 0
+    : deltaValue < 0;
+  return positive
+    ? '<span class="direction-tag is-positive">improved</span>'
+    : '<span class="direction-tag is-negative">regressed</span>';
 }
 
 function hasScalarDeltaGroups(compareSummary) {
