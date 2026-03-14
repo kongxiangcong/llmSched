@@ -572,6 +572,22 @@ function buildWorkspaceSweepSummaryTag(sweepComparison) {
   );
 }
 
+function resolveWorkspaceCompareRowState(baselineEntry, candidateEntry) {
+  const sameMetric = candidateEntry.primary_metric_name === baselineEntry.primary_metric_name;
+  const delta = candidateEntry.primary_metric_value - baselineEntry.primary_metric_value;
+  const ratio = baselineEntry.primary_metric_value !== 0 ? candidateEntry.primary_metric_value / baselineEntry.primary_metric_value : null;
+  const sweepComparison = resolveSweepComparison(baselineEntry, candidateEntry);
+  return {
+    sameMetric,
+    delta,
+    ratio,
+    sweepComparison,
+    workspaceSummaryTag: buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry),
+    workspaceRatioSummaryTag: buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry),
+    workspaceSweepSummaryTag: buildWorkspaceSweepSummaryTag(sweepComparison),
+  };
+}
+
 function renderWorkspaceSummaryCell(tagMarkup, contentMarkup) {
   return `<td>${renderWorkspaceSummaryStack(tagMarkup, contentMarkup)}</td>`;
 }
@@ -1027,13 +1043,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
       </thead>
       <tbody>
         ${candidates.map((entry) => {
-          const sameMetric = entry.primary_metric_name === baselineEntry.primary_metric_name;
-          const delta = entry.primary_metric_value - baselineEntry.primary_metric_value;
-          const ratio = baselineEntry.primary_metric_value !== 0 ? entry.primary_metric_value / baselineEntry.primary_metric_value : null;
-          const sweepComparison = resolveSweepComparison(baselineEntry, entry);
-          const workspaceSummaryTag = buildWorkspaceCompareSummaryTag(baselineEntry, entry);
-          const workspaceRatioSummaryTag = buildWorkspaceCompareRatioSummaryTag(baselineEntry, entry);
-          const workspaceSweepSummaryTag = buildWorkspaceSweepSummaryTag(sweepComparison);
+          const rowState = resolveWorkspaceCompareRowState(baselineEntry, entry);
             return `
               <tr>
                 <td>${entry.run_id}</td>
@@ -1041,20 +1051,20 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 <td>${entry.target_profile_name}</td>
                 <td>${entry.primary_metric_name}</td>
                 ${renderWorkspaceSummaryCell(
-                  workspaceSummaryTag,
-                  buildWorkspacePrimaryDeltaContent(sameMetric, delta)
+                  rowState.workspaceSummaryTag,
+                  buildWorkspacePrimaryDeltaContent(rowState.sameMetric, rowState.delta)
                 )}
                 ${renderWorkspaceSummaryCell(
-                  workspaceRatioSummaryTag,
-                  buildWorkspacePrimaryRatioContent(sameMetric, ratio)
+                  rowState.workspaceRatioSummaryTag,
+                  buildWorkspacePrimaryRatioContent(rowState.sameMetric, rowState.ratio)
                 )}
                 ${renderWorkspaceSummaryCell(
-                  workspaceSummaryTag,
-                  buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
+                  rowState.workspaceSummaryTag,
+                  buildMatchedCompareSummaryRows(baselineEntry, entry, rowState.sweepComparison)
                 )}
                 ${renderWorkspaceSummaryCell(
-                  workspaceSweepSummaryTag,
-                  buildWorkspaceSweepSummaryContent(baselineEntry, entry, sweepComparison)
+                  rowState.workspaceSweepSummaryTag,
+                  buildWorkspaceSweepSummaryContent(baselineEntry, entry, rowState.sweepComparison)
                 )}
                 <td>${buildComparePanelLinks(entry)}</td>
               </tr>
