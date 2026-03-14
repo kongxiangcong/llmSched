@@ -498,6 +498,13 @@ function buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry) {
   }).replace("<span ", '<span title="workspace summary" ');
 }
 
+function buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry) {
+  return buildWorkspaceCompareSummaryTag(baselineEntry, candidateEntry).replace(
+    'title="workspace summary"',
+    'title="workspace ratio summary"'
+  );
+}
+
 function renderScalarDeltaListItems(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
@@ -937,6 +944,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
           const ratio = baselineEntry.primary_metric_value !== 0 ? entry.primary_metric_value / baselineEntry.primary_metric_value : null;
           const sweepComparison = resolveSweepComparison(baselineEntry, entry);
           const workspaceSummaryTag = buildWorkspaceCompareSummaryTag(baselineEntry, entry);
+          const workspaceRatioSummaryTag = buildWorkspaceCompareRatioSummaryTag(baselineEntry, entry);
           return `
             <tr>
               <td>${entry.run_id}</td>
@@ -947,7 +955,10 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 ${workspaceSummaryTag}
                 <div>${sameMetric ? formatMetricDelta(delta) : "metric mismatch"}</div>
               </td>
-              <td>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</td>
+              <td>
+                ${workspaceRatioSummaryTag}
+                <div>${sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"}</div>
+              </td>
               <td>${workspaceSummaryTag}${buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, entry)}${renderSweepLayerDeltaRows(baselineEntry, entry, sweepComparison)}</td>
               <td>${buildComparePanelLinks(entry)}</td>

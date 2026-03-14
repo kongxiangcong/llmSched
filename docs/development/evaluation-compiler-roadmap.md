@@ -2422,3 +2422,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Ratio Summary Tags Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-ratio-summary-tags.md`
+- catalog compare workspace `Primary Ratio` cells now prepend ratio-specific semantic summary tags, so users can read both compare direction and ratio magnitude in one scan line instead of mentally joining the ratio column with the delta column.
+- this slice stays entirely inside the catalog static builder and reuses the existing workspace compare semantic mapping, while exposing a dedicated ratio helper so future ratio-column tuning remains isolated from the rest of the compare table.
+- new closure evidence:
+  - catalog `buildWorkspaceCompareRatioSummaryTag` now emits ratio-specific semantic tags by reusing the existing workspace compare summary semantics
+  - workspace compare table rows now render the ratio helper directly in the `Primary Ratio` cell ahead of the ratio value or `n/a` fallback
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one workspace scanability gap where users could see the ratio magnitude but still had to cross-reference another column to recover the semantic direction
+  - one overview-table consistency gap where delta and shared-metric cells already exposed semantic tags but the ratio column remained plain text
+  - one generated-asset testing gap where ratio-column semantic tagging was not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
