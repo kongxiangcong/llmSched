@@ -65,6 +65,34 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                                     "delta_ratio": 0.3333333344,
                                 },
                             ],
+                            "scalar_delta_groups": [
+                                {
+                                    "group_id": "headline",
+                                    "title": "Headline",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "estimated_cycles",
+                                            "baseline_value": 4096.0,
+                                            "candidate_value": 3072.0,
+                                            "delta_value": -1024.0,
+                                            "delta_ratio": -0.25,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "throughput_latency",
+                                    "title": "Throughput / Latency",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "tokens_per_cycle",
+                                            "baseline_value": 0.03125,
+                                            "candidate_value": 0.0416666667,
+                                            "delta_value": 0.0104166667,
+                                            "delta_ratio": 0.3333333344,
+                                        }
+                                    ],
+                                },
+                            ],
                         },
                         "layer_deltas": [
                             {
@@ -198,6 +226,10 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "profile_diff_fields" in files["catalog/assets/app.js"]
     assert "highlighted_scalar_deltas" in files["catalog/assets/app.js"]
     assert "Highlighted Metric Shifts" in files["catalog/assets/app.js"]
+    assert "scalar_delta_groups" in files["catalog/assets/app.js"]
+    assert "function renderScalarDeltaGroups" in files["catalog/assets/app.js"]
+    assert "Headline" in files["catalog/assets/app.js"]
+    assert "Throughput / Latency" in files["catalog/assets/app.js"]
     assert "scalar_deltas" in files["catalog/assets/app.js"]
     assert "layer_deltas" in files["catalog/assets/app.js"]
     assert "Workspace Compare" in files["catalog/index.html"]

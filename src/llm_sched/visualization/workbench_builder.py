@@ -662,20 +662,46 @@ function renderScalarDeltaRows(scalarDeltas) {
     `).join("");
 }
 
+function hasScalarDeltaGroups(compareSummary) {
+  return (compareSummary.scalar_delta_groups || []).some(
+    (group) => (group.scalar_deltas || []).length
+  );
+}
+
+function renderScalarDeltaGroups(compareSummary) {
+  return (compareSummary.scalar_delta_groups || [])
+    .filter((group) => (group.scalar_deltas || []).length)
+    .map((group) => `
+      <section class="compare-summary-group">
+        <p class="muted">${group.title || group.group_id}</p>
+        <ul class="metric-detail-list">${renderScalarDeltaRows(group.scalar_deltas || [])}</ul>
+      </section>
+    `)
+    .join("");
+}
+
 function renderSweepCompareSummary(compareSummary, metricDeltas) {
   if (
     compareSummary
     && (
+      hasScalarDeltaGroups(compareSummary)
+      || (
       (compareSummary.highlighted_scalar_deltas || []).length
       || (compareSummary.scalar_deltas || []).length
+      )
     )
   ) {
     const scheduleSummary = `${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}`;
     const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
     const highlightedRows = compareSummary.highlighted_scalar_deltas || [];
     const scalarRows = compareSummary.scalar_deltas || [];
+    const groupedRows = hasScalarDeltaGroups(compareSummary)
+      ? renderScalarDeltaGroups(compareSummary)
+      : "";
     const visibleRows = highlightedRows.length ? highlightedRows : scalarRows;
-    const fullScalarDetails = highlightedRows.length && scalarRows.length > highlightedRows.length
+    const fullScalarDetails = scalarRows.length && (
+      groupedRows || (highlightedRows.length && scalarRows.length > highlightedRows.length)
+    )
       ? `
         <details class="compare-summary-details">
           <summary>All Scalar Deltas</summary>
@@ -687,8 +713,10 @@ function renderSweepCompareSummary(compareSummary, metricDeltas) {
       <div class="compare-summary-block">
         <p class="muted">Schedule: ${scheduleSummary}</p>
         ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
-        ${highlightedRows.length ? `<p class="muted">Highlighted Metric Shifts</p>` : ""}
-        <ul class="metric-detail-list">${renderScalarDeltaRows(visibleRows)}</ul>
+        ${groupedRows || `
+          ${highlightedRows.length ? `<p class="muted">Highlighted Metric Shifts</p>` : ""}
+          <ul class="metric-detail-list">${renderScalarDeltaRows(visibleRows)}</ul>
+        `}
         ${fullScalarDetails}
       </div>
     `;

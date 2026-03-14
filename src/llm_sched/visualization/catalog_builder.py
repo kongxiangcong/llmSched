@@ -467,6 +467,24 @@ function renderScalarDeltaListItems(scalarDeltas) {
     `).join("");
 }
 
+function hasScalarDeltaGroups(compareSummary) {
+  return (compareSummary.scalar_delta_groups || []).some(
+    (group) => (group.scalar_deltas || []).length
+  );
+}
+
+function renderScalarDeltaGroups(compareSummary) {
+  return (compareSummary.scalar_delta_groups || [])
+    .filter((group) => (group.scalar_deltas || []).length)
+    .map((group) => `
+      <section class="compare-summary-group">
+        <p class="muted">${group.title || group.group_id}</p>
+        <ul class="metric-detail-list">${renderScalarDeltaListItems(group.scalar_deltas || [])}</ul>
+      </section>
+    `)
+    .join("");
+}
+
 function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison) {
   if (!sweepComparison || !sweepComparison.compare_summary) {
     return buildSharedMetricDeltaRows(baselineEntry, candidateEntry);
@@ -475,11 +493,16 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
   const diffFields = (compareSummary.profile_diff_fields || []).join(", ");
   const highlightedRows = compareSummary.highlighted_scalar_deltas || [];
   const scalarRows = compareSummary.scalar_deltas || [];
+  const groupedRows = hasScalarDeltaGroups(compareSummary)
+    ? renderScalarDeltaGroups(compareSummary)
+    : "";
   const visibleRows = highlightedRows.length ? highlightedRows : scalarRows;
-  if (!visibleRows.length) {
+  if (!groupedRows && !visibleRows.length) {
     return '<p class="empty">No matched Phase D compare summary rows.</p>';
   }
-  const fullScalarDetails = highlightedRows.length && scalarRows.length > highlightedRows.length
+  const fullScalarDetails = scalarRows.length && (
+    groupedRows || (highlightedRows.length && scalarRows.length > highlightedRows.length)
+  )
     ? `
       <details class="compare-summary-details">
         <summary>All Scalar Deltas</summary>
@@ -490,8 +513,10 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
   return `
     <p class="muted">Schedule: ${compareSummary.baseline_schedule_kind} -> ${compareSummary.candidate_schedule_kind}</p>
     ${diffFields ? `<p class="muted">Profile Diff Fields: ${diffFields}</p>` : ""}
-    ${highlightedRows.length ? '<p class="muted">Highlighted Metric Shifts</p>' : ""}
-    <ul class="metric-detail-list">${renderScalarDeltaListItems(visibleRows)}</ul>
+    ${groupedRows || `
+      ${highlightedRows.length ? '<p class="muted">Highlighted Metric Shifts</p>' : ""}
+      <ul class="metric-detail-list">${renderScalarDeltaListItems(visibleRows)}</ul>
+    `}
     ${fullScalarDetails}
   `;
 }
@@ -602,16 +627,24 @@ function renderSweepComparisonSummary(sweepComparison) {
   if (!sweepComparison) {
     return '<p class="muted">No matched sweep compare summary.</p>';
   }
-  const metricRows = sweepComparison.compare_summary && (
-    (sweepComparison.compare_summary.highlighted_scalar_deltas || []).length
-    || (sweepComparison.compare_summary.scalar_deltas || []).length
-  )
-    ? (
-      (sweepComparison.compare_summary.highlighted_scalar_deltas || []).length
-        ? (sweepComparison.compare_summary.highlighted_scalar_deltas || [])
-        : (sweepComparison.compare_summary.scalar_deltas || [])
-    ).map((scalarDelta) => [scalarDelta.metric_name, scalarDelta.delta_value])
-    : Object.entries(sweepComparison.metric_deltas || {});
+  const compareSummary = sweepComparison.compare_summary;
+  const metricRows = compareSummary && hasScalarDeltaGroups(compareSummary)
+    ? (compareSummary.scalar_delta_groups || [])
+        .filter((group) => (group.scalar_deltas || []).length)
+        .map((group) => {
+          const scalarDelta = (group.scalar_deltas || [])[0];
+          return [`${group.title || group.group_id}: ${scalarDelta.metric_name}`, scalarDelta.delta_value];
+        })
+    : compareSummary && (
+      (compareSummary.highlighted_scalar_deltas || []).length
+      || (compareSummary.scalar_deltas || []).length
+    )
+      ? (
+        (compareSummary.highlighted_scalar_deltas || []).length
+          ? (compareSummary.highlighted_scalar_deltas || [])
+          : (compareSummary.scalar_deltas || [])
+      ).map((scalarDelta) => [scalarDelta.metric_name, scalarDelta.delta_value])
+      : Object.entries(sweepComparison.metric_deltas || {});
   if (!metricRows.length) {
     return '<p class="muted">No matched sweep metric deltas.</p>';
   }

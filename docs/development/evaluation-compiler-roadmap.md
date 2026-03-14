@@ -270,6 +270,12 @@ graph TD
   - `schedule_shape`
 - The grouping is built entirely from existing `PhaseDCompareReport` scalar rows; this slice does not add new estimator math or reopen upstream compare contracts.
 - `VisualizationBundle` and `VisualizationCatalogArtifact` now carry the same grouped compare surface so static workbench/catalog consumers can evolve toward richer multi-metric compare views without breaking current summary-grade consumers.
+
+## 2026-03-14 SPEC-16 Grouped Compare UI Checkpoint
+
+- `SPEC-19` static catalog compare tray/workspace and workbench sweep panel now prefer rendering `scalar_delta_groups` when present.
+- Grouped compare sections are shown directly in the UI, while legacy highlight-only rendering and `All Scalar Deltas` disclosure remain as fallback/compatibility paths.
+- This closes the first end-to-end loop from `PhaseDCompareReport` grouped scalar rows through visualization bundle/catalog packaging into static compare-facing UI consumption.
   - final address-width / field-width encoding validation
   - final binary descriptor packer
 

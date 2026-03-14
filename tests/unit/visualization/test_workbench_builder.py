@@ -88,6 +88,9 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "profile_diff_fields" in files["workbench/assets/app.js"]
     assert "highlighted_scalar_deltas" in files["workbench/assets/app.js"]
     assert "Highlighted Metric Shifts" in files["workbench/assets/app.js"]
+    assert "scalar_delta_groups" in files["workbench/assets/app.js"]
+    assert "function renderScalarDeltaGroups" in files["workbench/assets/app.js"]
+    assert "group.title || group.group_id" in files["workbench/assets/app.js"]
     assert "scalar_deltas" in files["workbench/assets/app.js"]
     assert "function buildSweepExportData" in files["workbench/assets/app.js"]
     assert "function buildSweepSnapshotMetadata" in files["workbench/assets/app.js"]
@@ -329,18 +332,46 @@ def _bundle(*, include_sweep: bool) -> object:
                                         "delta_value": -1024.0,
                                         "delta_ratio": -0.25,
                                     },
-                                    {
-                                        "metric_name": "tokens_per_cycle",
-                                        "baseline_value": 0.03125,
-                                        "candidate_value": 0.0416666667,
-                                        "delta_value": 0.0104166667,
-                                        "delta_ratio": 0.3333333344,
-                                    },
-                                ],
-                            },
-                            "layer_deltas": [
                                 {
-                                    "layer_id": 0,
+                                    "metric_name": "tokens_per_cycle",
+                                    "baseline_value": 0.03125,
+                                    "candidate_value": 0.0416666667,
+                                    "delta_value": 0.0104166667,
+                                    "delta_ratio": 0.3333333344,
+                                },
+                            ],
+                            "scalar_delta_groups": [
+                                {
+                                    "group_id": "headline",
+                                    "title": "Headline",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "estimated_cycles",
+                                            "baseline_value": 4096.0,
+                                            "candidate_value": 3072.0,
+                                            "delta_value": -1024.0,
+                                            "delta_ratio": -0.25,
+                                        }
+                                    ],
+                                },
+                                {
+                                    "group_id": "throughput_latency",
+                                    "title": "Throughput / Latency",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "tokens_per_cycle",
+                                            "baseline_value": 0.03125,
+                                            "candidate_value": 0.0416666667,
+                                            "delta_value": 0.0104166667,
+                                            "delta_ratio": 0.3333333344,
+                                        }
+                                    ],
+                                },
+                            ],
+                        },
+                        "layer_deltas": [
+                            {
+                                "layer_id": 0,
                                     "baseline_cycles": 2048.0,
                                     "candidate_cycles": 1536.0,
                                     "delta_cycles": -512.0,
