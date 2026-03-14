@@ -2638,3 +2638,21 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-14 SPEC-16 Workspace Primary Content Helper Checkpoint
+
+- plan doc: `../plans/2026-03-14-spec-16-workspace-primary-content-helper.md`
+- catalog workspace compare rows now share `buildWorkspacePrimaryDeltaContent(sameMetric, deltaValue)` and `buildWorkspacePrimaryRatioContent(sameMetric, ratioValue)`, so the `Primary Delta` and `Primary Ratio` cells no longer inline their fallback-versus-formatted text selection inside `buildWorkspaceCompareRows`.
+- this slice stays entirely inside the catalog static JS builder and is a pure rendering refactor: it preserves `metric mismatch`, `n/a`, formatted delta text, formatted ratio text, summary tags, and table layout.
+- new closure evidence:
+  - catalog now exposes dedicated helpers for workspace primary delta and ratio cell content
+  - `buildWorkspaceCompareRows` now routes both primary summary cells through those helpers instead of embedding the selection logic inline
+  - focused visualization verification remains green (`18 passed`) across catalog/workbench builder tests plus visualization packaging workflow coverage
+- what this closes:
+  - one local content-selection gap where workspace primary delta and ratio cells still embedded fallback-string branching directly in the row builder
+  - one drift risk where future wording updates for `metric mismatch` or `n/a` could have changed one primary cell but missed the other
+  - one generated-asset testing gap where the primary content helpers themselves were not visible directly in emitted `catalog/assets/app.js`
+- what still remains for `M3`:
+  - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
+  - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
+  - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts

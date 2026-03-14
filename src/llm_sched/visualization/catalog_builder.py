@@ -580,6 +580,14 @@ function buildWorkspaceSweepSummaryContent(baselineEntry, candidateEntry, sweepC
   return `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}`;
 }
 
+function buildWorkspacePrimaryDeltaContent(sameMetric, deltaValue) {
+  return sameMetric ? formatMetricDelta(deltaValue) : "metric mismatch";
+}
+
+function buildWorkspacePrimaryRatioContent(sameMetric, ratioValue) {
+  return sameMetric && ratioValue !== null ? `${ratioValue.toFixed(3)}x` : "n/a";
+}
+
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {
   return `
       <div class="summary-stack">
@@ -1034,11 +1042,11 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 <td>${entry.primary_metric_name}</td>
                 ${renderWorkspaceSummaryCell(
                   workspaceSummaryTag,
-                  sameMetric ? formatMetricDelta(delta) : "metric mismatch"
+                  buildWorkspacePrimaryDeltaContent(sameMetric, delta)
                 )}
                 ${renderWorkspaceSummaryCell(
                   workspaceRatioSummaryTag,
-                  sameMetric && ratio !== null ? `${ratio.toFixed(3)}x` : "n/a"
+                  buildWorkspacePrimaryRatioContent(sameMetric, ratio)
                 )}
                 ${renderWorkspaceSummaryCell(
                   workspaceSummaryTag,
