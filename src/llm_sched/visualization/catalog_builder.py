@@ -373,6 +373,7 @@ function buildComparePanelLinks(entry) {
 }
 
 const MAX_SWEEP_LAYER_DELTA_ROWS = 3;
+const MAX_GROUPED_COMPARE_ROWS = 3;
 
 function formatMetricValue(value) {
   const numeric = Number(value);
@@ -473,15 +474,34 @@ function hasScalarDeltaGroups(compareSummary) {
   );
 }
 
+function renderGroupedScalarDeltaSection(group) {
+  const scalarDeltas = group.scalar_deltas || [];
+  if (!scalarDeltas.length) {
+    return "";
+  }
+  const visibleRows = scalarDeltas.slice(0, MAX_GROUPED_COMPARE_ROWS);
+  const hiddenRows = scalarDeltas.slice(MAX_GROUPED_COMPARE_ROWS);
+  const overflowDetails = hiddenRows.length
+    ? `
+      <details class="compare-summary-details">
+        <summary>Show all ${scalarDeltas.length} metrics</summary>
+        <ul class="metric-detail-list">${renderScalarDeltaListItems(hiddenRows)}</ul>
+      </details>
+    `
+    : "";
+  return `
+      <section class="compare-summary-group">
+        <p class="muted">${group.title || group.group_id}</p>
+        <ul class="metric-detail-list">${renderScalarDeltaListItems(visibleRows)}</ul>
+        ${overflowDetails}
+      </section>
+    `;
+}
+
 function renderScalarDeltaGroups(compareSummary) {
   return (compareSummary.scalar_delta_groups || [])
     .filter((group) => (group.scalar_deltas || []).length)
-    .map((group) => `
-      <section class="compare-summary-group">
-        <p class="muted">${group.title || group.group_id}</p>
-        <ul class="metric-detail-list">${renderScalarDeltaListItems(group.scalar_deltas || [])}</ul>
-      </section>
-    `)
+    .map((group) => renderGroupedScalarDeltaSection(group))
     .join("");
 }
 
@@ -1124,6 +1144,14 @@ def _build_styles_css() -> str:
   display: grid;
   justify-items: end;
   gap: 2px;
+}
+
+.compare-summary-group + .compare-summary-group {
+  margin-top: 12px;
+}
+
+.compare-summary-group .compare-summary-details {
+  margin-top: 8px;
 }
 
 .metric-detail-values em {

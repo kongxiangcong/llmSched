@@ -276,6 +276,12 @@ graph TD
 - `SPEC-19` static catalog compare tray/workspace and workbench sweep panel now prefer rendering `scalar_delta_groups` when present.
 - Grouped compare sections are shown directly in the UI, while legacy highlight-only rendering and `All Scalar Deltas` disclosure remain as fallback/compatibility paths.
 - This closes the first end-to-end loop from `PhaseDCompareReport` grouped scalar rows through visualization bundle/catalog packaging into static compare-facing UI consumption.
+
+## 2026-03-14 SPEC-16 Compact Grouped Compare Checkpoint
+
+- grouped compare sections in the static catalog/workbench UI now render a compact top-N subset by default and use native `<details>` expansion for overflow rows.
+- this keeps compare panels readable as grouped sections grow, without introducing extra browser state, new contracts, or URL-persisted UI controls.
+- the flat `All Scalar Deltas` disclosure remains available as the compatibility/full-detail path beneath grouped compare rendering.
   - final address-width / field-width encoding validation
   - final binary descriptor packer
 
