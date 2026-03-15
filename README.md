@@ -162,3 +162,54 @@ python -m pytest tests/smoke -m milestone_matrix -q
 - `docs/development/evaluation-compiler-roadmap.md`
 - `docs/development/test-strategy-and-run-modes.md`
 - `docs/development/mainline-test-recommendations.md`
+
+## Progress Records And Start-Here Rules
+
+Read these in order before starting new development work:
+
+1. `README.md`
+2. `docs/development/evaluation-compiler-roadmap.md`
+3. the active execution plan in `docs/plans/`
+
+Current active execution plan:
+
+- `docs/plans/2026-03-14-phase-d-m3-closure-followup.md`
+
+Canonical documentation roles:
+
+- `docs/development/evaluation-compiler-roadmap.md`
+  - the only project-status source for phase/spec state, audit checkpoints, priority order, and current blockers
+- `docs/plans/*.md`
+  - execution queues for one concrete slice or closure track
+- `docs/development/phase-*-handoff.md`
+  - stable contract and handoff boundaries
+- `docs/development/evaluation-compiler-spec-pack.md`
+  - spec definition only, not a progress log
+
+Update rules after each work slice:
+
+- if a change only refactors implementation details or completes a local helper extraction, update the active plan doc if needed, but do not create a second project-status summary
+- if a change alters current status, verification reality, blockers, or execution priority, update `docs/development/evaluation-compiler-roadmap.md`
+- if a change alters a stable contract or handoff boundary, update the relevant `docs/development/phase-*-handoff.md`
+- if a change starts a new multi-step execution slice, add a new dated plan doc under `docs/plans/`
+
+## 2026-03-14 Audited Status
+
+Fresh verification evidence on 2026-03-14:
+
+- `python -m pytest -q` -> `408 passed, 11 failed`
+- `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+- `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+
+Current working interpretation:
+
+- accepted smoke scope is stable enough to keep producing canonical-path artifacts
+- full-repository regression is not closed yet
+- main priority remains `P0: close M3`
+- `SPEC-19` stays `P1` hardening unless it directly helps close `M3`
+
+Current execution order:
+
+1. Restore the 11 failing full-regression checks.
+2. Continue `SPEC-13 -> SPEC-14/15 -> SPEC-16` in roadmap order.
+3. Resume `SPEC-19` hardening only after the `M3` path is back under control.

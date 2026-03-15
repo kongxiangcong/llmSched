@@ -63,6 +63,15 @@ def test_phase_d_decode_foundation_matrix(
     assert report["kv_len"] == 2048
     assert report["sdpa_decode_present"] is True
     assert report["token_latency"]["estimated_cycles"] > 0.0
+    assert report["token_latency"]["fitted_work_cycles"] >= report["token_latency"]["estimated_cycles"]
+    assert report["token_latency"]["kv_io_fitted_work_cycles"] >= 0.0
+    assert report["kv_summary"]["kv_related_fitted_work_cycle_share"] >= 0.0
     assert "memory_hotspot" in report
     assert report["memory_hotspot"]["hottest_region_utilization"] >= 0.0
     assert report["macro_hotspots"]
+    assert report["node_hotspots"]
+    assert report["node_hotspots"][0]["fitted_work_cycles"] >= report["node_hotspots"][0]["estimated_cycles"]
+    assert report["node_hotspots"][0]["fitted_cycle_share"] >= 0.0
+    assert report["layer_breakdown"]
+    assert report["layer_breakdown"][0]["fitted_work_cycles"] >= report["layer_breakdown"][0]["estimated_cycles"]
+    assert report["layer_breakdown"][0]["fitted_cycle_share"] >= 0.0

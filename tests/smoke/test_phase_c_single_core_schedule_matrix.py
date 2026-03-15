@@ -62,12 +62,11 @@ def test_phase_c_single_core_schedule_matrix(
     if expected_mode == "prefill":
         compute_blocks = [block for block in blocks if block["stage"] == "compute"]
         assert compute_blocks
-        assert any(block["macro_op"] in {"WDQ_GEMM", "RMSNORM_GEMM"} for block in compute_blocks)
-        untiled_compute_blocks = [
-            block for block in compute_blocks if block["macro_op"] in {"RMSNORM", "ELEM_ADD"}
-        ]
-        assert untiled_compute_blocks
-        assert all(block["tiling_candidate_id"] is None for block in untiled_compute_blocks)
+        assert any(block["macro_op"] == "WDQ_GEMM" for block in compute_blocks)
+        assert any(block["macro_op"] == "SDPA" for block in compute_blocks)
+        helper_compute_blocks = [block for block in compute_blocks if block["macro_op"] == "SHAPE_HELPER"]
+        assert helper_compute_blocks
+        assert all(block["tiling_candidate_id"] is None for block in helper_compute_blocks)
     else:
         decode_blocks = [
             block

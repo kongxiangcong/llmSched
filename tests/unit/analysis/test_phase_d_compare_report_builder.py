@@ -20,6 +20,7 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_compares[0].scenario_name == "prefill_seq128"
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
+    assert report.prefill_compares[0].fitted_work_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
     assert report.prefill_compares[0].projection_bytes.delta_value == -16384.0
     assert report.prefill_compares[0].attention_bytes.delta_value == -32768.0
@@ -32,6 +33,7 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_compares[0].layer_delta_count == 2
     assert report.decode_compares[0].scenario_name == "decode_token1_kv2048"
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
+    assert report.decode_compares[0].fitted_work_cycles.delta_value == -400.0
     assert report.decode_compares[0].projection_cycles.delta_value == -200.0
     assert report.decode_compares[0].projection_bytes.delta_value == -12000.0
     assert report.decode_compares[0].attention_bytes.delta_value == 8000.0
@@ -42,8 +44,144 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.decode_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0276785714)
     assert report.decode_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0651785714)
     assert report.decode_compares[0].kv_related_cycle_share.delta_value < 0.0
+    assert report.decode_compares[0].kv_related_fitted_work_cycle_share.delta_value < 0.0
     assert report.decode_compares[0].layer_delta_count == 2
     assert report.issues[0].code == "run_failed"
+
+
+def test_build_phase_d_compare_report_forwards_fitted_hotspot_and_layer_compare_rows() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+
+    sweep_report = _sweep_report()
+    prefill_source = sweep_report.comparisons[0]
+    decode_source = sweep_report.comparisons[1]
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.fitted-rows",
+        sweep_report=SimpleNamespace(
+            sweep_name=sweep_report.sweep_name,
+            baseline_target_profile_name=sweep_report.baseline_target_profile_name,
+            completed_run_count=sweep_report.completed_run_count,
+            failed_run_count=sweep_report.failed_run_count,
+            issues=sweep_report.issues,
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name=prefill_source.scenario_name,
+                    mode=prefill_source.mode,
+                    baseline_target_profile_name=prefill_source.baseline_target_profile_name,
+                    candidate_target_profile_name=prefill_source.candidate_target_profile_name,
+                    profile_diff_fields=prefill_source.profile_diff_fields,
+                    layer_deltas=prefill_source.layer_deltas,
+                    node_deltas=[
+                        {
+                            "node_id": "nig.node.linear.0",
+                            "baseline_cycles": 3072.0,
+                            "candidate_cycles": 2048.0,
+                            "delta_cycles": -1024.0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_cycle_share": 0.75,
+                            "candidate_cycle_share": 0.6666666667,
+                            "delta_cycle_share": -0.0833333333,
+                            "delta_cycles_ratio": -0.3333333333,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    fitted_layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    prefill_compare=prefill_source.prefill_compare,
+                    decode_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name=decode_source.scenario_name,
+                    mode=decode_source.mode,
+                    baseline_target_profile_name=decode_source.baseline_target_profile_name,
+                    candidate_target_profile_name=decode_source.candidate_target_profile_name,
+                    profile_diff_fields=decode_source.profile_diff_fields,
+                    layer_deltas=decode_source.layer_deltas,
+                    node_deltas=[
+                        {
+                            "node_id": "nig.node.kvload.0",
+                            "baseline_cycles": 900.0,
+                            "candidate_cycles": 700.0,
+                            "delta_cycles": -200.0,
+                            "baseline_fitted_work_cycles": 960.0,
+                            "candidate_fitted_work_cycles": 760.0,
+                            "delta_fitted_work_cycles": -200.0,
+                            "baseline_cycle_share": 0.28125,
+                            "candidate_cycle_share": 0.25,
+                            "delta_cycle_share": -0.03125,
+                            "delta_cycles_ratio": -0.2222222222,
+                            "baseline_fitted_cycle_share": 0.2857142857,
+                            "candidate_fitted_cycle_share": 0.2567567568,
+                            "delta_fitted_cycle_share": -0.0289575289,
+                            "delta_fitted_work_cycles_ratio": -0.2083333333,
+                            "baseline_bytes": 96000.0,
+                            "candidate_bytes": 76000.0,
+                            "delta_bytes": -20000.0,
+                            "delta_bytes_ratio": -0.2083333333,
+                            "change_direction": "down",
+                        }
+                    ],
+                    fitted_layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 2240.0,
+                            "candidate_fitted_work_cycles": 1980.0,
+                            "delta_fitted_work_cycles": -260.0,
+                            "baseline_fitted_cycle_share": 0.6666666667,
+                            "candidate_fitted_cycle_share": 0.6689189189,
+                            "delta_fitted_cycle_share": 0.0022522522,
+                            "delta_fitted_work_cycles_ratio": -0.1160714286,
+                            "baseline_bytes": 114000.0,
+                            "candidate_bytes": 96000.0,
+                            "delta_bytes": -18000.0,
+                            "delta_bytes_ratio": -0.1578947368,
+                            "change_direction": "down",
+                        }
+                    ],
+                    prefill_compare=None,
+                    decode_compare=decode_source.decode_compare,
+                ),
+            ],
+        ),
+    )
+
+    assert report.prefill_compares[0].node_delta_count == 1
+    assert report.prefill_compares[0].fitted_layer_delta_count == 1
+    assert report.prefill_compares[0].node_deltas[0].delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert report.prefill_compares[0].fitted_layer_deltas[0].delta_bytes == pytest.approx(-32768.0)
+    assert report.decode_compares[0].node_delta_count == 1
+    assert report.decode_compares[0].fitted_layer_delta_count == 1
+    assert report.decode_compares[0].node_deltas[0].delta_fitted_cycle_share == pytest.approx(
+        -0.0289575289
+    )
+    assert report.decode_compares[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio == pytest.approx(
+        -0.1160714286
+    )
 
 
 def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
@@ -70,7 +208,9 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         candidate_schedule_kind="dual-core",
                         estimated_cycles=_scalar_delta(4096.0, 3072.0),
                         critical_path_cycles=_scalar_delta(3584.0, 2304.0),
+                        fitted_work_cycles=_scalar_delta(4608.0, 3584.0),
                         projection_cycles=_scalar_delta(1536.0, 1024.0),
+                        projection_fitted_work_cycles=_scalar_delta(2048.0, 1536.0),
                         projection_bytes=_scalar_delta(65536.0, 49152.0),
                         projection_byte_share=_scalar_delta(0.25, 0.25),
                         projection_bytes_per_cycle=_scalar_delta(42.6666666667, 48.0),
@@ -102,6 +242,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_span_imbalance_slots=_scalar_delta(0.0, 256.0),
                         projection_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         kv_io_cycles=_scalar_delta(0.0, 0.0),
+                        kv_io_fitted_work_cycles=_scalar_delta(0.0, 0.0),
                         kv_io_bytes=_scalar_delta(0.0, 0.0),
                         kv_io_byte_share=_scalar_delta(0.0, 0.0),
                         kv_io_bytes_per_cycle=_scalar_delta(0.0, 0.0),
@@ -129,6 +270,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         kv_io_span_imbalance_slots=_scalar_delta(0.0, 0.0),
                         kv_io_span_balance_ratio=_scalar_delta(1.0, 1.0),
                         attention_cycles=_scalar_delta(2048.0, 1792.0),
+                        attention_fitted_work_cycles=_scalar_delta(2048.0, 1792.0),
                         attention_bytes=_scalar_delta(163840.0, 131072.0),
                         attention_byte_share=_scalar_delta(0.625, 0.6666666667),
                         attention_bytes_per_cycle=_scalar_delta(80.0, 73.1428571429),
@@ -159,6 +301,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         attention_span_imbalance_slots=_scalar_delta(0.0, 128.0),
                         attention_span_balance_ratio=_scalar_delta(1.0, 0.75),
                         sync_cycles=_scalar_delta(0.0, 0.0),
+                        sync_fitted_work_cycles=_scalar_delta(0.0, 0.0),
                         sync_bytes=_scalar_delta(0.0, 0.0),
                         sync_byte_share=_scalar_delta(0.0, 0.0),
                         sync_bytes_per_cycle=_scalar_delta(0.0, 0.0),
@@ -186,6 +329,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         sync_span_imbalance_slots=_scalar_delta(0.0, 0.0),
                         sync_span_balance_ratio=_scalar_delta(1.0, 1.0),
                         other_cycles=_scalar_delta(512.0, 256.0),
+                        other_fitted_work_cycles=_scalar_delta(512.0, 256.0),
                         other_bytes=_scalar_delta(32768.0, 16384.0),
                         other_byte_share=_scalar_delta(0.125, 0.0833333333),
                         other_bytes_per_cycle=_scalar_delta(64.0, 64.0),
@@ -215,8 +359,10 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         other_span_imbalance_slots=_scalar_delta(0.0, 64.0),
                         other_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         tokens_per_cycle=_scalar_delta(0.03125, 0.0416666667),
+                        tokens_per_fitted_work_cycle=_scalar_delta(0.0277777778, 0.0357142857),
                         tokens_per_critical_path_cycle=_scalar_delta(0.0357142857, 0.0555555556),
                         cycles_per_token=_scalar_delta(32.0, 24.0),
+                        fitted_cycles_per_token=_scalar_delta(36.0, 28.0),
                         bytes_per_cycle=_scalar_delta(64.0, 64.0),
                         max_region_utilization=_scalar_delta(0.75, 0.5),
                     ),
@@ -235,7 +381,9 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         candidate_schedule_kind="dual-core",
                         estimated_cycles=_scalar_delta(3200.0, 2800.0),
                         critical_path_cycles=_scalar_delta(2880.0, 2240.0),
+                        fitted_work_cycles=_scalar_delta(3360.0, 2960.0),
                         projection_cycles=_scalar_delta(980.0, 780.0),
+                        projection_fitted_work_cycles=_scalar_delta(1220.0, 1020.0),
                         projection_bytes=_scalar_delta(48000.0, 36000.0),
                         projection_byte_share=_scalar_delta(0.25, 0.2045454545),
                         projection_bytes_per_cycle=_scalar_delta(48.9795918367, 46.1538461538),
@@ -266,6 +414,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         projection_span_imbalance_slots=_scalar_delta(0.0, 96.0),
                         projection_span_balance_ratio=_scalar_delta(1.0, 0.6),
                         kv_io_cycles=_scalar_delta(900.0, 700.0),
+                        kv_io_fitted_work_cycles=_scalar_delta(960.0, 760.0),
                         kv_io_bytes=_scalar_delta(96000.0, 96000.0),
                         kv_io_byte_share=_scalar_delta(0.5, 0.5454545455),
                         kv_io_bytes_per_cycle=_scalar_delta(106.6666666667, 137.1428571429),
@@ -295,6 +444,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         kv_io_span_imbalance_slots=_scalar_delta(0.0, 192.0),
                         kv_io_span_balance_ratio=_scalar_delta(1.0, 0.4),
                         attention_cycles=_scalar_delta(820.0, 900.0),
+                        attention_fitted_work_cycles=_scalar_delta(820.0, 900.0),
                         attention_bytes=_scalar_delta(24000.0, 32000.0),
                         attention_byte_share=_scalar_delta(0.125, 0.1818181818),
                         attention_bytes_per_cycle=_scalar_delta(29.2682926829, 35.5555555556),
@@ -324,10 +474,13 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         attention_span_imbalance_slots=_scalar_delta(0.0, 64.0),
                         attention_span_balance_ratio=_scalar_delta(1.0, 0.8),
                         cycles_per_token=_scalar_delta(3200.0, 2800.0),
+                        fitted_work_cycles_per_token=_scalar_delta(3360.0, 2960.0),
                         critical_path_cycles_per_token=_scalar_delta(2880.0, 2240.0),
                         kv_related_cycle_share=_scalar_delta(0.28125, 0.25),
+                        kv_related_fitted_work_cycle_share=_scalar_delta(0.2857142857, 0.2567567568),
                         kv_related_bytes=_scalar_delta(96000.0, 96000.0),
                         sync_cycles=_scalar_delta(120.0, 80.0),
+                        sync_fitted_work_cycles=_scalar_delta(120.0, 80.0),
                         sync_bytes=_scalar_delta(8000.0, 4000.0),
                         sync_byte_share=_scalar_delta(0.0416666667, 0.0227272727),
                         sync_bytes_per_cycle=_scalar_delta(66.6666666667, 50.0),
@@ -357,6 +510,7 @@ def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
                         sync_span_imbalance_slots=_scalar_delta(0.0, 32.0),
                         sync_span_balance_ratio=_scalar_delta(1.0, 0.5),
                         other_cycles=_scalar_delta(280.0, 240.0),
+                        other_fitted_work_cycles=_scalar_delta(240.0, 200.0),
                         other_bytes=_scalar_delta(16000.0, 8000.0),
                         other_byte_share=_scalar_delta(0.0833333333, 0.0454545455),
                         other_bytes_per_cycle=_scalar_delta(57.1428571429, 33.3333333333),
@@ -545,11 +699,23 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -1280.0,
                             "delta_ratio": -0.3571428571,
                         },
+                        "fitted_work_cycles": {
+                            "baseline_value": 4608.0,
+                            "candidate_value": 3584.0,
+                            "delta_value": -1024.0,
+                            "delta_ratio": -0.2222222222,
+                        },
                         "projection_cycles": {
                             "baseline_value": 1536.0,
                             "candidate_value": 1024.0,
                             "delta_value": -512.0,
                             "delta_ratio": -0.3333333333,
+                        },
+                        "projection_fitted_work_cycles": {
+                            "baseline_value": 2048.0,
+                            "candidate_value": 1536.0,
+                            "delta_value": -512.0,
+                            "delta_ratio": -0.25,
                         },
                         "projection_bytes": {
                             "baseline_value": 65536.0,
@@ -576,6 +742,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": -0.1111111111,
                         },
                         "kv_io_cycles": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "kv_io_fitted_work_cycles": {
                             "baseline_value": 0.0,
                             "candidate_value": 0.0,
                             "delta_value": 0.0,
@@ -611,6 +783,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -256.0,
                             "delta_ratio": -0.125,
                         },
+                        "attention_fitted_work_cycles": {
+                            "baseline_value": 2048.0,
+                            "candidate_value": 1792.0,
+                            "delta_value": -256.0,
+                            "delta_ratio": -0.125,
+                        },
                         "attention_bytes": {
                             "baseline_value": 163840.0,
                             "candidate_value": 131072.0,
@@ -636,6 +814,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": 0.1666666667,
                         },
                         "sync_cycles": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "sync_fitted_work_cycles": {
                             "baseline_value": 0.0,
                             "candidate_value": 0.0,
                             "delta_value": 0.0,
@@ -671,6 +855,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -256.0,
                             "delta_ratio": -0.5,
                         },
+                        "other_fitted_work_cycles": {
+                            "baseline_value": 512.0,
+                            "candidate_value": 256.0,
+                            "delta_value": -256.0,
+                            "delta_ratio": -0.5,
+                        },
                         "other_bytes": {
                             "baseline_value": 32768.0,
                             "candidate_value": 16384.0,
@@ -701,6 +891,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": 0.0104166667,
                             "delta_ratio": 0.3333333344,
                         },
+                        "tokens_per_fitted_work_cycle": {
+                            "baseline_value": 0.0277777778,
+                            "candidate_value": 0.0357142857,
+                            "delta_value": 0.0079365079,
+                            "delta_ratio": 0.2857142844,
+                        },
                         "tokens_per_critical_path_cycle": {
                             "baseline_value": 0.0357142857,
                             "candidate_value": 0.0555555556,
@@ -712,6 +908,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "candidate_value": 24.0,
                             "delta_value": -8.0,
                             "delta_ratio": -0.25,
+                        },
+                        "fitted_cycles_per_token": {
+                            "baseline_value": 36.0,
+                            "candidate_value": 28.0,
+                            "delta_value": -8.0,
+                            "delta_ratio": -0.2222222222,
                         },
                         "bytes_per_cycle": {
                             "baseline_value": 64.0,
@@ -772,11 +974,23 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -640.0,
                             "delta_ratio": -0.2222222222,
                         },
+                        "fitted_work_cycles": {
+                            "baseline_value": 3360.0,
+                            "candidate_value": 2960.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.119047619,
+                        },
                         "projection_cycles": {
                             "baseline_value": 980.0,
                             "candidate_value": 780.0,
                             "delta_value": -200.0,
                             "delta_ratio": -0.2040816327,
+                        },
+                        "projection_fitted_work_cycles": {
+                            "baseline_value": 1220.0,
+                            "candidate_value": 1020.0,
+                            "delta_value": -200.0,
+                            "delta_ratio": -0.1639344262,
                         },
                         "projection_bytes": {
                             "baseline_value": 48000.0,
@@ -808,6 +1022,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -200.0,
                             "delta_ratio": -0.2222222222,
                         },
+                        "kv_io_fitted_work_cycles": {
+                            "baseline_value": 960.0,
+                            "candidate_value": 760.0,
+                            "delta_value": -200.0,
+                            "delta_ratio": -0.2083333333,
+                        },
                         "kv_io_bytes": {
                             "baseline_value": 96000.0,
                             "candidate_value": 96000.0,
@@ -833,6 +1053,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": -0.1111111111,
                         },
                         "attention_cycles": {
+                            "baseline_value": 820.0,
+                            "candidate_value": 900.0,
+                            "delta_value": 80.0,
+                            "delta_ratio": 0.0975609756,
+                        },
+                        "attention_fitted_work_cycles": {
                             "baseline_value": 820.0,
                             "candidate_value": 900.0,
                             "delta_value": 80.0,
@@ -868,6 +1094,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -40.0,
                             "delta_ratio": -0.1428571429,
                         },
+                        "other_fitted_work_cycles": {
+                            "baseline_value": 240.0,
+                            "candidate_value": 200.0,
+                            "delta_value": -40.0,
+                            "delta_ratio": -0.1666666667,
+                        },
                         "other_bytes": {
                             "baseline_value": 16000.0,
                             "candidate_value": 8000.0,
@@ -898,6 +1130,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -400.0,
                             "delta_ratio": -0.125,
                         },
+                        "fitted_work_cycles_per_token": {
+                            "baseline_value": 3360.0,
+                            "candidate_value": 2960.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.119047619,
+                        },
                         "critical_path_cycles_per_token": {
                             "baseline_value": 2880.0,
                             "candidate_value": 2240.0,
@@ -910,6 +1148,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_value": -0.03125,
                             "delta_ratio": -0.1111111111,
                         },
+                        "kv_related_fitted_work_cycle_share": {
+                            "baseline_value": 0.2857142857,
+                            "candidate_value": 0.2567567568,
+                            "delta_value": -0.0289575289,
+                            "delta_ratio": -0.1013513511,
+                        },
                         "kv_related_bytes": {
                             "baseline_value": 96000.0,
                             "candidate_value": 96000.0,
@@ -917,6 +1161,12 @@ def _sweep_report() -> SweepDeltaReport:
                             "delta_ratio": 0.0,
                         },
                         "sync_cycles": {
+                            "baseline_value": 120.0,
+                            "candidate_value": 80.0,
+                            "delta_value": -40.0,
+                            "delta_ratio": -0.3333333333,
+                        },
+                        "sync_fitted_work_cycles": {
                             "baseline_value": 120.0,
                             "candidate_value": 80.0,
                             "delta_value": -40.0,

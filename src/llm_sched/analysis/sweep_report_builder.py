@@ -8,10 +8,12 @@ from llm_sched.contracts.sweep_report import (
     SweepComparison,
     SweepDecodeCompareSummary,
     SweepDeltaReport,
+    SweepFittedLayerDelta,
     SweepIssue,
     SweepLayerDelta,
     SweepMacroDelta,
     SweepMetricDelta,
+    SweepNodeDelta,
     SweepPrefillCompareSummary,
     SweepRunRecord,
     SweepScalarDelta,
@@ -120,6 +122,8 @@ def build_sweep_delta_report(
                     metric_deltas=_build_metric_deltas(baseline_run, candidate_run),
                     macro_deltas=_build_macro_deltas(baseline_run, candidate_run),
                     layer_deltas=_build_layer_deltas(baseline_run, candidate_run),
+                    node_deltas=_build_node_deltas(baseline_run, candidate_run),
+                    fitted_layer_deltas=_build_fitted_layer_deltas(baseline_run, candidate_run),
                     prefill_compare=(
                         _build_prefill_compare_summary(baseline_run, candidate_run)
                         if mode == "prefill"
@@ -240,6 +244,138 @@ def _build_layer_delta(
         delta_bytes=delta_bytes,
         delta_bytes_ratio=_delta_ratio(baseline_bytes, delta_bytes),
         change_direction=_change_direction(delta_cycles),
+    )
+
+
+def _build_node_deltas(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> list[SweepNodeDelta]:
+    baseline_nodes = {row.node_id: row for row in baseline_run.node_hotspots}
+    candidate_nodes = {row.node_id: row for row in candidate_run.node_hotspots}
+    node_ids = set(baseline_nodes) | set(candidate_nodes)
+    deltas = [
+        _build_node_delta(
+            node_id=node_id,
+            baseline_node=baseline_nodes.get(node_id),
+            candidate_node=candidate_nodes.get(node_id),
+        )
+        for node_id in node_ids
+    ]
+    return sorted(deltas, key=lambda delta: (-abs(delta.delta_fitted_work_cycles), delta.node_id))
+
+
+def _build_node_delta(
+    *,
+    node_id: str,
+    baseline_node,
+    candidate_node,
+) -> SweepNodeDelta:
+    baseline_cycles = float(baseline_node.estimated_cycles) if baseline_node is not None else 0.0
+    candidate_cycles = float(candidate_node.estimated_cycles) if candidate_node is not None else 0.0
+    delta_cycles = candidate_cycles - baseline_cycles
+    baseline_fitted_work_cycles = (
+        float(baseline_node.fitted_work_cycles) if baseline_node is not None else 0.0
+    )
+    candidate_fitted_work_cycles = (
+        float(candidate_node.fitted_work_cycles) if candidate_node is not None else 0.0
+    )
+    delta_fitted_work_cycles = candidate_fitted_work_cycles - baseline_fitted_work_cycles
+    baseline_cycle_share = float(baseline_node.cycle_share) if baseline_node is not None else 0.0
+    candidate_cycle_share = float(candidate_node.cycle_share) if candidate_node is not None else 0.0
+    baseline_fitted_cycle_share = (
+        float(baseline_node.fitted_cycle_share) if baseline_node is not None else 0.0
+    )
+    candidate_fitted_cycle_share = (
+        float(candidate_node.fitted_cycle_share) if candidate_node is not None else 0.0
+    )
+    baseline_bytes = float(baseline_node.total_bytes) if baseline_node is not None else 0.0
+    candidate_bytes = float(candidate_node.total_bytes) if candidate_node is not None else 0.0
+    delta_bytes = candidate_bytes - baseline_bytes
+    return SweepNodeDelta(
+        node_id=node_id,
+        baseline_cycles=baseline_cycles,
+        candidate_cycles=candidate_cycles,
+        delta_cycles=delta_cycles,
+        baseline_fitted_work_cycles=baseline_fitted_work_cycles,
+        candidate_fitted_work_cycles=candidate_fitted_work_cycles,
+        delta_fitted_work_cycles=delta_fitted_work_cycles,
+        baseline_cycle_share=baseline_cycle_share,
+        candidate_cycle_share=candidate_cycle_share,
+        delta_cycle_share=candidate_cycle_share - baseline_cycle_share,
+        delta_cycles_ratio=_delta_ratio(baseline_cycles, delta_cycles),
+        baseline_fitted_cycle_share=baseline_fitted_cycle_share,
+        candidate_fitted_cycle_share=candidate_fitted_cycle_share,
+        delta_fitted_cycle_share=candidate_fitted_cycle_share - baseline_fitted_cycle_share,
+        delta_fitted_work_cycles_ratio=_delta_ratio(
+            baseline_fitted_work_cycles,
+            delta_fitted_work_cycles,
+        ),
+        baseline_bytes=baseline_bytes,
+        candidate_bytes=candidate_bytes,
+        delta_bytes=delta_bytes,
+        delta_bytes_ratio=_delta_ratio(baseline_bytes, delta_bytes),
+        change_direction=_change_direction(delta_fitted_work_cycles),
+    )
+
+
+def _build_fitted_layer_deltas(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> list[SweepFittedLayerDelta]:
+    baseline_layers = {int(row.layer_id): row for row in baseline_run.layer_breakdown}
+    candidate_layers = {int(row.layer_id): row for row in candidate_run.layer_breakdown}
+    layer_ids = set(baseline_layers) | set(candidate_layers)
+    deltas = [
+        _build_fitted_layer_delta(
+            layer_id=layer_id,
+            baseline_layer=baseline_layers.get(layer_id),
+            candidate_layer=candidate_layers.get(layer_id),
+        )
+        for layer_id in layer_ids
+    ]
+    return sorted(deltas, key=lambda delta: (-abs(delta.delta_fitted_work_cycles), delta.layer_id))
+
+
+def _build_fitted_layer_delta(
+    *,
+    layer_id: int,
+    baseline_layer,
+    candidate_layer,
+) -> SweepFittedLayerDelta:
+    baseline_fitted_work_cycles = (
+        float(baseline_layer.fitted_work_cycles) if baseline_layer is not None else 0.0
+    )
+    candidate_fitted_work_cycles = (
+        float(candidate_layer.fitted_work_cycles) if candidate_layer is not None else 0.0
+    )
+    delta_fitted_work_cycles = candidate_fitted_work_cycles - baseline_fitted_work_cycles
+    baseline_fitted_cycle_share = (
+        float(baseline_layer.fitted_cycle_share) if baseline_layer is not None else 0.0
+    )
+    candidate_fitted_cycle_share = (
+        float(candidate_layer.fitted_cycle_share) if candidate_layer is not None else 0.0
+    )
+    baseline_bytes = float(baseline_layer.total_bytes) if baseline_layer is not None else 0.0
+    candidate_bytes = float(candidate_layer.total_bytes) if candidate_layer is not None else 0.0
+    delta_bytes = candidate_bytes - baseline_bytes
+    return SweepFittedLayerDelta(
+        layer_id=layer_id,
+        baseline_fitted_work_cycles=baseline_fitted_work_cycles,
+        candidate_fitted_work_cycles=candidate_fitted_work_cycles,
+        delta_fitted_work_cycles=delta_fitted_work_cycles,
+        baseline_fitted_cycle_share=baseline_fitted_cycle_share,
+        candidate_fitted_cycle_share=candidate_fitted_cycle_share,
+        delta_fitted_cycle_share=candidate_fitted_cycle_share - baseline_fitted_cycle_share,
+        delta_fitted_work_cycles_ratio=_delta_ratio(
+            baseline_fitted_work_cycles,
+            delta_fitted_work_cycles,
+        ),
+        baseline_bytes=baseline_bytes,
+        candidate_bytes=candidate_bytes,
+        delta_bytes=delta_bytes,
+        delta_bytes_ratio=_delta_ratio(baseline_bytes, delta_bytes),
+        change_direction=_change_direction(delta_fitted_work_cycles),
     )
 
 
@@ -389,9 +525,17 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "critical_path_cycles"),
             _metric_value(candidate_run, "critical_path_cycles"),
         ),
+        fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles"),
+            _metric_value(candidate_run, "fitted_work_cycles"),
+        ),
         projection_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
+        ),
+        projection_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_fitted_work_cycles"),
+            _metric_value(candidate_run, "projection_fitted_work_cycles"),
         ),
         projection_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "projection_bytes"),
@@ -420,6 +564,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
         ),
+        kv_io_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_fitted_work_cycles"),
+            _metric_value(candidate_run, "kv_io_fitted_work_cycles"),
+        ),
         kv_io_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_bytes"),
             _metric_value(candidate_run, "kv_io_bytes"),
@@ -439,6 +587,10 @@ def _build_prefill_compare_summary(
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
+        ),
+        attention_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_fitted_work_cycles"),
+            _metric_value(candidate_run, "attention_fitted_work_cycles"),
         ),
         attention_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "attention_bytes"),
@@ -460,6 +612,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
         ),
+        sync_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_fitted_work_cycles"),
+            _metric_value(candidate_run, "sync_fitted_work_cycles"),
+        ),
         sync_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "sync_bytes"),
             _metric_value(candidate_run, "sync_bytes"),
@@ -479,6 +635,10 @@ def _build_prefill_compare_summary(
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "other_fitted_work_cycles"),
+            _metric_value(candidate_run, "other_fitted_work_cycles"),
         ),
         other_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "other_bytes"),
@@ -500,6 +660,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "tokens_per_cycle"),
             _metric_value(candidate_run, "tokens_per_cycle"),
         ),
+        tokens_per_fitted_work_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "tokens_per_fitted_work_cycle"),
+            _metric_value(candidate_run, "tokens_per_fitted_work_cycle"),
+        ),
         tokens_per_critical_path_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "tokens_per_critical_path_cycle"),
             _metric_value(candidate_run, "tokens_per_critical_path_cycle"),
@@ -507,6 +671,10 @@ def _build_prefill_compare_summary(
         cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "cycles_per_token"),
             _metric_value(candidate_run, "cycles_per_token"),
+        ),
+        fitted_cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_cycles_per_token"),
+            _metric_value(candidate_run, "fitted_cycles_per_token"),
         ),
         bytes_per_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "bytes_per_cycle"),
@@ -534,9 +702,17 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "critical_path_cycles"),
             _metric_value(candidate_run, "critical_path_cycles"),
         ),
+        fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles"),
+            _metric_value(candidate_run, "fitted_work_cycles"),
+        ),
         projection_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
+        ),
+        projection_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_fitted_work_cycles"),
+            _metric_value(candidate_run, "projection_fitted_work_cycles"),
         ),
         projection_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "projection_bytes"),
@@ -565,6 +741,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
         ),
+        kv_io_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_fitted_work_cycles"),
+            _metric_value(candidate_run, "kv_io_fitted_work_cycles"),
+        ),
         kv_io_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_bytes"),
             _metric_value(candidate_run, "kv_io_bytes"),
@@ -584,6 +764,10 @@ def _build_decode_compare_summary(
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
+        ),
+        attention_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_fitted_work_cycles"),
+            _metric_value(candidate_run, "attention_fitted_work_cycles"),
         ),
         attention_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "attention_bytes"),
@@ -605,6 +789,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "cycles_per_token"),
             _metric_value(candidate_run, "cycles_per_token"),
         ),
+        fitted_work_cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles_per_token"),
+            _metric_value(candidate_run, "fitted_work_cycles_per_token"),
+        ),
         critical_path_cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "critical_path_cycles_per_token"),
             _metric_value(candidate_run, "critical_path_cycles_per_token"),
@@ -613,6 +801,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "kv_related_cycle_share"),
             _metric_value(candidate_run, "kv_related_cycle_share"),
         ),
+        kv_related_fitted_work_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_related_fitted_work_cycle_share"),
+            _metric_value(candidate_run, "kv_related_fitted_work_cycle_share"),
+        ),
         kv_related_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_related_bytes"),
             _metric_value(candidate_run, "kv_related_bytes"),
@@ -620,6 +812,10 @@ def _build_decode_compare_summary(
         sync_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
+        ),
+        sync_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_fitted_work_cycles"),
+            _metric_value(candidate_run, "sync_fitted_work_cycles"),
         ),
         sync_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "sync_bytes"),
@@ -640,6 +836,10 @@ def _build_decode_compare_summary(
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "other_fitted_work_cycles"),
+            _metric_value(candidate_run, "other_fitted_work_cycles"),
         ),
         other_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "other_bytes"),

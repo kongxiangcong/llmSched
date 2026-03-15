@@ -10,14 +10,21 @@ class DecodeLatencySummary(BaseModel):
 
     total_tokens: int = Field(gt=0)
     estimated_cycles: float = Field(ge=0.0)
+    fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     critical_path_cycles: float = Field(ge=0.0, default=0.0)
     cycles_per_token: float = Field(ge=0.0)
+    fitted_work_cycles_per_token: float = Field(ge=0.0, default=0.0)
     critical_path_cycles_per_token: float = Field(ge=0.0, default=0.0)
     projection_cycles: float = Field(ge=0.0)
+    projection_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     kv_io_cycles: float = Field(ge=0.0)
+    kv_io_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     attention_cycles: float = Field(ge=0.0)
+    attention_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     sync_cycles: float = Field(ge=0.0)
+    sync_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     other_cycles: float = Field(ge=0.0)
+    other_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     projection_bytes: float = Field(ge=0.0, default=0.0)
     kv_io_bytes: float = Field(ge=0.0, default=0.0)
     attention_bytes: float = Field(ge=0.0, default=0.0)
@@ -33,6 +40,7 @@ class DecodeKVSummary(BaseModel):
     kv_formula_count: int = Field(ge=0)
     unresolved_address_count: int = Field(ge=0)
     kv_related_cycle_share: float = Field(ge=0.0)
+    kv_related_fitted_work_cycle_share: float = Field(ge=0.0, default=0.0)
     kv_related_bytes: float = Field(ge=0.0)
 
 
@@ -71,7 +79,9 @@ class DecodeNodeHotspot(BaseModel):
 
     node_id: str
     estimated_cycles: float = Field(ge=0.0)
+    fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     cycle_share: float = Field(ge=0.0)
+    fitted_cycle_share: float = Field(ge=0.0, default=0.0)
     total_bytes: float = Field(ge=0.0)
 
 
@@ -80,7 +90,9 @@ class DecodeLayerBreakdownRow(BaseModel):
 
     layer_id: int = Field(ge=0)
     estimated_cycles: float = Field(ge=0.0)
+    fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     cycle_share: float = Field(ge=0.0)
+    fitted_cycle_share: float = Field(ge=0.0, default=0.0)
     total_bytes: float = Field(ge=0.0)
 
 

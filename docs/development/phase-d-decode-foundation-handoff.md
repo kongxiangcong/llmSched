@@ -1,5 +1,18 @@
 # Phase D Decode Foundation Handoff
 
+## 2026-03-15 Fitted-Cycle Topline Adoption Checkpoint
+
+- New plan: `../plans/2026-03-15-spec-14-15-fitted-topline-adoption.md`
+- `DecodeEvaluationReport.token_latency` now carries summary-grade `fitted_work_cycles`, per-token fitted toplines, and per-phase fitted buckets sourced from `SPEC-13`.
+- `DecodeEvaluationReport.kv_summary` now carries `kv_related_fitted_work_cycle_share` while keeping existing estimated-cycle, hotspot, and layer semantics unchanged.
+- `SPEC-15` now reuses `PerfSummaryReport.totals["fitted_work_cycles"]` plus `phase_attribution[*].fitted_work_cycles` without widening this slice into hotspot-row or compare-grade fitted-cycle work.
+- focused prefill/decode builder, workflow, and smoke regressions remain green (`20 passed`) with the stronger summary-grade fitted-cycle surface.
+- This batch deliberately does not introduce:
+  - fitted-cycle hotspot rows
+  - fitted-cycle layer breakdown rows
+  - compare-grade fitted-cycle aggregation
+  - deeper cycle-model changes outside `SPEC-13`
+
 ## 2026-03-12 Hottest-Region Memory-Class Reuse Checkpoint
 
 - New plan: `../plans/2026-03-12-spec-08-prefill-decode-memory-class-hotspot-reuse.md`

@@ -128,7 +128,7 @@
 - `SPEC-11` now consumes `TileCandidate.rank` directly instead of re-sorting by tile shape.
 - untiled but stable macro ops now still lower into dual-core `ScheduleIR`; they no longer vanish when no tile candidate exists.
 - transfer insertion remains explicit for untiled cross-core producer-consumer handoff.
-- Gemma3 dual-core prefill smoke now asserts the schedule contains untiled compute blocks such as `RMSNORM` or `ELEM_ADD`.
+- Gemma3 dual-core prefill smoke now asserts the schedule contains an untiled helper compute block with `tiling_candidate_id = null`; in the current audited fixture that visible helper surface is `SHAPE_HELPER`, while focused scheduler unit tests continue to cover `RMSNORM` / `ELEM_ADD`.
 
 ## 2026-03-07 Checkpoint
 

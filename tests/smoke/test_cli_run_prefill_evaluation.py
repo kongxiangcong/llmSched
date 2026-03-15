@@ -44,6 +44,9 @@ def test_run_prefill_evaluation_writes_report_for_single_core(
     assert manifest["artifact_index"]["prefill_evaluation_report"] == "reports/prefill_evaluation_report.json"
     assert report["scenario_name"] == "prefill_seq128"
     assert report["throughput"]["estimated_cycles"] > 0.0
+    assert report["throughput"]["fitted_work_cycles"] >= report["throughput"]["estimated_cycles"]
+    assert report["throughput"]["tokens_per_fitted_work_cycle"] > 0.0
+    assert report["throughput"]["projection_fitted_work_cycles"] >= 0.0
     assert report["throughput"]["phase_attribution"]["projection"]["cycles_per_token"] > 0.0
     assert report["throughput"]["phase_attribution"]["attention"]["bytes_per_token"] >= 0.0
     assert report["throughput"]["phase_attribution"]["projection"]["compute_cycles"] >= 0.0

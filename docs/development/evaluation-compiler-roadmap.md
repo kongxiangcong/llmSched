@@ -46,7 +46,7 @@
 | SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
 | SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
 | SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
-| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
+| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；当前 `SPEC-16` 也已并行比较 summary-grade fitted toplines，并通过 standalone `PhaseDCompareReport` 透传这些 prefill/decode fitted compare rows；最新 slice 也已从保留的 `node_hotspots` / `layer_breakdown` 构建 fitted `node_deltas` 与 `fitted_layer_deltas`，并在 sweep compare 与 standalone compare report 中公开；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式；visualization-specific fitted compare payload 仍属于后续 scope。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution；`sweep_view.comparisons` 现在也已直接带结构化 `layer_deltas`。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
 | SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 metric-plus-layer summary compare 的更强 compare modes。 |
@@ -164,7 +164,7 @@ graph TD
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
 | M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
-| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得第一条 formal top-level compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-backing-store-pressure/phase-memory-class-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator和更强的 top-level report compare surface。 |
+| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得 formal top-level compare consumer 与 fitted hotspot/layer compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-backing-store-pressure/phase-memory-class-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows、fitted `node_deltas` / `fitted_layer_deltas`，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、更强的 top-level report compare surface，以及 visualization-specific fitted compare adoption。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
@@ -2369,6 +2369,52 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
 
+## 2026-03-15 SPEC-13 Deeper Cycle Model Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-13-deeper-cycle-model.md`
+- `SPEC-13` now exposes a tile- and memory-aware `fitted_work_cycles` surface alongside the existing summary-grade `estimated_cycles`, without reinterpreting the older cycle fields.
+- the new fitted cycle surface is now available at totals, phase attribution, macro, node, and layer granularity inside the canonical `PerfSummaryReport`.
+- workflow serialization now threads optional `tiling_plan` context into descriptor estimation without making that artifact mandatory for older or minimal run roots.
+- fresh closure evidence:
+  - focused `SPEC-13` verification is green: `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
+  - downstream Phase D consumers remain green: `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- what this closes:
+  - the first deeper-cycle slice for `SPEC-13`, so schedule- and memory-aware fitted work cycles now survive descriptor estimation, perf summary aggregation, workflow serialization, CLI output, and smoke coverage
+  - a contract gap where downstream consumers could only see `estimated_cycles`, even when schedule and tiling evidence supported a more conservative fitted work estimate
+- what still remains for `M3`:
+  - prefill/decode top-level adoption of the new fitted cycle surface remains later `SPEC-14/15` work
+  - richer compare-grade exposure of fitted cycles remains later `SPEC-16` work
+  - any future compare or workbench expansion should continue consuming the existing report and compare contracts instead of reopening this batch's summary-grade surfaces
+
+## 2026-03-14 Progress Review Checkpoint
+
+- audit scope:
+  - current phase/spec status versus the roadmap To Do list
+  - current verification reality versus the accepted smoke gate
+  - next execution order for continued development
+- fresh verification evidence on 2026-03-14:
+  - `python -m pytest -q` -> `420 passed`
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+- current status decision:
+  - keep `Phase A`, `Phase B`, and `Phase C` as `done` at the roadmap level
+  - keep `Phase D / M3` as the primary closure target
+  - keep `Phase E / M4` as downstream hardening, not the main blocker
+- current verification decision:
+  - accepted smoke scope is still stable enough to produce artifacts on the canonical path
+  - the repository regression gate is back at full closure, so whole-project verification is green again
+- current full-regression blockers:
+  - none; the previously audited 11 failing checks are now reclosed
+- execution rule from this checkpoint forward:
+  - do not create a second project-status source outside this roadmap
+  - use a dedicated plan doc for execution ordering and task slices
+  - treat `SPEC-19` work as `P1` hardening unless it directly helps close `M3`
+- next-step order:
+  - continue `P0: close M3` in roadmap order: `SPEC-13 -> SPEC-14/15 -> SPEC-16`
+  - only after that resume `P1: harden SPEC-19`
+- active execution entry:
+  - `../plans/2026-03-14-phase-d-m3-closure-followup.md`
+
 ## 2026-03-14 SPEC-16 Grouped Compare Tag Semantics Checkpoint
 
 - plan doc: `../plans/2026-03-14-spec-16-grouped-compare-tag-semantics.md`
@@ -2656,6 +2702,59 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-15 SPEC-14/15 Fitted Topline Adoption Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-14-15-fitted-topline-adoption.md`
+- `SPEC-14` and `SPEC-15` now consume `SPEC-13` fitted-cycle toplines in their top-level prefill/decode report summaries.
+- this slice is intentionally summary-grade only: it adds fitted totals, fitted per-token ratios, per-phase fitted buckets, and decode KV fitted-cycle share without changing existing estimated-cycle semantics.
+- new closure evidence:
+  - `PrefillEvaluationReport.throughput` now exposes fitted toplines beside the existing estimated-cycle throughput fields
+  - `DecodeEvaluationReport.token_latency` and `DecodeEvaluationReport.kv_summary` now expose fitted toplines beside the existing estimated-cycle token-latency and KV-summary fields
+  - focused prefill/decode builder, workflow, and smoke regression remains green (`20 passed`)
+- what this closes:
+  - one adoption gap where `SPEC-13` already produced `fitted_work_cycles` but `SPEC-14/15` top-level reports still only surfaced estimated-cycle summaries
+  - one downstream contract gap where workflow and CLI artifacts did not yet assert the stronger summary-grade fitted-cycle public surface
+- what still remains for `M3`:
+  - hotspot and layer rows still keep the current estimated-cycle semantics in this slice
+  - compare-grade fitted-cycle rollups remain later `SPEC-16` or follow-on `SPEC-14/15` work
+  - deeper cycle fitting remains in `SPEC-13`, not in the top-level eval reports
+
+## 2026-03-15 SPEC-16 Fitted Topline Compare Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-16-fitted-topline-compare.md`
+- `SPEC-16` sweep compare summaries and the standalone `PhaseDCompareReport` now compare summary-grade fitted toplines in parallel with the existing estimated-cycle surface.
+- this slice stays intentionally narrow: it copies fitted toplines into `SweepRunRecord.metrics`, builds fitted deltas into `prefill_compare` / `decode_compare`, and forwards those rows into `PhaseDCompareReport` without changing hotspot rows, layer rows, or visualization compare payloads.
+- new closure evidence:
+  - `SweepComparison.prefill_compare` now exposes fitted throughput toplines such as `fitted_work_cycles`, `tokens_per_fitted_work_cycle`, `fitted_cycles_per_token`, and per-phase fitted work-cycle buckets
+  - `SweepComparison.decode_compare` and `PhaseDCompareReport.decode_compares` now expose fitted token-latency/KV toplines such as `fitted_work_cycles`, `fitted_work_cycles_per_token`, per-phase fitted work-cycle buckets, and `kv_related_fitted_work_cycle_share`
+  - focused `SPEC-16` regression remains green (`19 passed`) across contracts, builders, workflow, and smoke coverage
+- what this closes:
+  - one compare-surface gap where fitted toplines were already present in `SPEC-14/15` reports but not yet compared in `SweepDeltaReport` or `PhaseDCompareReport`
+  - one standalone-report gap where `run-phase-d-compare` could not yet expose the stronger summary-grade fitted compare surface already available in the sweep inputs
+  - one regression-hardening gap where real workflow checks now assert fitted compare presence and metric alignment without assuming fitted deltas always share the same sign as estimated deltas
+- what still remains for `M3`:
+  - visualization-specific fitted compare payloads remained out of scope for this slice; fitted hotspot/layer compare landed in the follow-on `2026-03-15-spec-16-fitted-hotspot-layer-compare` slice
+  - broader `SPEC-16` compare expansion beyond the current summary-grade scalar-plus-phase compare surface remains later work
+  - deeper cycle fitting remains in `SPEC-13`, not in these compare builders
+
+## 2026-03-15 SPEC-16 Fitted Hotspot/Layer Compare Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-16-fitted-hotspot-layer-compare.md`
+- `SPEC-16` sweep compare surfaces and the standalone `PhaseDCompareReport` now consume the richer fitted `node_hotspots` / `layer_breakdown` rows as compare-grade `node_deltas` and `fitted_layer_deltas`, while keeping the existing estimated `layer_deltas` semantics unchanged.
+- this slice stays intentionally narrow: it preserves fitted hotspot/layer rows in sweep-local compare outputs and standalone compare reports without changing visualization consumers.
+- new closure evidence:
+  - `SweepComparison` now exposes `node_deltas` and `fitted_layer_deltas` in parallel with the existing estimated `layer_deltas`
+  - `PhaseDCompareReport` prefill/decode rows now expose `node_delta_count`, `fitted_layer_delta_count`, `node_deltas`, and `fitted_layer_deltas`
+  - focused Task 1 + Task 2 regression remains green (`40 passed`) across fitted report builders, workflows, sweep compare, standalone compare, and smoke coverage
+- what this closes:
+  - one compare-surface gap where fitted hotspot/layer rows were preserved in sweep run records but not yet consumed by compare outputs
+  - one standalone-report gap where `run-phase-d-compare` could not yet emit fitted hotspot/layer compare rows already present in `sweep_delta_report.json`
+  - one contract gap where compare/report consumers only had estimated `layer_deltas` and no parallel fitted hotspot/layer surfaces
+- what still remains for `M3`:
+  - visualization-specific fitted compare payload adoption remains later scope
+  - broader `SPEC-16` compare expansion beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-hotspot-plus-layer contract remains later work
+  - deeper cycle fitting remains in `SPEC-13`, not in these compare builders
 
 ## 2026-03-15 SPEC-13 Deeper Cycle Model Checkpoint
 

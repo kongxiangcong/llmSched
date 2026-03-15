@@ -26,13 +26,21 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
     assert report.mxu_dominant is False
     assert report.throughput.total_tokens == 128
     assert report.throughput.tokens_per_cycle == pytest.approx(128 / 4096.0)
+    assert report.throughput.fitted_work_cycles == pytest.approx(4608.0)
+    assert report.throughput.tokens_per_fitted_work_cycle == pytest.approx(128 / 4608.0)
+    assert report.throughput.fitted_cycles_per_token == pytest.approx(4608.0 / 128.0)
     assert report.throughput.critical_path_cycles == pytest.approx(3072.0)
     assert report.throughput.tokens_per_critical_path_cycle == pytest.approx(128 / 3072.0)
     assert report.throughput.projection_cycles == pytest.approx(1536.0)
+    assert report.throughput.projection_fitted_work_cycles == pytest.approx(2048.0)
     assert report.throughput.kv_io_cycles == pytest.approx(0.0)
+    assert report.throughput.kv_io_fitted_work_cycles == pytest.approx(0.0)
     assert report.throughput.attention_cycles == pytest.approx(2048.0)
+    assert report.throughput.attention_fitted_work_cycles == pytest.approx(2048.0)
     assert report.throughput.sync_cycles == pytest.approx(0.0)
+    assert report.throughput.sync_fitted_work_cycles == pytest.approx(0.0)
     assert report.throughput.other_cycles == pytest.approx(512.0)
+    assert report.throughput.other_fitted_work_cycles == pytest.approx(512.0)
     assert report.throughput.projection_bytes == pytest.approx(65536.0)
     assert report.throughput.kv_io_bytes == pytest.approx(0.0)
     assert report.throughput.attention_bytes == pytest.approx(163840.0)
@@ -101,7 +109,11 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
         "nig.node.sdpa.0",
         "nig.node.dma_load.0",
     ]
+    assert report.node_hotspots[0].fitted_work_cycles == pytest.approx(3584.0)
+    assert report.node_hotspots[0].fitted_cycle_share == pytest.approx(3584.0 / 4608.0)
     assert [row.layer_id for row in report.layer_breakdown] == [0, 1]
+    assert report.layer_breakdown[0].fitted_work_cycles == pytest.approx(3584.0)
+    assert report.layer_breakdown[0].fitted_cycle_share == pytest.approx(3584.0 / 4608.0)
 
 
 def test_build_prefill_evaluation_report_rejects_decode_scenarios() -> None:
@@ -186,6 +198,7 @@ def _perf_summary_report() -> PerfSummaryReport:
             "schedule_kind": "single-core",
             "totals": {
                 "estimated_cycles": 4096.0,
+                "fitted_work_cycles": 4608.0,
                 "critical_path_cycles": 3072.0,
                 "total_bytes": 262144.0,
                 "read_bytes": 196608.0,
@@ -195,6 +208,7 @@ def _perf_summary_report() -> PerfSummaryReport:
             "phase_attribution": {
                 "projection": {
                     "estimated_cycles": 1536.0,
+                    "fitted_work_cycles": 2048.0,
                     "compute_cycles": 1536.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -221,6 +235,7 @@ def _perf_summary_report() -> PerfSummaryReport:
                 },
                 "kv_io": {
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 0.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -241,6 +256,7 @@ def _perf_summary_report() -> PerfSummaryReport:
                 },
                 "attention": {
                     "estimated_cycles": 2048.0,
+                    "fitted_work_cycles": 2048.0,
                     "compute_cycles": 1536.0,
                     "memory_cycles": 512.0,
                     "sync_cycles": 0.0,
@@ -261,6 +277,7 @@ def _perf_summary_report() -> PerfSummaryReport:
                 },
                 "sync": {
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 0.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -281,6 +298,7 @@ def _perf_summary_report() -> PerfSummaryReport:
                 },
                 "other": {
                     "estimated_cycles": 512.0,
+                    "fitted_work_cycles": 512.0,
                     "compute_cycles": 256.0,
                     "memory_cycles": 256.0,
                     "sync_cycles": 0.0,
@@ -315,6 +333,11 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "nig.node.sdpa.0": 768.0,
                 "nig.node.dma_load.0": 256.0,
             },
+            "per_node_fitted_work_cycles": {
+                "nig.node.linear.0": 3584.0,
+                "nig.node.sdpa.0": 768.0,
+                "nig.node.dma_load.0": 256.0,
+            },
             "per_node_bytes": {
                 "nig.node.linear.0": 131072.0,
                 "nig.node.sdpa.0": 98304.0,
@@ -322,6 +345,10 @@ def _perf_summary_report() -> PerfSummaryReport:
             },
             "per_layer_cycles": {
                 "0": 3072.0,
+                "1": 1024.0,
+            },
+            "per_layer_fitted_work_cycles": {
+                "0": 3584.0,
                 "1": 1024.0,
             },
             "per_layer_bytes": {

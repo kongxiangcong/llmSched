@@ -68,6 +68,8 @@ def test_phase_d_sweep_local_smoke(tmp_path: Path) -> None:
     assert report["failed_run_count"] == 0
     assert len(report["run_records"]) == 2
     assert len(report["comparisons"]) == 1
+    assert report["run_records"][0]["metrics"]["fitted_work_cycles"] >= report["run_records"][0]["metrics"]["estimated_cycles"]
+    assert report["comparisons"][0]["prefill_compare"]["fitted_work_cycles"]["baseline_value"] >= report["comparisons"][0]["prefill_compare"]["estimated_cycles"]["baseline_value"]
     assert {record["mode"] for record in report["run_records"]} == {"prefill"}
     assert {record["schedule_kind"] for record in report["run_records"]} == {"single-core", "dual-core"}
     assert not report["issues"]
@@ -117,6 +119,14 @@ def test_phase_d_sweep_foundation_matrix(tmp_path: Path) -> None:
     assert report["failed_run_count"] == 0
     assert len(report["run_records"]) == 4
     assert len(report["comparisons"]) == 2
+    prefill_comparison = next(comparison for comparison in report["comparisons"] if comparison["mode"] == "prefill")
+    decode_comparison = next(comparison for comparison in report["comparisons"] if comparison["mode"] == "decode")
+    assert prefill_comparison["node_deltas"]
+    assert prefill_comparison["fitted_layer_deltas"]
+    assert decode_comparison["node_deltas"]
+    assert decode_comparison["fitted_layer_deltas"]
+    assert prefill_comparison["prefill_compare"]["tokens_per_fitted_work_cycle"]["candidate_value"] > 0.0
+    assert decode_comparison["decode_compare"]["kv_related_fitted_work_cycle_share"]["baseline_value"] >= 0.0
     assert {record["mode"] for record in report["run_records"]} == {"prefill", "decode"}
     assert {record["schedule_kind"] for record in report["run_records"]} == {"single-core", "dual-core"}
     assert not report["issues"]

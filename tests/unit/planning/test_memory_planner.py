@@ -397,6 +397,39 @@ def test_plan_memory_sdpa_uses_streaming_attention_tiles() -> None:
     assert artifact.region_summaries["pong"].fits is True
 
 
+def test_plan_memory_sdpa_decode_emits_kv_formulas_without_explicit_kv_memory_classes() -> None:
+    from llm_sched.config.loader import load_scenario_profile, load_target_profile
+    from llm_sched.planning.memory_planner import plan_memory_artifact
+
+    bound_nig = _make_bound_nig_ir(
+        [
+            _make_sdpa_node(
+                node_id="nig.sdpa.decode",
+                shape=[1, 1, 1024],
+                mode="decode",
+                query_len=1,
+                kv_len=2049,
+                layer_id=2,
+                activation_dtype="bf16",
+            )
+        ]
+    )
+    repo_root = Path(__file__).resolve().parents[3]
+    target = load_target_profile(repo_root / "profiles" / "targets" / "riscv_npu_single_core_v1.json")
+    scenario = load_scenario_profile(repo_root / "profiles" / "scenarios" / "decode_token1_kv2048.json")
+
+    artifact = plan_memory_artifact(bound_nig, target, scenario)
+
+    kv_bindings = [binding for binding in artifact.storage_bindings if binding.memory_class == "KV_CACHE"]
+
+    assert {formula.tensor_kind for formula in artifact.kv_formulas} == {"key", "value"}
+    assert {formula.layer_id for formula in artifact.kv_formulas} == {2}
+    assert all(formula.base_symbol == "KV_BASE" for formula in artifact.kv_formulas)
+    assert {binding.tensor_kind for binding in kv_bindings} == {"key", "value"}
+    assert all(diagnostic.address_kind == "kv" for diagnostic in artifact.address_diagnostics)
+    assert all(diagnostic.status == "bound" for diagnostic in artifact.address_diagnostics)
+
+
 def test_plan_memory_rmsnorm_gemm_stages_aux_weight_as_vector() -> None:
     from llm_sched.config.loader import load_scenario_profile, load_target_profile
     from llm_sched.planning.memory_planner import plan_memory_artifact
@@ -992,13 +1025,22 @@ def _make_rope_node(node_id: str, shape: list[int]) -> object:
     )
 
 
-def _make_sdpa_node(node_id: str, shape: list[int]) -> object:
+def _make_sdpa_node(
+    node_id: str,
+    shape: list[int],
+    *,
+    mode: str = "prefill",
+    query_len: int = 128,
+    kv_len: int = 128,
+    layer_id: int | None = None,
+    activation_dtype: str = "float16",
+) -> object:
     from llm_sched.ir.common import AuditRef
     from llm_sched.ir.nig import AttentionBinding, NIGBinding, NIGNode, QuantBinding
 
     quant = QuantBinding(
         weight_dtype="none",
-        activation_dtype="float16",
+        activation_dtype=activation_dtype,
         group_size=1,
         quant_mode="none",
         scale_present=False,
@@ -1006,15 +1048,21 @@ def _make_sdpa_node(node_id: str, shape: list[int]) -> object:
         k_tile_size=128,
         k_tile_aligned=True,
     )
+    canonical_pattern = "SDPA_DECODE" if mode == "decode" else "SDPA"
+    source_ids = (
+        [f"onnx::/model/layers.{layer_id}/self_attn/SDPA_0"]
+        if layer_id is not None
+        else ["onnx::MatMul_qk", "onnx::Softmax_0", "onnx::MatMul_sv"]
+    )
     return NIGNode(
         node_id=node_id,
-        macro_op="SDPA",
+        macro_op=canonical_pattern,
         inputs=["q", "k", "v", "mask"],
         outputs=["attn.out"],
         shape=shape,
         layout="HSD",
         memory_class="activation",
-        legal_opcodes=["SDPA"],
+        legal_opcodes=[canonical_pattern],
         quant=quant,
         binding=NIGBinding(
             resolved_shape=shape,
@@ -1029,9 +1077,9 @@ def _make_sdpa_node(node_id: str, shape: list[int]) -> object:
             output_memory_classes={"attn.out": "ACTIVATION"},
             quant=quant,
             attention=AttentionBinding(
-                mode="prefill",
-                query_len=128,
-                kv_len=128,
+                mode=mode,
+                query_len=query_len,
+                kv_len=kv_len,
                 head_dim=256,
                 num_heads=4,
                 num_key_value_heads=1,
@@ -1040,16 +1088,16 @@ def _make_sdpa_node(node_id: str, shape: list[int]) -> object:
             ),
         ),
         attrs={
-            "canonical_pattern": "SDPA",
-            "query_len": 128,
-            "kv_len": 128,
+            "canonical_pattern": canonical_pattern,
+            "query_len": query_len,
+            "kv_len": kv_len,
             "num_heads": 4,
             "head_dim": 256,
         },
-        source_ref=["onnx::MatMul_qk", "onnx::Softmax_0", "onnx::MatMul_sv"],
+        source_ref=source_ids,
         audit_ref=AuditRef(
             graph_node_ids=[node_id.replace("nig.", "graph.", 1)],
-            source_ids=["onnx::MatMul_qk", "onnx::Softmax_0", "onnx::MatMul_sv"],
+            source_ids=source_ids,
         ),
     )
 

@@ -33,12 +33,21 @@ def build_decode_evaluation_report(
         raise ValueError("decode evaluation requires scenario.mode='decode'")
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
+    fitted_work_cycles = float(perf_summary.totals.get("fitted_work_cycles", total_cycles))
     critical_path_cycles = float(perf_summary.totals.get("critical_path_cycles", total_cycles))
     total_tokens = scenario.batch * scenario.seq_len
     projection_cycles = _phase_cycles(perf_summary, "projection")
+    projection_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "projection")
     kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
+    kv_io_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "kv_io")
     attention_cycles = _phase_cycles(perf_summary, "attention")
+    attention_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "attention")
     sync_cycles = _phase_cycles(
+        perf_summary,
+        "sync",
+        fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
+    )
+    sync_fitted_work_cycles = _phase_fitted_work_cycles(
         perf_summary,
         "sync",
         fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
@@ -49,6 +58,18 @@ def build_decode_evaluation_report(
         fallback=max(
             0.0,
             total_cycles - projection_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+        ),
+    )
+    other_fitted_work_cycles = _phase_fitted_work_cycles(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            fitted_work_cycles
+            - projection_fitted_work_cycles
+            - kv_io_fitted_work_cycles
+            - attention_fitted_work_cycles
+            - sync_fitted_work_cycles,
         ),
     )
     kv_related_bytes = _phase_bytes(
@@ -93,16 +114,23 @@ def build_decode_evaluation_report(
         token_latency=DecodeLatencySummary(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
+            fitted_work_cycles=fitted_work_cycles,
             critical_path_cycles=critical_path_cycles,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
+            fitted_work_cycles_per_token=(fitted_work_cycles / total_tokens) if total_tokens > 0 else 0.0,
             critical_path_cycles_per_token=(
                 critical_path_cycles / total_tokens
             ) if total_tokens > 0 else 0.0,
             projection_cycles=projection_cycles,
+            projection_fitted_work_cycles=projection_fitted_work_cycles,
             kv_io_cycles=kv_io_cycles,
+            kv_io_fitted_work_cycles=kv_io_fitted_work_cycles,
             attention_cycles=attention_cycles,
+            attention_fitted_work_cycles=attention_fitted_work_cycles,
             sync_cycles=sync_cycles,
+            sync_fitted_work_cycles=sync_fitted_work_cycles,
             other_cycles=other_cycles,
+            other_fitted_work_cycles=other_fitted_work_cycles,
             projection_bytes=projection_bytes,
             kv_io_bytes=kv_io_bytes,
             attention_bytes=attention_bytes,
@@ -117,6 +145,9 @@ def build_decode_evaluation_report(
                 1 for diagnostic in memory_plan.address_diagnostics if diagnostic.status == "unresolved"
             ),
             kv_related_cycle_share=(kv_io_cycles / total_cycles) if total_cycles > 0.0 else 0.0,
+            kv_related_fitted_work_cycle_share=(
+                kv_io_fitted_work_cycles / fitted_work_cycles
+            ) if fitted_work_cycles > 0.0 else 0.0,
             kv_related_bytes=kv_related_bytes,
         ),
         memory_hotspot=_build_memory_hotspot(perf_summary, memory_plan),
@@ -125,10 +156,11 @@ def build_decode_evaluation_report(
             gap_counts=dict(coverage_report.gap_counts),
         ),
         macro_hotspots=_build_macro_hotspots(perf_summary, total_cycles),
-        node_hotspots=_build_node_hotspots(perf_summary, total_cycles),
+        node_hotspots=_build_node_hotspots(perf_summary, total_cycles, fitted_work_cycles),
         layer_breakdown=_build_layer_breakdown(
             perf_summary,
             total_cycles,
+            fitted_work_cycles,
             enabled=scenario.reporting.include_layer_breakdown,
         ),
     )
@@ -174,6 +206,23 @@ def _phase_bytes(
     return float(fallback)
 
 
+def _phase_fitted_work_cycles(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float | None = None,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        fitted_work_cycles = float(phase_summary.fitted_work_cycles)
+        if fitted_work_cycles > 0.0 or phase_summary.estimated_cycles == 0.0:
+            return fitted_work_cycles
+        return float(phase_summary.estimated_cycles)
+    if fallback is not None:
+        return float(fallback)
+    return _phase_cycles(perf_summary, phase_name)
+
+
 def _build_macro_hotspots(
     perf_summary: PerfSummaryReport,
     total_cycles: float,
@@ -198,17 +247,25 @@ def _build_macro_hotspots(
 def _build_node_hotspots(
     perf_summary: PerfSummaryReport,
     total_cycles: float,
+    total_fitted_work_cycles: float,
 ) -> list[DecodeNodeHotspot]:
     hotspots: list[DecodeNodeHotspot] = []
     for node_id, estimated_cycles in sorted(
         perf_summary.per_node_cycles.items(),
         key=lambda item: (-float(item[1]), item[0]),
     ):
+        fitted_work_cycles = float(
+            perf_summary.per_node_fitted_work_cycles.get(node_id, estimated_cycles)
+        )
         hotspots.append(
             DecodeNodeHotspot(
                 node_id=node_id,
                 estimated_cycles=float(estimated_cycles),
+                fitted_work_cycles=fitted_work_cycles,
                 cycle_share=(float(estimated_cycles) / total_cycles) if total_cycles > 0.0 else 0.0,
+                fitted_cycle_share=(
+                    fitted_work_cycles / total_fitted_work_cycles
+                ) if total_fitted_work_cycles > 0.0 else 0.0,
                 total_bytes=float(perf_summary.per_node_bytes.get(node_id, 0.0)),
             )
         )
@@ -218,6 +275,7 @@ def _build_node_hotspots(
 def _build_layer_breakdown(
     perf_summary: PerfSummaryReport,
     total_cycles: float,
+    total_fitted_work_cycles: float,
     *,
     enabled: bool,
 ) -> list[DecodeLayerBreakdownRow]:
@@ -228,11 +286,18 @@ def _build_layer_breakdown(
         perf_summary.per_layer_cycles.items(),
         key=lambda item: (-float(item[1]), int(item[0])),
     ):
+        fitted_work_cycles = float(
+            perf_summary.per_layer_fitted_work_cycles.get(layer_key, estimated_cycles)
+        )
         rows.append(
             DecodeLayerBreakdownRow(
                 layer_id=int(layer_key),
                 estimated_cycles=float(estimated_cycles),
+                fitted_work_cycles=fitted_work_cycles,
                 cycle_share=(float(estimated_cycles) / total_cycles) if total_cycles > 0.0 else 0.0,
+                fitted_cycle_share=(
+                    fitted_work_cycles / total_fitted_work_cycles
+                ) if total_fitted_work_cycles > 0.0 else 0.0,
                 total_bytes=float(perf_summary.per_layer_bytes.get(layer_key, 0.0)),
             )
         )

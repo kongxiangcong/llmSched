@@ -62,6 +62,14 @@ def test_phase_d_prefill_foundation_matrix(
     assert report["schedule_kind"] == schedule_kind
     assert report["throughput"]["total_tokens"] == 128
     assert report["throughput"]["estimated_cycles"] > 0.0
+    assert report["throughput"]["fitted_work_cycles"] >= report["throughput"]["estimated_cycles"]
+    assert report["throughput"]["projection_fitted_work_cycles"] >= 0.0
     assert "memory_hotspot" in report
     assert report["memory_hotspot"]["hottest_region_utilization"] >= 0.0
     assert report["macro_hotspots"]
+    assert report["node_hotspots"]
+    assert report["node_hotspots"][0]["fitted_work_cycles"] >= report["node_hotspots"][0]["estimated_cycles"]
+    assert report["node_hotspots"][0]["fitted_cycle_share"] >= 0.0
+    assert report["layer_breakdown"]
+    assert report["layer_breakdown"][0]["fitted_work_cycles"] >= report["layer_breakdown"][0]["estimated_cycles"]
+    assert report["layer_breakdown"][0]["fitted_cycle_share"] >= 0.0

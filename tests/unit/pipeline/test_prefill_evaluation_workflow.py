@@ -28,11 +28,14 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
 
     assert report.scenario_name == "prefill_seq128"
     assert report.throughput.estimated_cycles > 0.0
+    assert report.throughput.fitted_work_cycles >= report.throughput.estimated_cycles
     assert report.throughput.critical_path_cycles > 0.0
     assert report.throughput.projection_bytes > 0.0
     assert report.throughput.attention_bytes >= 0.0
     assert report.throughput.other_bytes >= 0.0
+    assert report.throughput.tokens_per_fitted_work_cycle > 0.0
     assert report.throughput.tokens_per_critical_path_cycle > 0.0
+    assert report.throughput.projection_fitted_work_cycles >= 0.0
     assert report.throughput.phase_attribution["projection"].cycles_per_token > 0.0
     assert report.throughput.phase_attribution["attention"].bytes_per_token >= 0.0
     assert report.throughput.phase_attribution["projection"].compute_cycles >= 0.0
@@ -61,8 +64,12 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {"ACTIVATION": 49152}
     assert report.node_hotspots
     assert report.node_hotspots[0].estimated_cycles > 0.0
+    assert report.node_hotspots[0].fitted_work_cycles >= report.node_hotspots[0].estimated_cycles
+    assert report.node_hotspots[0].fitted_cycle_share >= 0.0
     assert report.layer_breakdown
     assert report.layer_breakdown[0].estimated_cycles > 0.0
+    assert report.layer_breakdown[0].fitted_work_cycles >= report.layer_breakdown[0].estimated_cycles
+    assert report.layer_breakdown[0].fitted_cycle_share >= 0.0
     assert manifest.artifact_index["prefill_evaluation_report"] == "reports/prefill_evaluation_report.json"
     assert summary.status == "completed"
     assert summary.exit_code == 0

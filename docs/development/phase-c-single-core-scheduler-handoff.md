@@ -114,7 +114,7 @@
 - `SPEC-10` now consumes `TileCandidate.rank` directly instead of re-deriving tile preference from `m_tile`.
 - untiled but stable macro ops now still lower into `ScheduleIR`; they no longer disappear just because `SPEC-09` emitted no tile candidate.
 - current untiled coverage now includes `RMSNORM`, `ELEM_ADD`, `GEGLU`, `ROPE`, `ATTENTION_MASK_PREP`, `EMBEDDING_LOOKUP`, `SHAPE_HELPER`, `LAYOUT_FALLBACK`, `ROPE_TABLE`, `KVLOAD`, and `KVSTORE`.
-- Gemma3 single-core prefill smoke now asserts the schedule contains untiled compute blocks such as `RMSNORM` or `ELEM_ADD`.
+- Gemma3 single-core prefill smoke now asserts the schedule contains an untiled helper compute block with `tiling_candidate_id = null`; in the current audited fixture that visible helper surface is `SHAPE_HELPER`, while focused scheduler unit tests continue to cover `RMSNORM` / `ELEM_ADD`.
 
 ## 2026-03-07 Checkpoint
 
