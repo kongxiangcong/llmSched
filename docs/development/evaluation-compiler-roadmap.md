@@ -2369,6 +2369,52 @@ graph TD
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
 
+## 2026-03-15 SPEC-13 Deeper Cycle Model Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-13-deeper-cycle-model.md`
+- `SPEC-13` now exposes a tile- and memory-aware `fitted_work_cycles` surface alongside the existing summary-grade `estimated_cycles`, without reinterpreting the older cycle fields.
+- the new fitted cycle surface is now available at totals, phase attribution, macro, node, and layer granularity inside the canonical `PerfSummaryReport`.
+- workflow serialization now threads optional `tiling_plan` context into descriptor estimation without making that artifact mandatory for older or minimal run roots.
+- fresh closure evidence:
+  - focused `SPEC-13` verification is green: `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
+  - downstream Phase D consumers remain green: `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- what this closes:
+  - the first deeper-cycle slice for `SPEC-13`, so schedule- and memory-aware fitted work cycles now survive descriptor estimation, perf summary aggregation, workflow serialization, CLI output, and smoke coverage
+  - a contract gap where downstream consumers could only see `estimated_cycles`, even when schedule and tiling evidence supported a more conservative fitted work estimate
+- what still remains for `M3`:
+  - prefill/decode top-level adoption of the new fitted cycle surface remains later `SPEC-14/15` work
+  - richer compare-grade exposure of fitted cycles remains later `SPEC-16` work
+  - any future compare or workbench expansion should continue consuming the existing report and compare contracts instead of reopening this batch's summary-grade surfaces
+
+## 2026-03-14 Progress Review Checkpoint
+
+- audit scope:
+  - current phase/spec status versus the roadmap To Do list
+  - current verification reality versus the accepted smoke gate
+  - next execution order for continued development
+- fresh verification evidence on 2026-03-14:
+  - `python -m pytest -q` -> `420 passed`
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+- current status decision:
+  - keep `Phase A`, `Phase B`, and `Phase C` as `done` at the roadmap level
+  - keep `Phase D / M3` as the primary closure target
+  - keep `Phase E / M4` as downstream hardening, not the main blocker
+- current verification decision:
+  - accepted smoke scope is still stable enough to produce artifacts on the canonical path
+  - the repository regression gate is back at full closure, so whole-project verification is green again
+- current full-regression blockers:
+  - none; the previously audited 11 failing checks are now reclosed
+- execution rule from this checkpoint forward:
+  - do not create a second project-status source outside this roadmap
+  - use a dedicated plan doc for execution ordering and task slices
+  - treat `SPEC-19` work as `P1` hardening unless it directly helps close `M3`
+- next-step order:
+  - continue `P0: close M3` in roadmap order: `SPEC-13 -> SPEC-14/15 -> SPEC-16`
+  - only after that resume `P1: harden SPEC-19`
+- active execution entry:
+  - `../plans/2026-03-14-phase-d-m3-closure-followup.md`
+
 ## 2026-03-14 SPEC-16 Grouped Compare Tag Semantics Checkpoint
 
 - plan doc: `../plans/2026-03-14-spec-16-grouped-compare-tag-semantics.md`

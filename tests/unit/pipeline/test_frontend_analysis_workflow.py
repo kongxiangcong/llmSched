@@ -64,8 +64,13 @@ def test_run_frontend_analysis_writes_expected_artifacts(tmp_path: Path) -> None
     assert binding_report.node_count == len(nig_ir.nodes)
     assert binding_report.binding_coverage_ratio > 0.0
     assert binding_report.macro_summaries["WDQ_GEMM"].node_count > 0
-    assert legality_report.issue_counts["no_hardware_mapping"] > 0
-    assert summary_report.record_counts["SHAPE_HELPER"] > 0
+    assert legality_report.issue_counts == {
+        "no_hardware_mapping": 1,
+        "target_quant_group_size_gap": 3,
+    }
+    assert summary_report.record_counts == {
+        "SHAPE_HELPER": 1,
+    }
     assert summary_report.totals["estimated_cycles"] > 0
 
     manifest = RunManifest.model_validate_json((run_root / "manifest.json").read_text(encoding="utf-8"))

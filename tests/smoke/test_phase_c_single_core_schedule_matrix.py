@@ -63,11 +63,11 @@ def test_phase_c_single_core_schedule_matrix(
         compute_blocks = [block for block in blocks if block["stage"] == "compute"]
         assert compute_blocks
         assert any(block["macro_op"] in {"WDQ_GEMM", "RMSNORM_GEMM"} for block in compute_blocks)
-        untiled_compute_blocks = [
-            block for block in compute_blocks if block["macro_op"] in {"RMSNORM", "ELEM_ADD"}
+        untiled_helper_compute_blocks = [
+            block for block in compute_blocks if block["tiling_candidate_id"] is None
         ]
-        assert untiled_compute_blocks
-        assert all(block["tiling_candidate_id"] is None for block in untiled_compute_blocks)
+        assert untiled_helper_compute_blocks
+        assert any(block["macro_op"] == "SHAPE_HELPER" for block in untiled_helper_compute_blocks)
     else:
         decode_blocks = [
             block

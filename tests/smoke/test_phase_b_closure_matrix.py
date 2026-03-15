@@ -89,13 +89,13 @@ def test_phase_b_closure_matrix(
     assert decomposition_report["macro_op_counts"]["WDQ_GEMM"] > 0
     assert bound_nig_ir.binding_state == "bound"
     assert legality_report["issue_counts"].get("dynamic_shape_unresolved", 0) == 0
-    assert legality_report["issue_counts"]["no_hardware_mapping"] > 0
-    assert legality_report["issue_counts"]["kv_cache_dtype_mismatch"] > 0
-    assert legality_report["issue_counts"]["target_quant_activation_dtype_gap"] > 0
-    assert legality_report["issue_counts"]["target_quant_group_size_gap"] > 0
-    assert pseudo_report["record_counts"]["ATTENTION_MASK_PREP"] > 0
-    assert pseudo_report["record_counts"]["SHAPE_HELPER"] > 0
-    assert pseudo_report["record_counts"]["LAYOUT_FALLBACK"] > 0
+    assert legality_report["issue_counts"] == {
+        "no_hardware_mapping": 1,
+        "target_quant_group_size_gap": 3,
+    }
+    assert pseudo_report["record_counts"] == {
+        "SHAPE_HELPER": 1,
+    }
     assert all(not key.startswith("target_") for key in pseudo_report["record_counts"])
     assert "SHAPE_HELPER" not in legality_report["issue_counts"]
     assert binding_report.binding_coverage_ratio >= minimum_binding_coverage

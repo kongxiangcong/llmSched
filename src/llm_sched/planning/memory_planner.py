@@ -140,18 +140,20 @@ def plan_memory_artifact(
                 elif required_bytes == peak_bytes_by_region[region_name] and required_bytes > 0:
                     offending_node_ids_by_region[region_name].append(node.node_id)
 
-        kv_formula = _build_kv_formula(node)
-        if kv_formula is not None:
-            kv_formulas.append(kv_formula)
-            address_diagnostics.append(
-                _build_kv_address_diagnostic(
-                    kv_formula,
-                    storage_binding_id=_kv_storage_binding_id(
-                        node,
-                        tensor_kind=kv_formula.tensor_kind,
-                    ),
+        node_kv_formulas = _build_kv_formulas(node)
+        if node_kv_formulas:
+            kv_formulas.extend(node_kv_formulas)
+            _register_kv_formula_bindings(storage_bindings_by_id, node, node_kv_formulas)
+            for kv_formula in node_kv_formulas:
+                address_diagnostics.append(
+                    _build_kv_address_diagnostic(
+                        kv_formula,
+                        storage_binding_id=_kv_storage_binding_id(
+                            node,
+                            tensor_kind=kv_formula.tensor_kind,
+                        ),
+                    )
                 )
-            )
 
     region_summaries: dict[str, RegionSummary] = {}
     diagnostics: list[VMEMFitDiagnostic] = []
@@ -644,6 +646,32 @@ def _register_storage_bindings(
         bindings_by_id.setdefault(binding.binding_id, binding)
 
 
+def _register_kv_formula_bindings(
+    bindings_by_id: dict[str, StorageBindingDescriptor],
+    node: NIGNode,
+    kv_formulas: list[KVAddressFormula],
+) -> None:
+    for kv_formula in kv_formulas:
+        binding_id = _kv_storage_binding_id(node, tensor_kind=kv_formula.tensor_kind)
+        bindings_by_id.setdefault(
+            binding_id,
+            StorageBindingDescriptor(
+                binding_id=binding_id,
+                node_id=node.node_id,
+                tensor_name=_kv_tensor_name_for_kind(node, kv_formula.tensor_kind),
+                memory_class="KV_CACHE",
+                backing_store="ddr-persistent",
+                source_kind="kv_cache_slice",
+                symbol=kv_formula.base_symbol,
+                binding_scope="per-layer-slice",
+                layout=kv_formula.layout,
+                dtype=node.quant.activation_dtype,
+                layer_id=kv_formula.layer_id,
+                tensor_kind=kv_formula.tensor_kind,
+            ),
+        )
+
+
 def _build_storage_binding_descriptor(
     node: NIGNode,
     allocation: PlannedAllocation,
@@ -736,6 +764,22 @@ def _primary_kv_tensor_name(node: NIGNode) -> str:
         if node.binding.output_memory_classes.get(tensor_name) == "KV_CACHE":
             return tensor_name
     return node.inputs[0] if node.inputs else ""
+
+
+def _kv_tensor_name_for_kind(node: NIGNode, tensor_kind: Literal["key", "value"]) -> str:
+    if node.binding is not None:
+        for tensor_name in [*node.inputs, *node.outputs]:
+            if node.binding.input_memory_classes.get(tensor_name) == "KV_CACHE" and _kv_tensor_kind(
+                node,
+                tensor_name=tensor_name,
+            ) == tensor_kind:
+                return tensor_name
+            if node.binding.output_memory_classes.get(tensor_name) == "KV_CACHE" and _kv_tensor_kind(
+                node,
+                tensor_name=tensor_name,
+            ) == tensor_kind:
+                return tensor_name
+    return f"past_{tensor_kind}"
 
 
 def _activation_input_bytes(
@@ -835,35 +879,47 @@ def _kv_tensor_bytes(node: NIGNode) -> int:
     return max(1, attention.kv_len * attention.num_key_value_heads * attention.head_dim * 2)
 
 
-def _build_kv_formula(node: NIGNode) -> KVAddressFormula | None:
+def _kv_tensor_kinds_for_node(node: NIGNode) -> tuple[Literal["key", "value"], ...]:
+    if node.macro_op in {"KVSTORE", "KVLOAD"}:
+        return (_kv_tensor_kind(node, tensor_name=_primary_kv_tensor_name(node)),)
+    if node.macro_op in {"SDPA", "SDPA_DECODE"}:
+        return ("key", "value")
+    return ()
+
+
+def _build_kv_formulas(node: NIGNode) -> list[KVAddressFormula]:
     if node.binding is None or node.binding.attention is None:
-        return None
-    if node.macro_op not in {"KVSTORE", "KVLOAD"}:
-        return None
+        return []
+    tensor_kinds = _kv_tensor_kinds_for_node(node)
+    if not tensor_kinds:
+        return []
 
     attention = node.binding.attention
     token_stride = attention.num_key_value_heads * attention.head_dim * 2
     kv_kind_stride = attention.kv_len * token_stride
     layer_stride = 2 * kv_kind_stride
     head_stride = attention.head_dim * 2
-    tensor_kind = _kv_tensor_kind(node, tensor_name=_primary_kv_tensor_name(node))
+    layer_id = _infer_layer_id(node)
 
-    return KVAddressFormula(
-        node_id=node.node_id,
-        tensor_kind=tensor_kind,
-        layer_id=_infer_layer_id(node),
-        layout="LBHSD",
-        base_symbol="KV_BASE",
-        layer_stride_bytes=layer_stride,
-        kv_kind_stride_bytes=kv_kind_stride,
-        token_stride_bytes=token_stride,
-        head_stride_bytes=head_stride,
-        dim_stride_bytes=2,
-        formula=(
-            "KV_BASE + layer_id * KV_LAYER_STRIDE + kv_kind * KV_KIND_STRIDE "
-            "+ token * KV_TOKEN_STRIDE"
-        ),
-    )
+    return [
+        KVAddressFormula(
+            node_id=node.node_id,
+            tensor_kind=tensor_kind,
+            layer_id=layer_id,
+            layout="LBHSD",
+            base_symbol="KV_BASE",
+            layer_stride_bytes=layer_stride,
+            kv_kind_stride_bytes=kv_kind_stride,
+            token_stride_bytes=token_stride,
+            head_stride_bytes=head_stride,
+            dim_stride_bytes=2,
+            formula=(
+                "KV_BASE + layer_id * KV_LAYER_STRIDE + kv_kind * KV_KIND_STRIDE "
+                "+ token * KV_TOKEN_STRIDE"
+            ),
+        )
+        for tensor_kind in tensor_kinds
+    ]
 
 
 def _infer_layer_id(node: NIGNode) -> int | None:
