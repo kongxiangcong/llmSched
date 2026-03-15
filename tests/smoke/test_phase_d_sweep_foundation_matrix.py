@@ -121,6 +121,10 @@ def test_phase_d_sweep_foundation_matrix(tmp_path: Path) -> None:
     assert len(report["comparisons"]) == 2
     prefill_comparison = next(comparison for comparison in report["comparisons"] if comparison["mode"] == "prefill")
     decode_comparison = next(comparison for comparison in report["comparisons"] if comparison["mode"] == "decode")
+    assert prefill_comparison["node_deltas"]
+    assert prefill_comparison["fitted_layer_deltas"]
+    assert decode_comparison["node_deltas"]
+    assert decode_comparison["fitted_layer_deltas"]
     assert prefill_comparison["prefill_compare"]["tokens_per_fitted_work_cycle"]["candidate_value"] > 0.0
     assert decode_comparison["decode_compare"]["kv_related_fitted_work_cycle_share"]["baseline_value"] >= 0.0
     assert {record["mode"] for record in report["run_records"]} == {"prefill", "decode"}

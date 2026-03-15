@@ -358,6 +358,211 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         comparison for comparison in report.comparisons if comparison.scenario_name == "decode_token1_kv2048"
     )
     assert decode_comparison.prefill_compare is None
+
+
+def test_build_sweep_delta_report_emits_fitted_node_and_layer_compare_rows() -> None:
+    from llm_sched.analysis import build_sweep_delta_report
+
+    report = build_sweep_delta_report(
+        "phase-d-fitted-rows",
+        "riscv_npu_single_core_v1",
+        [
+            _completed_prefill_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                4096.0,
+                3072.0,
+                layer_rows=[
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 3072.0,
+                        "fitted_work_cycles": 3584.0,
+                        "cycle_share": 0.75,
+                        "fitted_cycle_share": 3584.0 / 4608.0,
+                        "total_bytes": 131072.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1024.0,
+                        "fitted_work_cycles": 1024.0,
+                        "cycle_share": 0.25,
+                        "fitted_cycle_share": 1024.0 / 4608.0,
+                        "total_bytes": 65536.0,
+                    },
+                ],
+                node_rows=[
+                    {
+                        "node_id": "nig.node.linear.0",
+                        "estimated_cycles": 3072.0,
+                        "fitted_work_cycles": 3584.0,
+                        "cycle_share": 0.75,
+                        "fitted_cycle_share": 3584.0 / 4608.0,
+                        "total_bytes": 131072.0,
+                    },
+                    {
+                        "node_id": "nig.node.sdpa.0",
+                        "estimated_cycles": 768.0,
+                        "fitted_work_cycles": 768.0,
+                        "cycle_share": 768.0 / 4096.0,
+                        "fitted_cycle_share": 768.0 / 4608.0,
+                        "total_bytes": 98304.0,
+                    },
+                ],
+            ),
+            _completed_prefill_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                3072.0,
+                2048.0,
+                layer_rows=[
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 2048.0,
+                        "fitted_work_cycles": 2560.0,
+                        "cycle_share": 0.6666666667,
+                        "fitted_cycle_share": 2560.0 / 3584.0,
+                        "total_bytes": 98304.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1024.0,
+                        "fitted_work_cycles": 1024.0,
+                        "cycle_share": 0.3333333333,
+                        "fitted_cycle_share": 1024.0 / 3584.0,
+                        "total_bytes": 65536.0,
+                    },
+                ],
+                node_rows=[
+                    {
+                        "node_id": "nig.node.linear.0",
+                        "estimated_cycles": 2048.0,
+                        "fitted_work_cycles": 2560.0,
+                        "cycle_share": 0.6666666667,
+                        "fitted_cycle_share": 2560.0 / 3584.0,
+                        "total_bytes": 98304.0,
+                    },
+                    {
+                        "node_id": "nig.node.sdpa.0",
+                        "estimated_cycles": 768.0,
+                        "fitted_work_cycles": 768.0,
+                        "cycle_share": 0.25,
+                        "fitted_cycle_share": 768.0 / 3584.0,
+                        "total_bytes": 98304.0,
+                    },
+                ],
+            ),
+            _completed_decode_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                3200.0,
+                900.0,
+                layer_rows=[
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 2000.0,
+                        "fitted_work_cycles": 2240.0,
+                        "cycle_share": 0.625,
+                        "fitted_cycle_share": 2240.0 / 3360.0,
+                        "total_bytes": 114000.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1200.0,
+                        "fitted_work_cycles": 1120.0,
+                        "cycle_share": 0.375,
+                        "fitted_cycle_share": 1120.0 / 3360.0,
+                        "total_bytes": 78000.0,
+                    },
+                ],
+                node_rows=[
+                    {
+                        "node_id": "nig.node.kvload.0",
+                        "estimated_cycles": 900.0,
+                        "fitted_work_cycles": 960.0,
+                        "cycle_share": 0.28125,
+                        "fitted_cycle_share": 0.2857142857,
+                        "total_bytes": 96000.0,
+                    },
+                    {
+                        "node_id": "nig.node.attn.0",
+                        "estimated_cycles": 820.0,
+                        "fitted_work_cycles": 820.0,
+                        "cycle_share": 820.0 / 3200.0,
+                        "fitted_cycle_share": 820.0 / 3360.0,
+                        "total_bytes": 24000.0,
+                    },
+                ],
+            ),
+            _completed_decode_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                2800.0,
+                700.0,
+                layer_rows=[
+                    {
+                        "layer_id": 0,
+                        "estimated_cycles": 1600.0,
+                        "fitted_work_cycles": 1980.0,
+                        "cycle_share": 0.5714285714,
+                        "fitted_cycle_share": 1980.0 / 2960.0,
+                        "total_bytes": 96000.0,
+                    },
+                    {
+                        "layer_id": 1,
+                        "estimated_cycles": 1200.0,
+                        "fitted_work_cycles": 980.0,
+                        "cycle_share": 0.4285714286,
+                        "fitted_cycle_share": 980.0 / 2960.0,
+                        "total_bytes": 80000.0,
+                    },
+                ],
+                node_rows=[
+                    {
+                        "node_id": "nig.node.kvload.0",
+                        "estimated_cycles": 700.0,
+                        "fitted_work_cycles": 760.0,
+                        "cycle_share": 0.25,
+                        "fitted_cycle_share": 0.2567567568,
+                        "total_bytes": 96000.0,
+                    },
+                    {
+                        "node_id": "nig.node.attn.0",
+                        "estimated_cycles": 900.0,
+                        "fitted_work_cycles": 900.0,
+                        "cycle_share": 900.0 / 2800.0,
+                        "fitted_cycle_share": 900.0 / 2960.0,
+                        "total_bytes": 32000.0,
+                    },
+                ],
+            ),
+        ],
+        {"riscv_npu_dual_core_v1": ["core_mode", "num_cores"]},
+    )
+
+    prefill_comparison = next(
+        comparison for comparison in report.comparisons if comparison.mode == "prefill"
+    )
+    decode_comparison = next(
+        comparison for comparison in report.comparisons if comparison.mode == "decode"
+    )
+    node_delta = next(
+        delta for delta in prefill_comparison.node_deltas if delta.node_id == "nig.node.linear.0"
+    )
+    assert node_delta.delta_cycles == pytest.approx(-1024.0)
+    assert node_delta.delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert node_delta.delta_fitted_cycle_share == pytest.approx((2560.0 / 3584.0) - (3584.0 / 4608.0))
+    assert node_delta.delta_bytes == pytest.approx(-32768.0)
+    assert node_delta.change_direction == "down"
+    fitted_layer_delta = next(
+        delta for delta in prefill_comparison.fitted_layer_deltas if delta.layer_id == 0
+    )
+    assert fitted_layer_delta.delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert fitted_layer_delta.delta_fitted_work_cycles_ratio == pytest.approx(-1024.0 / 3584.0)
+    assert fitted_layer_delta.delta_fitted_cycle_share == pytest.approx(
+        (2560.0 / 3584.0) - (3584.0 / 4608.0)
+    )
+    assert fitted_layer_delta.delta_bytes_ratio == pytest.approx(-32768.0 / 131072.0)
+    assert fitted_layer_delta.change_direction == "down"
     assert decode_comparison.decode_compare is not None
     assert decode_comparison.decode_compare.estimated_cycles.delta_value == -400.0
     assert decode_comparison.decode_compare.critical_path_cycles.delta_value == -640.0
@@ -657,6 +862,7 @@ def _completed_prefill_run(
     wdq_cycles: float,
     *,
     layer_rows: list[dict[str, float | int]] | None = None,
+    node_rows: list[dict[str, object]] | None = None,
 ) -> SweepRunRecord:
     return SweepRunRecord.model_validate(
         {
@@ -909,6 +1115,7 @@ def _completed_prefill_run(
                 {"macro_op": "WDQ_GEMM", "estimated_cycles": wdq_cycles, "total_bytes": 131072.0},
                 {"macro_op": "SDPA", "estimated_cycles": 768.0, "total_bytes": 98304.0},
             ],
+            "node_hotspots": node_rows or [],
             "layer_breakdown": layer_rows or [],
         }
     )
@@ -921,6 +1128,7 @@ def _completed_decode_run(
     kvload_cycles: float,
     *,
     layer_rows: list[dict[str, float | int]] | None = None,
+    node_rows: list[dict[str, object]] | None = None,
 ) -> SweepRunRecord:
     return SweepRunRecord.model_validate(
         {
@@ -1178,6 +1386,7 @@ def _completed_decode_run(
                 {"macro_op": "KVLOAD", "estimated_cycles": kvload_cycles, "total_bytes": 64000.0},
                 {"macro_op": "SDPA_DECODE", "estimated_cycles": 700.0, "total_bytes": 40000.0},
             ],
+            "node_hotspots": node_rows or [],
             "layer_breakdown": layer_rows or [],
         }
     )

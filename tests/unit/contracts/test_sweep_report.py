@@ -57,17 +57,31 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                     "macro_hotspots": [
                         {"macro_op": "WDQ_GEMM", "estimated_cycles": 3072.0, "total_bytes": 131072.0}
                     ],
+                    "node_hotspots": [
+                        {
+                            "node_id": "nig.node.linear.0",
+                            "estimated_cycles": 3072.0,
+                            "fitted_work_cycles": 3584.0,
+                            "cycle_share": 0.75,
+                            "fitted_cycle_share": 0.7777777778,
+                            "total_bytes": 131072.0,
+                        }
+                    ],
                     "layer_breakdown": [
                         {
                             "layer_id": 0,
                             "estimated_cycles": 3072.0,
+                            "fitted_work_cycles": 3584.0,
                             "cycle_share": 0.75,
+                            "fitted_cycle_share": 0.7777777778,
                             "total_bytes": 131072.0,
                         },
                         {
                             "layer_id": 1,
                             "estimated_cycles": 1024.0,
+                            "fitted_work_cycles": 1024.0,
                             "cycle_share": 0.25,
+                            "fitted_cycle_share": 0.2222222222,
                             "total_bytes": 131072.0,
                         },
                     ],
@@ -236,8 +250,13 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
 
     assert report.completed_run_count == 4
     assert report.comparisons[0].metric_deltas[0].delta_ratio == -0.25
+    assert report.run_records[0].node_hotspots[0].node_id == "nig.node.linear.0"
+    assert report.run_records[0].node_hotspots[0].fitted_work_cycles == pytest.approx(3584.0)
+    assert report.run_records[0].node_hotspots[0].fitted_cycle_share == pytest.approx(0.7777777778)
     assert report.run_records[0].layer_breakdown[0].layer_id == 0
+    assert report.run_records[0].layer_breakdown[0].fitted_work_cycles == pytest.approx(3584.0)
     assert report.run_records[0].layer_breakdown[0].cycle_share == 0.75
+    assert report.run_records[0].layer_breakdown[0].fitted_cycle_share == pytest.approx(0.7777777778)
     assert report.comparisons[0].layer_deltas[0].delta_bytes == -32768.0
     assert report.comparisons[0].layer_deltas[0].delta_cycle_share < 0.0
     assert report.comparisons[0].layer_deltas[0].change_direction == "down"
@@ -258,6 +277,88 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.comparisons[0].prefill_compare.projection_fitted_work_cycles.delta_value == -512.0
     assert report.comparisons[0].prefill_compare.attention_fitted_work_cycles.delta_value == -256.0
     assert report.comparisons[0].prefill_compare.max_region_utilization.delta_value == -0.25
+
+
+def test_sweep_delta_report_contract_accepts_node_and_fitted_layer_deltas() -> None:
+    report = SweepDeltaReport.model_validate(
+        {
+            "sweep_name": "phase-d-fitted-rows",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "run_records": [],
+            "comparisons": [
+                {
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "metric_deltas": [],
+                    "macro_deltas": [],
+                    "layer_deltas": [],
+                    "node_deltas": [
+                        {
+                            "node_id": "nig.node.linear.0",
+                            "baseline_cycles": 3072.0,
+                            "candidate_cycles": 2048.0,
+                            "delta_cycles": -1024.0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_cycle_share": 0.75,
+                            "candidate_cycle_share": 0.6666666667,
+                            "delta_cycle_share": -0.0833333333,
+                            "delta_cycles_ratio": -0.3333333333,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "fitted_layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "prefill_compare": None,
+                    "decode_compare": None,
+                }
+            ],
+            "issues": [
+                {
+                    "code": "run_failed",
+                    "message": "run failed",
+                }
+            ],
+        }
+    )
+
+    comparison = report.comparisons[0]
+    assert comparison.node_deltas[0].node_id == "nig.node.linear.0"
+    assert comparison.node_deltas[0].delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert comparison.node_deltas[0].delta_fitted_cycle_share == pytest.approx(-0.0634920635)
+    assert comparison.fitted_layer_deltas[0].layer_id == 0
+    assert comparison.fitted_layer_deltas[0].delta_fitted_work_cycles_ratio == pytest.approx(
+        -0.2857142857
+    )
     assert report.comparisons[0].decode_compare is None
     assert report.issues[0].code == "run_failed"
 

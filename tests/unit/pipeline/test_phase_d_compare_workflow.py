@@ -135,6 +135,120 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
 
 
+def test_run_phase_d_compare_preserves_fitted_hotspot_and_layer_compare_rows(tmp_path: Path) -> None:
+    from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
+    from llm_sched.pipeline import run_phase_d_compare
+
+    sweep_root = tmp_path / "phase-d-compare-fitted-rows"
+    (sweep_root / "reports").mkdir(parents=True, exist_ok=True)
+    payload = _sweep_report_payload()
+    prefill_comparison = payload["comparisons"][0]
+    decode_comparison = payload["comparisons"][1]
+    prefill_comparison["node_deltas"] = [
+        {
+            "node_id": "nig.node.linear.0",
+            "baseline_cycles": 3072.0,
+            "candidate_cycles": 2048.0,
+            "delta_cycles": -1024.0,
+            "baseline_fitted_work_cycles": 3584.0,
+            "candidate_fitted_work_cycles": 2560.0,
+            "delta_fitted_work_cycles": -1024.0,
+            "baseline_cycle_share": 0.75,
+            "candidate_cycle_share": 0.6666666667,
+            "delta_cycle_share": -0.0833333333,
+            "delta_cycles_ratio": -0.3333333333,
+            "baseline_fitted_cycle_share": 0.7777777778,
+            "candidate_fitted_cycle_share": 0.7142857143,
+            "delta_fitted_cycle_share": -0.0634920635,
+            "delta_fitted_work_cycles_ratio": -0.2857142857,
+            "baseline_bytes": 131072.0,
+            "candidate_bytes": 98304.0,
+            "delta_bytes": -32768.0,
+            "delta_bytes_ratio": -0.25,
+            "change_direction": "down",
+        }
+    ]
+    prefill_comparison["fitted_layer_deltas"] = [
+        {
+            "layer_id": 0,
+            "baseline_fitted_work_cycles": 3584.0,
+            "candidate_fitted_work_cycles": 2560.0,
+            "delta_fitted_work_cycles": -1024.0,
+            "baseline_fitted_cycle_share": 0.7777777778,
+            "candidate_fitted_cycle_share": 0.7142857143,
+            "delta_fitted_cycle_share": -0.0634920635,
+            "delta_fitted_work_cycles_ratio": -0.2857142857,
+            "baseline_bytes": 131072.0,
+            "candidate_bytes": 98304.0,
+            "delta_bytes": -32768.0,
+            "delta_bytes_ratio": -0.25,
+            "change_direction": "down",
+        }
+    ]
+    decode_comparison["node_deltas"] = [
+        {
+            "node_id": "nig.node.kvload.0",
+            "baseline_cycles": 900.0,
+            "candidate_cycles": 700.0,
+            "delta_cycles": -200.0,
+            "baseline_fitted_work_cycles": 960.0,
+            "candidate_fitted_work_cycles": 760.0,
+            "delta_fitted_work_cycles": -200.0,
+            "baseline_cycle_share": 0.28125,
+            "candidate_cycle_share": 0.25,
+            "delta_cycle_share": -0.03125,
+            "delta_cycles_ratio": -0.2222222222,
+            "baseline_fitted_cycle_share": 0.2857142857,
+            "candidate_fitted_cycle_share": 0.2567567568,
+            "delta_fitted_cycle_share": -0.0289575289,
+            "delta_fitted_work_cycles_ratio": -0.2083333333,
+            "baseline_bytes": 96000.0,
+            "candidate_bytes": 76000.0,
+            "delta_bytes": -20000.0,
+            "delta_bytes_ratio": -0.2083333333,
+            "change_direction": "down",
+        }
+    ]
+    decode_comparison["fitted_layer_deltas"] = [
+        {
+            "layer_id": 0,
+            "baseline_fitted_work_cycles": 2240.0,
+            "candidate_fitted_work_cycles": 1980.0,
+            "delta_fitted_work_cycles": -260.0,
+            "baseline_fitted_cycle_share": 0.6666666667,
+            "candidate_fitted_cycle_share": 0.6689189189,
+            "delta_fitted_cycle_share": 0.0022522522,
+            "delta_fitted_work_cycles_ratio": -0.1160714286,
+            "baseline_bytes": 114000.0,
+            "candidate_bytes": 96000.0,
+            "delta_bytes": -18000.0,
+            "delta_bytes_ratio": -0.1578947368,
+            "change_direction": "down",
+        }
+    ]
+    (sweep_root / "reports" / "sweep_delta_report.json").write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
+
+    result = run_phase_d_compare(sweep_root)
+
+    assert result.status == "completed"
+    report = PhaseDCompareReport.model_validate_json(result.report_path.read_text(encoding="utf-8"))
+    assert report.prefill_compares[0].node_delta_count == 1
+    assert report.prefill_compares[0].node_deltas[0].delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert report.prefill_compares[0].fitted_layer_delta_count == 1
+    assert report.prefill_compares[0].fitted_layer_deltas[0].delta_bytes == pytest.approx(-32768.0)
+    assert report.decode_compares[0].node_delta_count == 1
+    assert report.decode_compares[0].node_deltas[0].delta_fitted_cycle_share == pytest.approx(
+        -0.0289575289
+    )
+    assert report.decode_compares[0].fitted_layer_delta_count == 1
+    assert report.decode_compares[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio == pytest.approx(
+        -0.1160714286
+    )
+
+
 def test_run_phase_d_compare_rejects_missing_sweep_report(tmp_path: Path) -> None:
     from llm_sched.pipeline import run_phase_d_compare
 
