@@ -2320,7 +2320,7 @@ graph TD
   - `PerfPhaseSummary` now carries `per_core_occupied_slots`, `per_core_span_slots`, `occupied_slot_imbalance_slots`, `occupied_slot_balance_ratio`, `span_imbalance_slots`, and `span_balance_ratio` with compatibility-friendly dict/zero defaults
   - performance estimation now computes per-phase per-core occupied time from merged same-core intervals, per-phase per-core span from first-start to last-end, and derives balance/imbalance once from the canonical per-core maps
   - dual-core schedules now preserve zero-valued inactive-core entries in phase-local per-core maps, so one-sided phases show explicit imbalance instead of disappearing into aggregate occupied-slot sums
-  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer phase surface automatically through their existing direct `phase_attribution` handoff, and focused unit/workflow verification remains green (`23 passed`)
+  - `PrefillThroughputSummary` and `DecodeLatencySummary` preserve the richer phase surface automatically through their existing direct `phase_attribution` handoff, and fresh focused unit/workflow verification remains green (`24 passed`)
   - performance-facing smoke coverage now asserts the new JSON fields end to end (`6 passed`)
 - what this closes:
   - one `SPEC-13` deeper-cycle gap where phase attribution still collapsed all occupied time into a single aggregate and could not explain whether dual-core work was actually balanced
