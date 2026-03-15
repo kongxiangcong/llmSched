@@ -28,11 +28,14 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
 
     assert report.scenario_name == "decode_token1_kv2048"
     assert report.token_latency.estimated_cycles > 0.0
+    assert report.token_latency.fitted_work_cycles >= report.token_latency.estimated_cycles
     assert report.token_latency.critical_path_cycles > 0.0
     assert report.token_latency.projection_bytes >= 0.0
     assert report.token_latency.kv_io_bytes >= 0.0
+    assert report.token_latency.kv_io_fitted_work_cycles >= 0.0
     assert report.token_latency.attention_bytes >= 0.0
     assert report.kv_summary.kv_related_bytes >= 0.0
+    assert report.kv_summary.kv_related_fitted_work_cycle_share >= 0.0
     assert report.token_latency.critical_path_cycles_per_token > 0.0
     assert report.token_latency.phase_attribution["projection"].cycles_per_token >= 0.0
     assert report.token_latency.phase_attribution["kv_io"].bytes_per_token >= 0.0

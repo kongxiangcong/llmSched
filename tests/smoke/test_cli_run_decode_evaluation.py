@@ -44,6 +44,9 @@ def test_run_decode_evaluation_writes_report_for_single_core(
     assert manifest["artifact_index"]["decode_evaluation_report"] == "reports/decode_evaluation_report.json"
     assert report["scenario_name"] == "decode_token1_kv2048"
     assert report["token_latency"]["estimated_cycles"] > 0.0
+    assert report["token_latency"]["fitted_work_cycles"] >= report["token_latency"]["estimated_cycles"]
+    assert report["token_latency"]["kv_io_fitted_work_cycles"] >= 0.0
+    assert report["kv_summary"]["kv_related_fitted_work_cycle_share"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["projection"]["cycles_per_token"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["kv_io"]["bytes_per_token"] >= 0.0
     assert report["token_latency"]["phase_attribution"]["kv_io"]["compute_cycles"] >= 0.0

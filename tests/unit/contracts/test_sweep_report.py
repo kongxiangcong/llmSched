@@ -129,6 +129,12 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "delta_value": -1280.0,
                             "delta_ratio": -0.3571428571,
                         },
+                        "fitted_work_cycles": {
+                            "baseline_value": 4608.0,
+                            "candidate_value": 3584.0,
+                            "delta_value": -1024.0,
+                            "delta_ratio": -0.2222222222,
+                        },
                         "attention_byte_share": {
                             "baseline_value": 0.625,
                             "candidate_value": 0.6666666667,
@@ -147,6 +153,12 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "delta_value": 0.0104166667,
                             "delta_ratio": 0.3333333344,
                         },
+                        "tokens_per_fitted_work_cycle": {
+                            "baseline_value": 0.0277777778,
+                            "candidate_value": 0.0357142857,
+                            "delta_value": 0.0079365079,
+                            "delta_ratio": 0.2857142844,
+                        },
                         "tokens_per_critical_path_cycle": {
                             "baseline_value": 0.0357142857,
                             "candidate_value": 0.0555555556,
@@ -158,6 +170,42 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "candidate_value": 24.0,
                             "delta_value": -8.0,
                             "delta_ratio": -0.25,
+                        },
+                        "fitted_cycles_per_token": {
+                            "baseline_value": 36.0,
+                            "candidate_value": 28.0,
+                            "delta_value": -8.0,
+                            "delta_ratio": -0.2222222222,
+                        },
+                        "projection_fitted_work_cycles": {
+                            "baseline_value": 2048.0,
+                            "candidate_value": 1536.0,
+                            "delta_value": -512.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "kv_io_fitted_work_cycles": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "attention_fitted_work_cycles": {
+                            "baseline_value": 2048.0,
+                            "candidate_value": 1792.0,
+                            "delta_value": -256.0,
+                            "delta_ratio": -0.125,
+                        },
+                        "sync_fitted_work_cycles": {
+                            "baseline_value": 0.0,
+                            "candidate_value": 0.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "other_fitted_work_cycles": {
+                            "baseline_value": 512.0,
+                            "candidate_value": 256.0,
+                            "delta_value": -256.0,
+                            "delta_ratio": -0.5,
                         },
                         "bytes_per_cycle": {
                             "baseline_value": 64.0,
@@ -196,15 +244,137 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].prefill_compare.estimated_cycles.delta_value == -1024.0
     assert report.comparisons[0].prefill_compare.critical_path_cycles.delta_value == -1280.0
+    assert report.comparisons[0].prefill_compare.fitted_work_cycles.delta_value == -1024.0
     assert report.comparisons[0].prefill_compare.attention_byte_share.delta_value == pytest.approx(
         0.0416666667
     )
     assert report.comparisons[0].prefill_compare.attention_bytes_per_cycle.delta_value == pytest.approx(
         -6.8571428571
     )
+    assert report.comparisons[0].prefill_compare.tokens_per_fitted_work_cycle.delta_value == pytest.approx(
+        0.0079365079
+    )
+    assert report.comparisons[0].prefill_compare.fitted_cycles_per_token.delta_value == -8.0
+    assert report.comparisons[0].prefill_compare.projection_fitted_work_cycles.delta_value == -512.0
+    assert report.comparisons[0].prefill_compare.attention_fitted_work_cycles.delta_value == -256.0
     assert report.comparisons[0].prefill_compare.max_region_utilization.delta_value == -0.25
     assert report.comparisons[0].decode_compare is None
     assert report.issues[0].code == "run_failed"
+
+
+def test_sweep_delta_report_accepts_decode_fitted_compare_summary() -> None:
+    report = SweepDeltaReport.model_validate(
+        {
+            "sweep_name": "phase-d-foundation",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "run_records": [],
+            "comparisons": [
+                {
+                    "scenario_name": "decode_token1_kv2048",
+                    "mode": "decode",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "metric_deltas": [],
+                    "macro_deltas": [],
+                    "layer_deltas": [],
+                    "prefill_compare": None,
+                    "decode_compare": {
+                        "baseline_schedule_kind": "single-core",
+                        "candidate_schedule_kind": "dual-core",
+                        "estimated_cycles": {
+                            "baseline_value": 3200.0,
+                            "candidate_value": 2800.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.125,
+                        },
+                        "fitted_work_cycles": {
+                            "baseline_value": 3360.0,
+                            "candidate_value": 2960.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.119047619,
+                        },
+                        "fitted_work_cycles_per_token": {
+                            "baseline_value": 3360.0,
+                            "candidate_value": 2960.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.119047619,
+                        },
+                        "projection_fitted_work_cycles": {
+                            "baseline_value": 1220.0,
+                            "candidate_value": 1020.0,
+                            "delta_value": -200.0,
+                            "delta_ratio": -0.1639344262,
+                        },
+                        "kv_io_fitted_work_cycles": {
+                            "baseline_value": 960.0,
+                            "candidate_value": 760.0,
+                            "delta_value": -200.0,
+                            "delta_ratio": -0.2083333333,
+                        },
+                        "attention_fitted_work_cycles": {
+                            "baseline_value": 820.0,
+                            "candidate_value": 900.0,
+                            "delta_value": 80.0,
+                            "delta_ratio": 0.0975609756,
+                        },
+                        "sync_fitted_work_cycles": {
+                            "baseline_value": 120.0,
+                            "candidate_value": 80.0,
+                            "delta_value": -40.0,
+                            "delta_ratio": -0.3333333333,
+                        },
+                        "other_fitted_work_cycles": {
+                            "baseline_value": 240.0,
+                            "candidate_value": 200.0,
+                            "delta_value": -40.0,
+                            "delta_ratio": -0.1666666667,
+                        },
+                        "cycles_per_token": {
+                            "baseline_value": 3200.0,
+                            "candidate_value": 2800.0,
+                            "delta_value": -400.0,
+                            "delta_ratio": -0.125,
+                        },
+                        "kv_related_cycle_share": {
+                            "baseline_value": 0.28125,
+                            "candidate_value": 0.25,
+                            "delta_value": -0.03125,
+                            "delta_ratio": -0.1111111111,
+                        },
+                        "kv_related_fitted_work_cycle_share": {
+                            "baseline_value": 0.2857142857,
+                            "candidate_value": 0.2567567568,
+                            "delta_value": -0.0289575289,
+                            "delta_ratio": -0.1013513511,
+                        },
+                        "kv_related_bytes": {
+                            "baseline_value": 96000.0,
+                            "candidate_value": 96000.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "sync_cycles": {
+                            "baseline_value": 120.0,
+                            "candidate_value": 80.0,
+                            "delta_value": -40.0,
+                            "delta_ratio": -0.3333333333,
+                        },
+                    },
+                }
+            ],
+            "issues": [],
+        }
+    )
+
+    compare = report.comparisons[0].decode_compare
+    assert compare is not None
+    assert compare.fitted_work_cycles.delta_value == -400.0
+    assert compare.fitted_work_cycles_per_token.delta_value == -400.0
+    assert compare.kv_io_fitted_work_cycles.delta_value == -200.0
+    assert compare.kv_related_fitted_work_cycle_share.delta_value == pytest.approx(-0.0289575289)
 
 
 def test_sweep_delta_report_accepts_legacy_compare_summary_without_critical_path_fields() -> None:
@@ -269,6 +439,11 @@ def test_sweep_delta_report_accepts_legacy_compare_summary_without_critical_path
     compare = report.comparisons[0].prefill_compare
     assert compare is not None
     assert compare.critical_path_cycles.delta_value == 0.0
+    assert compare.fitted_work_cycles.delta_value == 0.0
     assert compare.attention_byte_share.delta_value == 0.0
     assert compare.attention_bytes_per_cycle.delta_value == 0.0
+    assert compare.tokens_per_fitted_work_cycle.delta_value == 0.0
     assert compare.tokens_per_critical_path_cycle.delta_value == 0.0
+    assert compare.fitted_cycles_per_token.delta_value == 0.0
+    assert compare.projection_fitted_work_cycles.delta_value == 0.0
+    assert compare.attention_fitted_work_cycles.delta_value == 0.0

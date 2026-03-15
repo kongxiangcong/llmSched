@@ -33,12 +33,21 @@ def build_decode_evaluation_report(
         raise ValueError("decode evaluation requires scenario.mode='decode'")
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
+    fitted_work_cycles = float(perf_summary.totals.get("fitted_work_cycles", total_cycles))
     critical_path_cycles = float(perf_summary.totals.get("critical_path_cycles", total_cycles))
     total_tokens = scenario.batch * scenario.seq_len
     projection_cycles = _phase_cycles(perf_summary, "projection")
+    projection_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "projection")
     kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
+    kv_io_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "kv_io")
     attention_cycles = _phase_cycles(perf_summary, "attention")
+    attention_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "attention")
     sync_cycles = _phase_cycles(
+        perf_summary,
+        "sync",
+        fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
+    )
+    sync_fitted_work_cycles = _phase_fitted_work_cycles(
         perf_summary,
         "sync",
         fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
@@ -49,6 +58,18 @@ def build_decode_evaluation_report(
         fallback=max(
             0.0,
             total_cycles - projection_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+        ),
+    )
+    other_fitted_work_cycles = _phase_fitted_work_cycles(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            fitted_work_cycles
+            - projection_fitted_work_cycles
+            - kv_io_fitted_work_cycles
+            - attention_fitted_work_cycles
+            - sync_fitted_work_cycles,
         ),
     )
     kv_related_bytes = _phase_bytes(
@@ -93,16 +114,23 @@ def build_decode_evaluation_report(
         token_latency=DecodeLatencySummary(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
+            fitted_work_cycles=fitted_work_cycles,
             critical_path_cycles=critical_path_cycles,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
+            fitted_work_cycles_per_token=(fitted_work_cycles / total_tokens) if total_tokens > 0 else 0.0,
             critical_path_cycles_per_token=(
                 critical_path_cycles / total_tokens
             ) if total_tokens > 0 else 0.0,
             projection_cycles=projection_cycles,
+            projection_fitted_work_cycles=projection_fitted_work_cycles,
             kv_io_cycles=kv_io_cycles,
+            kv_io_fitted_work_cycles=kv_io_fitted_work_cycles,
             attention_cycles=attention_cycles,
+            attention_fitted_work_cycles=attention_fitted_work_cycles,
             sync_cycles=sync_cycles,
+            sync_fitted_work_cycles=sync_fitted_work_cycles,
             other_cycles=other_cycles,
+            other_fitted_work_cycles=other_fitted_work_cycles,
             projection_bytes=projection_bytes,
             kv_io_bytes=kv_io_bytes,
             attention_bytes=attention_bytes,
@@ -117,6 +145,9 @@ def build_decode_evaluation_report(
                 1 for diagnostic in memory_plan.address_diagnostics if diagnostic.status == "unresolved"
             ),
             kv_related_cycle_share=(kv_io_cycles / total_cycles) if total_cycles > 0.0 else 0.0,
+            kv_related_fitted_work_cycle_share=(
+                kv_io_fitted_work_cycles / fitted_work_cycles
+            ) if fitted_work_cycles > 0.0 else 0.0,
             kv_related_bytes=kv_related_bytes,
         ),
         memory_hotspot=_build_memory_hotspot(perf_summary, memory_plan),
@@ -172,6 +203,23 @@ def _phase_bytes(
     if phase_summary is not None:
         return float(phase_summary.total_bytes)
     return float(fallback)
+
+
+def _phase_fitted_work_cycles(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float | None = None,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        fitted_work_cycles = float(phase_summary.fitted_work_cycles)
+        if fitted_work_cycles > 0.0 or phase_summary.estimated_cycles == 0.0:
+            return fitted_work_cycles
+        return float(phase_summary.estimated_cycles)
+    if fallback is not None:
+        return float(fallback)
+    return _phase_cycles(perf_summary, phase_name)
 
 
 def _build_macro_hotspots(

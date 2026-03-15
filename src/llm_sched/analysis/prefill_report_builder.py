@@ -33,13 +33,22 @@ def build_prefill_evaluation_report(
         raise ValueError("prefill evaluation requires scenario.mode='prefill'")
 
     total_cycles = float(perf_summary.totals.get("estimated_cycles", 0.0))
+    fitted_work_cycles = float(perf_summary.totals.get("fitted_work_cycles", total_cycles))
     critical_path_cycles = float(perf_summary.totals.get("critical_path_cycles", total_cycles))
     total_bytes = float(perf_summary.totals.get("total_bytes", 0.0))
     total_tokens = scenario.batch * scenario.seq_len
     mxu_cycles = _projection_cycles(perf_summary)
+    projection_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "projection")
     kv_io_cycles = _phase_cycles(perf_summary, "kv_io")
+    kv_io_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "kv_io")
     attention_cycles = _phase_cycles(perf_summary, "attention")
+    attention_fitted_work_cycles = _phase_fitted_work_cycles(perf_summary, "attention")
     sync_cycles = _phase_cycles(
+        perf_summary,
+        "sync",
+        fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
+    )
+    sync_fitted_work_cycles = _phase_fitted_work_cycles(
         perf_summary,
         "sync",
         fallback=float(perf_summary.totals.get("sync_cycles", 0.0)),
@@ -50,6 +59,18 @@ def build_prefill_evaluation_report(
         fallback=max(
             0.0,
             total_cycles - mxu_cycles - kv_io_cycles - attention_cycles - sync_cycles,
+        ),
+    )
+    other_fitted_work_cycles = _phase_fitted_work_cycles(
+        perf_summary,
+        "other",
+        fallback=max(
+            0.0,
+            fitted_work_cycles
+            - projection_fitted_work_cycles
+            - kv_io_fitted_work_cycles
+            - attention_fitted_work_cycles
+            - sync_fitted_work_cycles,
         ),
     )
     projection_bytes = _phase_bytes(perf_summary, "projection", fallback=_sum_bytes(perf_summary, MXU_HEAVY_MACROS))
@@ -80,22 +101,32 @@ def build_prefill_evaluation_report(
         throughput=PrefillThroughputSummary(
             total_tokens=total_tokens,
             estimated_cycles=total_cycles,
+            fitted_work_cycles=fitted_work_cycles,
             critical_path_cycles=critical_path_cycles,
             projection_cycles=mxu_cycles,
+            projection_fitted_work_cycles=projection_fitted_work_cycles,
             kv_io_cycles=kv_io_cycles,
+            kv_io_fitted_work_cycles=kv_io_fitted_work_cycles,
             attention_cycles=attention_cycles,
+            attention_fitted_work_cycles=attention_fitted_work_cycles,
             sync_cycles=sync_cycles,
+            sync_fitted_work_cycles=sync_fitted_work_cycles,
             other_cycles=other_cycles,
+            other_fitted_work_cycles=other_fitted_work_cycles,
             projection_bytes=projection_bytes,
             kv_io_bytes=kv_io_bytes,
             attention_bytes=attention_bytes,
             sync_bytes=sync_bytes,
             other_bytes=other_bytes,
             tokens_per_cycle=(total_tokens / total_cycles) if total_cycles > 0.0 else 0.0,
+            tokens_per_fitted_work_cycle=(
+                total_tokens / fitted_work_cycles
+            ) if fitted_work_cycles > 0.0 else 0.0,
             tokens_per_critical_path_cycle=(
                 total_tokens / critical_path_cycles
             ) if critical_path_cycles > 0.0 else 0.0,
             cycles_per_token=(total_cycles / total_tokens) if total_tokens > 0 else 0.0,
+            fitted_cycles_per_token=(fitted_work_cycles / total_tokens) if total_tokens > 0 else 0.0,
             bytes_per_cycle=(total_bytes / total_cycles) if total_cycles > 0.0 else 0.0,
             phase_attribution=dict(sorted(perf_summary.phase_attribution.items())),
         ),
@@ -156,6 +187,23 @@ def _phase_cycles(
             if macro_op in macros
         )
     )
+
+
+def _phase_fitted_work_cycles(
+    perf_summary: PerfSummaryReport,
+    phase_name: str,
+    *,
+    fallback: float | None = None,
+) -> float:
+    phase_summary = perf_summary.phase_attribution.get(phase_name)
+    if phase_summary is not None:
+        fitted_work_cycles = float(phase_summary.fitted_work_cycles)
+        if fitted_work_cycles > 0.0 or phase_summary.estimated_cycles == 0.0:
+            return fitted_work_cycles
+        return float(phase_summary.estimated_cycles)
+    if fallback is not None:
+        return float(fallback)
+    return _phase_cycles(perf_summary, phase_name)
 
 
 def _phase_bytes(

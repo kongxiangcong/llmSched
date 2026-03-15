@@ -389,9 +389,17 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "critical_path_cycles"),
             _metric_value(candidate_run, "critical_path_cycles"),
         ),
+        fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles"),
+            _metric_value(candidate_run, "fitted_work_cycles"),
+        ),
         projection_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
+        ),
+        projection_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_fitted_work_cycles"),
+            _metric_value(candidate_run, "projection_fitted_work_cycles"),
         ),
         projection_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "projection_bytes"),
@@ -420,6 +428,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
         ),
+        kv_io_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_fitted_work_cycles"),
+            _metric_value(candidate_run, "kv_io_fitted_work_cycles"),
+        ),
         kv_io_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_bytes"),
             _metric_value(candidate_run, "kv_io_bytes"),
@@ -439,6 +451,10 @@ def _build_prefill_compare_summary(
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
+        ),
+        attention_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_fitted_work_cycles"),
+            _metric_value(candidate_run, "attention_fitted_work_cycles"),
         ),
         attention_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "attention_bytes"),
@@ -460,6 +476,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
         ),
+        sync_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_fitted_work_cycles"),
+            _metric_value(candidate_run, "sync_fitted_work_cycles"),
+        ),
         sync_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "sync_bytes"),
             _metric_value(candidate_run, "sync_bytes"),
@@ -479,6 +499,10 @@ def _build_prefill_compare_summary(
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "other_fitted_work_cycles"),
+            _metric_value(candidate_run, "other_fitted_work_cycles"),
         ),
         other_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "other_bytes"),
@@ -500,6 +524,10 @@ def _build_prefill_compare_summary(
             _metric_value(baseline_run, "tokens_per_cycle"),
             _metric_value(candidate_run, "tokens_per_cycle"),
         ),
+        tokens_per_fitted_work_cycle=_build_scalar_delta(
+            _metric_value(baseline_run, "tokens_per_fitted_work_cycle"),
+            _metric_value(candidate_run, "tokens_per_fitted_work_cycle"),
+        ),
         tokens_per_critical_path_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "tokens_per_critical_path_cycle"),
             _metric_value(candidate_run, "tokens_per_critical_path_cycle"),
@@ -507,6 +535,10 @@ def _build_prefill_compare_summary(
         cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "cycles_per_token"),
             _metric_value(candidate_run, "cycles_per_token"),
+        ),
+        fitted_cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_cycles_per_token"),
+            _metric_value(candidate_run, "fitted_cycles_per_token"),
         ),
         bytes_per_cycle=_build_scalar_delta(
             _metric_value(baseline_run, "bytes_per_cycle"),
@@ -534,9 +566,17 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "critical_path_cycles"),
             _metric_value(candidate_run, "critical_path_cycles"),
         ),
+        fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles"),
+            _metric_value(candidate_run, "fitted_work_cycles"),
+        ),
         projection_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "projection_cycles"),
             _metric_value(candidate_run, "projection_cycles"),
+        ),
+        projection_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "projection_fitted_work_cycles"),
+            _metric_value(candidate_run, "projection_fitted_work_cycles"),
         ),
         projection_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "projection_bytes"),
@@ -565,6 +605,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "kv_io_cycles"),
             _metric_value(candidate_run, "kv_io_cycles"),
         ),
+        kv_io_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_io_fitted_work_cycles"),
+            _metric_value(candidate_run, "kv_io_fitted_work_cycles"),
+        ),
         kv_io_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_io_bytes"),
             _metric_value(candidate_run, "kv_io_bytes"),
@@ -584,6 +628,10 @@ def _build_decode_compare_summary(
         attention_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "attention_cycles"),
             _metric_value(candidate_run, "attention_cycles"),
+        ),
+        attention_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "attention_fitted_work_cycles"),
+            _metric_value(candidate_run, "attention_fitted_work_cycles"),
         ),
         attention_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "attention_bytes"),
@@ -605,6 +653,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "cycles_per_token"),
             _metric_value(candidate_run, "cycles_per_token"),
         ),
+        fitted_work_cycles_per_token=_build_scalar_delta(
+            _metric_value(baseline_run, "fitted_work_cycles_per_token"),
+            _metric_value(candidate_run, "fitted_work_cycles_per_token"),
+        ),
         critical_path_cycles_per_token=_build_scalar_delta(
             _metric_value(baseline_run, "critical_path_cycles_per_token"),
             _metric_value(candidate_run, "critical_path_cycles_per_token"),
@@ -613,6 +665,10 @@ def _build_decode_compare_summary(
             _metric_value(baseline_run, "kv_related_cycle_share"),
             _metric_value(candidate_run, "kv_related_cycle_share"),
         ),
+        kv_related_fitted_work_cycle_share=_build_scalar_delta(
+            _metric_value(baseline_run, "kv_related_fitted_work_cycle_share"),
+            _metric_value(candidate_run, "kv_related_fitted_work_cycle_share"),
+        ),
         kv_related_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "kv_related_bytes"),
             _metric_value(candidate_run, "kv_related_bytes"),
@@ -620,6 +676,10 @@ def _build_decode_compare_summary(
         sync_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "sync_cycles"),
             _metric_value(candidate_run, "sync_cycles"),
+        ),
+        sync_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "sync_fitted_work_cycles"),
+            _metric_value(candidate_run, "sync_fitted_work_cycles"),
         ),
         sync_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "sync_bytes"),
@@ -640,6 +700,10 @@ def _build_decode_compare_summary(
         other_cycles=_build_scalar_delta(
             _metric_value(baseline_run, "other_cycles"),
             _metric_value(candidate_run, "other_cycles"),
+        ),
+        other_fitted_work_cycles=_build_scalar_delta(
+            _metric_value(baseline_run, "other_fitted_work_cycles"),
+            _metric_value(candidate_run, "other_fitted_work_cycles"),
         ),
         other_bytes=_build_scalar_delta(
             _metric_value(baseline_run, "other_bytes"),

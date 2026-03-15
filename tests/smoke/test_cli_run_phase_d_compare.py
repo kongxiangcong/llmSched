@@ -54,6 +54,8 @@ def test_run_phase_d_compare_writes_report(
     assert report["prefill_compare_count"] == 1
     assert report["decode_compare_count"] == 0
     assert len(report["prefill_compares"]) == 1
+    assert report["prefill_compares"][0]["fitted_work_cycles"]["baseline_value"] >= report["prefill_compares"][0]["estimated_cycles"]["baseline_value"]
+    assert report["prefill_compares"][0]["tokens_per_fitted_work_cycle"]["candidate_value"] > 0.0
 
 
 def test_run_phase_d_compare_rejects_missing_sweep_report_without_traceback(tmp_path: Path) -> None:

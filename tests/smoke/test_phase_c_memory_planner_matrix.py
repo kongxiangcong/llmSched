@@ -84,8 +84,9 @@ def test_phase_c_memory_planner_matrix(
 
     assert manifest["status"] == "completed"
     assert manifest["artifact_index"]["memory_plan"] == "artifacts/memory_plan.json"
-    assert memory_plan["kv_formulas"]
+    assert memory_plan["kv_formulas"] == []
     assert memory_plan["storage_bindings"]
+    assert memory_plan["address_diagnostics"]
     assert memory_plan["allocations"][0]["lifetime_bucket"] in {"preload", "compute", "store", "persist"}
     assert memory_plan["allocations"][0]["backing_store"] in {"vmem-local", "ddr-backed-staged", "ddr-persistent"}
     assert all(
@@ -93,7 +94,7 @@ def test_phase_c_memory_planner_matrix(
         for allocation in memory_plan["allocations"]
         if allocation["backing_store"] != "vmem-local"
     )
-    assert len(memory_plan["address_diagnostics"]) >= len(memory_plan["kv_formulas"])
+    assert len(memory_plan["address_diagnostics"]) == len(memory_plan["storage_bindings"])
     assert overflow_regions == expected_overflow_regions
     assert not unresolved_addresses
     assert "peak_lifetime_bucket" in memory_plan["region_summaries"]["ping"]
@@ -103,5 +104,6 @@ def test_phase_c_memory_planner_matrix(
     assert "required_bytes_by_backing_store" in memory_plan["diagnostics"][0]
     assert "weight" in {diagnostic["address_kind"] for diagnostic in memory_plan["address_diagnostics"]}
     assert "quant" in {diagnostic["address_kind"] for diagnostic in memory_plan["address_diagnostics"]}
+    assert {diagnostic["status"] for diagnostic in memory_plan["address_diagnostics"]} == {"bound"}
     assert memory_plan["region_summaries"]["quant"]["fits"] is True
     assert memory_plan["region_summaries"]["wdq_reserved"]["fits"] is True
