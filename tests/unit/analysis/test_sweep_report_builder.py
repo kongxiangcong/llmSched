@@ -122,6 +122,7 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.decode_compare is None
     assert prefill_comparison.prefill_compare.estimated_cycles.delta_value == -1024.0
     assert prefill_comparison.prefill_compare.critical_path_cycles.delta_value == -1280.0
+    assert prefill_comparison.prefill_compare.fitted_work_cycles.delta_value == -1024.0
     assert prefill_comparison.prefill_compare.projection_cycles.delta_value == -512.0
     assert prefill_comparison.prefill_compare.attention_cycles.delta_value == -256.0
     assert prefill_comparison.prefill_compare.other_cycles.delta_value == -256.0
@@ -340,9 +341,17 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert prefill_comparison.prefill_compare.tokens_per_cycle.delta_value == (
         (128.0 / 3072.0) - (128.0 / 4096.0)
     )
+    assert prefill_comparison.prefill_compare.tokens_per_fitted_work_cycle.delta_value == pytest.approx(
+        (128.0 / 3584.0) - (128.0 / 4608.0)
+    )
     assert prefill_comparison.prefill_compare.tokens_per_critical_path_cycle.delta_value == pytest.approx(
         (128.0 / 2304.0) - (128.0 / 3584.0)
     )
+    assert prefill_comparison.prefill_compare.fitted_cycles_per_token.delta_value == pytest.approx(
+        (3584.0 / 128.0) - (4608.0 / 128.0)
+    )
+    assert prefill_comparison.prefill_compare.projection_fitted_work_cycles.delta_value == -512.0
+    assert prefill_comparison.prefill_compare.attention_fitted_work_cycles.delta_value == -256.0
     assert prefill_comparison.prefill_compare.max_region_utilization.delta_value == pytest.approx(-0.25)
 
     decode_comparison = next(
@@ -352,6 +361,7 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare is not None
     assert decode_comparison.decode_compare.estimated_cycles.delta_value == -400.0
     assert decode_comparison.decode_compare.critical_path_cycles.delta_value == -640.0
+    assert decode_comparison.decode_compare.fitted_work_cycles.delta_value == -400.0
     assert decode_comparison.decode_compare.projection_cycles.delta_value == -200.0
     assert decode_comparison.decode_compare.kv_io_cycles.delta_value == -200.0
     assert decode_comparison.decode_compare.attention_cycles.delta_value == 80.0
@@ -478,7 +488,15 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
     assert decode_comparison.decode_compare.other_sync_cycles.delta_value == 0.0
     assert decode_comparison.decode_compare.other_occupied_slots.delta_value == -48.0
     assert decode_comparison.decode_compare.other_occupied_slots_per_token.delta_value == -48.0
+    assert decode_comparison.decode_compare.fitted_work_cycles_per_token.delta_value == -400.0
     assert decode_comparison.decode_compare.critical_path_cycles_per_token.delta_value == -640.0
+    assert decode_comparison.decode_compare.kv_related_fitted_work_cycle_share.delta_value == pytest.approx(
+        (760.0 / 2960.0) - (960.0 / 3360.0)
+    )
+    assert decode_comparison.decode_compare.projection_fitted_work_cycles.delta_value == -200.0
+    assert decode_comparison.decode_compare.kv_io_fitted_work_cycles.delta_value == -200.0
+    assert decode_comparison.decode_compare.sync_fitted_work_cycles.delta_value == -40.0
+    assert decode_comparison.decode_compare.other_fitted_work_cycles.delta_value == -40.0
     assert decode_comparison.decode_compare.projection_cycle_share.delta_value == pytest.approx(
         (780.0 / 2800.0) - (980.0 / 3200.0)
     )
@@ -654,11 +672,17 @@ def _completed_prefill_run(
             "metrics": {
                 "estimated_cycles": estimated_cycles,
                 "critical_path_cycles": estimated_cycles - 512.0 if schedule_kind == "single-core" else estimated_cycles - 768.0,
+                "fitted_work_cycles": estimated_cycles + 512.0,
                 "projection_cycles": 1536.0 if schedule_kind == "single-core" else 1024.0,
+                "projection_fitted_work_cycles": 2048.0 if schedule_kind == "single-core" else 1536.0,
                 "kv_io_cycles": 0.0,
+                "kv_io_fitted_work_cycles": 0.0,
                 "attention_cycles": 2048.0 if schedule_kind == "single-core" else 1792.0,
+                "attention_fitted_work_cycles": 2048.0 if schedule_kind == "single-core" else 1792.0,
                 "sync_cycles": 0.0,
+                "sync_fitted_work_cycles": 0.0,
                 "other_cycles": 512.0 if schedule_kind == "single-core" else 256.0,
+                "other_fitted_work_cycles": 512.0 if schedule_kind == "single-core" else 256.0,
                 "projection_bytes": 65536.0 if schedule_kind == "single-core" else 49152.0,
                 "kv_io_bytes": 0.0,
                 "attention_bytes": 163840.0 if schedule_kind == "single-core" else 131072.0,
@@ -873,9 +897,11 @@ def _completed_prefill_run(
                 "other_span_imbalance_slots": 0.0 if schedule_kind == "single-core" else 64.0,
                 "other_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.5,
                 "tokens_per_cycle": 128.0 / estimated_cycles,
+                "tokens_per_fitted_work_cycle": 128.0 / (estimated_cycles + 512.0),
                 "tokens_per_critical_path_cycle": 128.0
                 / (estimated_cycles - 512.0 if schedule_kind == "single-core" else estimated_cycles - 768.0),
                 "cycles_per_token": estimated_cycles / 128.0,
+                "fitted_cycles_per_token": (estimated_cycles + 512.0) / 128.0,
                 "bytes_per_cycle": 64.0,
                 "max_region_utilization": 0.75 if schedule_kind == "single-core" else 0.5,
             },
@@ -910,9 +936,13 @@ def _completed_decode_run(
             "metrics": {
                 "estimated_cycles": estimated_cycles,
                 "critical_path_cycles": estimated_cycles - 320.0 if schedule_kind == "single-core" else estimated_cycles - 560.0,
+                "fitted_work_cycles": 3360.0 if schedule_kind == "single-core" else 2960.0,
                 "projection_cycles": 980.0 if schedule_kind == "single-core" else 780.0,
+                "projection_fitted_work_cycles": 1220.0 if schedule_kind == "single-core" else 1020.0,
                 "kv_io_cycles": kvload_cycles,
+                "kv_io_fitted_work_cycles": 960.0 if schedule_kind == "single-core" else 760.0,
                 "attention_cycles": 820.0 if schedule_kind == "single-core" else 900.0,
+                "attention_fitted_work_cycles": 820.0 if schedule_kind == "single-core" else 900.0,
                 "projection_bytes": 48000.0 if schedule_kind == "single-core" else 36000.0,
                 "kv_io_bytes": 96000.0,
                 "attention_bytes": 24000.0 if schedule_kind == "single-core" else 32000.0,
@@ -1054,13 +1084,19 @@ def _completed_decode_run(
                 "attention_span_imbalance_slots": 0.0 if schedule_kind == "single-core" else 64.0,
                 "attention_span_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.8,
                 "cycles_per_token": estimated_cycles,
+                "fitted_work_cycles_per_token": 3360.0 if schedule_kind == "single-core" else 2960.0,
                 "critical_path_cycles_per_token": estimated_cycles - 320.0
                 if schedule_kind == "single-core"
                 else estimated_cycles - 560.0,
                 "kv_related_cycle_share": kvload_cycles / estimated_cycles,
+                "kv_related_fitted_work_cycle_share": (960.0 / 3360.0)
+                if schedule_kind == "single-core"
+                else (760.0 / 2960.0),
                 "kv_related_bytes": 96000.0,
                 "sync_cycles": 120.0 if schedule_kind == "single-core" else 80.0,
+                "sync_fitted_work_cycles": 120.0 if schedule_kind == "single-core" else 80.0,
                 "other_cycles": 280.0 if schedule_kind == "single-core" else 240.0,
+                "other_fitted_work_cycles": 240.0 if schedule_kind == "single-core" else 200.0,
                 "sync_occupied_slot_imbalance_slots": 0.0 if schedule_kind == "single-core" else 32.0,
                 "sync_occupied_slot_balance_ratio": 1.0 if schedule_kind == "single-core" else 0.5,
                 "sync_span_imbalance_slots": 0.0 if schedule_kind == "single-core" else 32.0,

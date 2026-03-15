@@ -1,5 +1,17 @@
 # Phase D Prefill Foundation Handoff
 
+## 2026-03-15 Fitted-Cycle Topline Adoption Checkpoint
+
+- New plan: `../plans/2026-03-15-spec-14-15-fitted-topline-adoption.md`
+- `PrefillEvaluationReport.throughput` now carries summary-grade `fitted_work_cycles`, fitted per-token ratios, and per-phase fitted toplines sourced from `SPEC-13`.
+- `SPEC-14` now reuses `PerfSummaryReport.totals["fitted_work_cycles"]` plus `phase_attribution[*].fitted_work_cycles` without reinterpreting existing `estimated_cycles`, `macro_hotspots`, `node_hotspots`, or `layer_breakdown`.
+- focused prefill/decode builder, workflow, and smoke regressions remain green (`20 passed`) with the stronger summary-grade fitted-cycle surface.
+- This batch deliberately does not introduce:
+  - fitted-cycle hotspot rows
+  - fitted-cycle layer breakdown rows
+  - compare-grade fitted-cycle aggregation
+  - deeper cycle-model changes outside `SPEC-13`
+
 ## 2026-03-12 Hottest-Region Memory-Class Reuse Checkpoint
 
 - New plan: `../plans/2026-03-12-spec-08-prefill-decode-memory-class-hotspot-reuse.md`

@@ -83,6 +83,10 @@ def test_phase_d_perf_foundation_matrix(
     assert perf_report["vmem_region_capacity_bytes"]
     assert perf_report["vmem_region_peak_utilization"]
     assert perf_report["totals"]["estimated_cycles"] > 0.0
+    assert perf_report["totals"]["fitted_work_cycles"] >= perf_report["totals"]["estimated_cycles"]
+    assert perf_report["phase_attribution"]["other"]["fitted_work_cycles"] >= 0.0
+    assert perf_report["per_node_fitted_work_cycles"]
+    assert perf_report["per_layer_fitted_work_cycles"]
     assert perf_report["bottleneck_counts"].get("compute-bound", 0) > 0
     if schedule_kind == "dual-core":
         assert perf_report["bottleneck_counts"].get("sync-bound", 0) > 0

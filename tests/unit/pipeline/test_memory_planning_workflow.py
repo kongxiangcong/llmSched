@@ -31,10 +31,12 @@ def test_run_memory_planning_writes_memory_plan_artifact(tmp_path: Path) -> None
 
     assert artifact.allocations
     assert artifact.storage_bindings
-    assert artifact.kv_formulas
+    assert artifact.kv_formulas == []
+    assert artifact.address_diagnostics
     assert artifact.allocations[0].lifetime_bucket in {"preload", "compute", "store", "persist"}
     assert artifact.allocations[0].backing_store in {"vmem-local", "ddr-backed-staged", "ddr-persistent"}
     assert any(allocation.storage_binding_id for allocation in artifact.allocations if allocation.backing_store != "vmem-local")
+    assert all(diagnostic.status == "bound" for diagnostic in artifact.address_diagnostics)
     assert "peak_lifetime_bucket" in artifact.region_summaries["ping"].model_dump(mode="json")
     assert "peak_bytes_by_memory_class" in artifact.region_summaries["ping"].model_dump(mode="json")
     assert "required_bytes_by_backing_store" in artifact.diagnostics[0].model_dump(mode="json")

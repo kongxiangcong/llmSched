@@ -35,6 +35,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -1280.0,
                         "delta_ratio": -0.3571428571,
                     },
+                    "fitted_work_cycles": {
+                        "baseline_value": 4608.0,
+                        "candidate_value": 3584.0,
+                        "delta_value": -1024.0,
+                        "delta_ratio": -0.2222222222,
+                    },
                     "projection_cycles": {
                         "baseline_value": 1536.0,
                         "candidate_value": 1024.0,
@@ -191,6 +197,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": 0.0104166667,
                         "delta_ratio": 0.3333333344,
                     },
+                    "tokens_per_fitted_work_cycle": {
+                        "baseline_value": 0.0277777778,
+                        "candidate_value": 0.0357142857,
+                        "delta_value": 0.0079365079,
+                        "delta_ratio": 0.2857142844,
+                    },
                     "tokens_per_critical_path_cycle": {
                         "baseline_value": 0.0357142857,
                         "candidate_value": 0.0555555556,
@@ -202,6 +214,42 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 24.0,
                         "delta_value": -8.0,
                         "delta_ratio": -0.25,
+                    },
+                    "fitted_cycles_per_token": {
+                        "baseline_value": 36.0,
+                        "candidate_value": 28.0,
+                        "delta_value": -8.0,
+                        "delta_ratio": -0.2222222222,
+                    },
+                    "projection_fitted_work_cycles": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1536.0,
+                        "delta_value": -512.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "kv_io_fitted_work_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "attention_fitted_work_cycles": {
+                        "baseline_value": 2048.0,
+                        "candidate_value": 1792.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.125,
+                    },
+                    "sync_fitted_work_cycles": {
+                        "baseline_value": 0.0,
+                        "candidate_value": 0.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "other_fitted_work_cycles": {
+                        "baseline_value": 512.0,
+                        "candidate_value": 256.0,
+                        "delta_value": -256.0,
+                        "delta_ratio": -0.5,
                     },
                     "bytes_per_cycle": {
                         "baseline_value": 64.0,
@@ -237,6 +285,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 2240.0,
                         "delta_value": -640.0,
                         "delta_ratio": -0.2222222222,
+                    },
+                    "fitted_work_cycles": {
+                        "baseline_value": 3360.0,
+                        "candidate_value": 2960.0,
+                        "delta_value": -400.0,
+                        "delta_ratio": -0.119047619,
                     },
                     "projection_cycles": {
                         "baseline_value": 980.0,
@@ -364,6 +418,42 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "delta_value": -400.0,
                         "delta_ratio": -0.125,
                     },
+                    "fitted_work_cycles_per_token": {
+                        "baseline_value": 3360.0,
+                        "candidate_value": 2960.0,
+                        "delta_value": -400.0,
+                        "delta_ratio": -0.119047619,
+                    },
+                    "projection_fitted_work_cycles": {
+                        "baseline_value": 1220.0,
+                        "candidate_value": 1020.0,
+                        "delta_value": -200.0,
+                        "delta_ratio": -0.1639344262,
+                    },
+                    "kv_io_fitted_work_cycles": {
+                        "baseline_value": 960.0,
+                        "candidate_value": 760.0,
+                        "delta_value": -200.0,
+                        "delta_ratio": -0.2083333333,
+                    },
+                    "attention_fitted_work_cycles": {
+                        "baseline_value": 820.0,
+                        "candidate_value": 900.0,
+                        "delta_value": 80.0,
+                        "delta_ratio": 0.0975609756,
+                    },
+                    "sync_fitted_work_cycles": {
+                        "baseline_value": 120.0,
+                        "candidate_value": 80.0,
+                        "delta_value": -40.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                    "other_fitted_work_cycles": {
+                        "baseline_value": 240.0,
+                        "candidate_value": 200.0,
+                        "delta_value": -40.0,
+                        "delta_ratio": -0.1666666667,
+                    },
                     "critical_path_cycles_per_token": {
                         "baseline_value": 2880.0,
                         "candidate_value": 2240.0,
@@ -375,6 +465,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                         "candidate_value": 0.25,
                         "delta_value": -0.03125,
                         "delta_ratio": -0.1111111111,
+                    },
+                    "kv_related_fitted_work_cycle_share": {
+                        "baseline_value": 0.2857142857,
+                        "candidate_value": 0.2567567568,
+                        "delta_value": -0.0289575289,
+                        "delta_ratio": -0.1013513511,
                     },
                     "kv_related_bytes": {
                         "baseline_value": 96000.0,
@@ -429,12 +525,18 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
     assert report.decode_compare_count == 1
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
+    assert report.prefill_compares[0].fitted_work_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].projection_cycles.delta_value == -512.0
     assert report.prefill_compares[0].projection_bytes.delta_value == -16384.0
     assert report.prefill_compares[0].attention_byte_share.delta_value == pytest.approx(0.0416666667)
     assert report.prefill_compares[0].projection_bytes_per_cycle.delta_value == pytest.approx(
         5.3333333333
     )
+    assert report.prefill_compares[0].tokens_per_fitted_work_cycle.delta_value == pytest.approx(
+        0.0079365079
+    )
+    assert report.prefill_compares[0].fitted_cycles_per_token.delta_value == -8.0
+    assert report.prefill_compares[0].projection_fitted_work_cycles.delta_value == -512.0
     assert report.prefill_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0416666667)
     assert report.prefill_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0833333333)
     assert report.decode_compares[0].sync_cycles.delta_value == -40.0
@@ -449,6 +551,12 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
     assert report.decode_compares[0].kv_io_byte_share.delta_value == pytest.approx(0.0454545455)
     assert report.decode_compares[0].kv_io_bytes_per_cycle.delta_value == pytest.approx(
         30.4761904762
+    )
+    assert report.decode_compares[0].fitted_work_cycles.delta_value == -400.0
+    assert report.decode_compares[0].fitted_work_cycles_per_token.delta_value == -400.0
+    assert report.decode_compares[0].kv_io_fitted_work_cycles.delta_value == -200.0
+    assert report.decode_compares[0].kv_related_fitted_work_cycle_share.delta_value == pytest.approx(
+        -0.0289575289
     )
     assert report.decode_compares[0].projection_cycle_share.delta_value == pytest.approx(-0.0276785714)
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
@@ -536,6 +644,7 @@ def test_phase_d_compare_report_accepts_legacy_rows_without_critical_path_fields
     )
 
     assert report.prefill_compares[0].critical_path_cycles.delta_value == 0.0
+    assert report.prefill_compares[0].fitted_work_cycles.delta_value == 0.0
     assert report.prefill_compares[0].projection_cycles.delta_value == 0.0
     assert report.prefill_compares[0].projection_bytes.delta_value == 0.0
     assert report.prefill_compares[0].projection_byte_share.delta_value == 0.0
@@ -545,5 +654,8 @@ def test_phase_d_compare_report_accepts_legacy_rows_without_critical_path_fields
     assert report.prefill_compares[0].attention_bytes.delta_value == 0.0
     assert report.prefill_compares[0].attention_byte_share.delta_value == 0.0
     assert report.prefill_compares[0].attention_bytes_per_cycle.delta_value == 0.0
+    assert report.prefill_compares[0].tokens_per_fitted_work_cycle.delta_value == 0.0
     assert report.prefill_compares[0].attention_cycle_share.delta_value == 0.0
+    assert report.prefill_compares[0].fitted_cycles_per_token.delta_value == 0.0
+    assert report.prefill_compares[0].projection_fitted_work_cycles.delta_value == 0.0
     assert report.prefill_compares[0].tokens_per_critical_path_cycle.delta_value == 0.0

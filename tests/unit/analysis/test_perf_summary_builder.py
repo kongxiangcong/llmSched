@@ -112,6 +112,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "write_bytes": 12288.0,
                     "total_bytes": 32768.0,
                     "estimated_cycles": 48.0,
+                    "fitted_work_cycles": 64.0,
                     "sync_cycles": 0.0,
                     "bandwidth_pressure": 682.6666666666666,
                 },
@@ -126,6 +127,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "write_bytes": 8192.0,
                     "total_bytes": 16384.0,
                     "estimated_cycles": 26.0,
+                    "fitted_work_cycles": 26.0,
                     "sync_cycles": 18.0,
                     "bandwidth_pressure": 630.1538461538462,
                 },
@@ -140,6 +142,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "write_bytes": 0.0,
                     "total_bytes": 0.0,
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 0.0,
                     "sync_cycles": 0.0,
                     "bandwidth_pressure": 0.0,
                 },
@@ -237,6 +240,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {
         "estimated_cycles": 74.0,
+        "fitted_work_cycles": 90.0,
         "critical_path_cycles": 54.0,
         "total_bytes": 49152.0,
         "read_bytes": 28672.0,
@@ -244,6 +248,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
         "sync_cycles": 18.0,
     }
     assert report.phase_attribution["projection"].estimated_cycles == 48.0
+    assert report.phase_attribution["projection"].fitted_work_cycles == 64.0
     assert report.phase_attribution["projection"].compute_cycles == 48.0
     assert report.phase_attribution["projection"].memory_cycles == 0.0
     assert report.phase_attribution["projection"].sync_cycles == 0.0
@@ -270,6 +275,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["projection"].read_bytes_by_memory_class == {"WEIGHT": 8192.0}
     assert report.phase_attribution["projection"].write_bytes_by_memory_class == {}
     assert report.phase_attribution["sync"].estimated_cycles == 18.0
+    assert report.phase_attribution["sync"].fitted_work_cycles == 18.0
     assert report.phase_attribution["sync"].compute_cycles == 0.0
     assert report.phase_attribution["sync"].memory_cycles == 0.0
     assert report.phase_attribution["sync"].sync_cycles == 18.0
@@ -294,6 +300,7 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["kv_io"].estimated_cycles == 0.0
     assert report.phase_attribution["attention"].estimated_cycles == 0.0
     assert report.phase_attribution["other"].estimated_cycles == 8.0
+    assert report.phase_attribution["other"].fitted_work_cycles == 8.0
     assert report.phase_attribution["other"].compute_cycles == 0.0
     assert report.phase_attribution["other"].memory_cycles == 8.0
     assert report.phase_attribution["other"].sync_cycles == 0.0
@@ -316,9 +323,14 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.phase_attribution["other"].read_bytes_by_memory_class == {"ACTIVATION": 8192.0}
     assert report.phase_attribution["other"].write_bytes_by_memory_class == {"ACTIVATION": 8192.0}
     assert report.per_macro_cycles == {"WDQ_GEMM": 74.0}
+    assert report.per_macro_fitted_work_cycles == {"WDQ_GEMM": 90.0}
     assert report.per_macro_bytes == {"WDQ_GEMM": 49152.0}
     assert report.per_node_cycles == {
         "nig.node.linear.0": 48.0,
+        "nig.node.linear.1": 26.0,
+    }
+    assert report.per_node_fitted_work_cycles == {
+        "nig.node.linear.0": 64.0,
         "nig.node.linear.1": 26.0,
     }
     assert report.per_node_bytes == {
@@ -327,6 +339,10 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     }
     assert report.per_layer_cycles == {
         "0": 48.0,
+        "1": 26.0,
+    }
+    assert report.per_layer_fitted_work_cycles == {
+        "0": 64.0,
         "1": 26.0,
     }
     assert report.per_layer_bytes == {

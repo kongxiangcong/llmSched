@@ -24,12 +24,14 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
             "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
             "totals": {
                 "estimated_cycles": 1024.0,
+                "fitted_work_cycles": 1180.0,
                 "critical_path_cycles": 128.0,
                 "total_bytes": 65536.0,
             },
             "phase_attribution": {
                 "projection": {
                     "estimated_cycles": 768.0,
+                    "fitted_work_cycles": 880.0,
                     "compute_cycles": 768.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -56,6 +58,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "sync": {
                     "estimated_cycles": 256.0,
+                    "fitted_work_cycles": 256.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 256.0,
@@ -82,6 +85,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "kv_io": {
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 0.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -108,6 +112,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "attention": {
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 0.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -134,6 +139,7 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
                 "other": {
                     "estimated_cycles": 0.0,
+                    "fitted_work_cycles": 44.0,
                     "compute_cycles": 0.0,
                     "memory_cycles": 0.0,
                     "sync_cycles": 0.0,
@@ -160,10 +166,13 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 },
             },
             "per_macro_cycles": {"WDQ_GEMM": 768.0, "DMA_TRANSFER": 256.0},
+            "per_macro_fitted_work_cycles": {"WDQ_GEMM": 924.0, "DMA_TRANSFER": 256.0},
             "per_macro_bytes": {"WDQ_GEMM": 32768.0, "DMA_TRANSFER": 32768.0},
             "per_node_cycles": {"nig.node.linear.0": 768.0, "nig.node.transfer.0": 256.0},
+            "per_node_fitted_work_cycles": {"nig.node.linear.0": 880.0, "nig.node.transfer.0": 256.0},
             "per_node_bytes": {"nig.node.linear.0": 32768.0, "nig.node.transfer.0": 32768.0},
             "per_layer_cycles": {"0": 768.0, "1": 256.0},
+            "per_layer_fitted_work_cycles": {"0": 880.0, "1": 300.0},
             "per_layer_bytes": {"0": 32768.0, "1": 32768.0},
             "bottleneck_counts": {"compute-bound": 3, "sync-bound": 1},
             "isa_gap_counts": {"opcode_not_supported": 2},
@@ -191,8 +200,10 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.vmem_region_capacity_bytes["pong"] == 30720
     assert report.vmem_region_peak_utilization["ping"] == 0.8
     assert report.totals["estimated_cycles"] == 1024.0
+    assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0
     assert report.phase_attribution["projection"].estimated_cycles == 768.0
+    assert report.phase_attribution["projection"].fitted_work_cycles == 880.0
     assert report.phase_attribution["projection"].compute_cycles == 768.0
     assert report.phase_attribution["projection"].memory_cycles == 0.0
     assert report.phase_attribution["projection"].sync_cycles == 0.0
@@ -222,9 +233,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.phase_attribution["projection"].write_bytes_by_memory_class["ACTIVATION"] == 8192.0
     assert report.phase_attribution["sync"].write_bytes_by_memory_class == {}
     assert report.per_macro_cycles["WDQ_GEMM"] == 768.0
+    assert report.per_macro_fitted_work_cycles["WDQ_GEMM"] == 924.0
     assert report.per_node_cycles["nig.node.linear.0"] == 768.0
+    assert report.per_node_fitted_work_cycles["nig.node.linear.0"] == 880.0
     assert report.per_node_bytes["nig.node.transfer.0"] == 32768.0
     assert report.per_layer_cycles["0"] == 768.0
+    assert report.per_layer_fitted_work_cycles["0"] == 880.0
     assert report.per_layer_bytes["1"] == 32768.0
     assert report.isa_gap_counts["opcode_not_supported"] == 2
     assert report.issues[0].bottleneck == "isa-gap-bound"

@@ -28,7 +28,9 @@ class PhaseDPrefillCompareRow(BaseModel):
     layer_delta_count: int = Field(ge=0)
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    projection_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -62,6 +64,7 @@ class PhaseDPrefillCompareRow(BaseModel):
     projection_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    kv_io_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -95,6 +98,7 @@ class PhaseDPrefillCompareRow(BaseModel):
     kv_io_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    attention_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -128,6 +132,7 @@ class PhaseDPrefillCompareRow(BaseModel):
     attention_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    sync_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -161,6 +166,7 @@ class PhaseDPrefillCompareRow(BaseModel):
     sync_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    other_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -194,8 +200,10 @@ class PhaseDPrefillCompareRow(BaseModel):
     other_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     tokens_per_cycle: SweepScalarDelta
+    tokens_per_fitted_work_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     tokens_per_critical_path_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     cycles_per_token: SweepScalarDelta
+    fitted_cycles_per_token: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     bytes_per_cycle: SweepScalarDelta
     max_region_utilization: SweepScalarDelta
 
@@ -212,7 +220,9 @@ class PhaseDDecodeCompareRow(BaseModel):
     layer_delta_count: int = Field(ge=0)
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    projection_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -246,6 +256,7 @@ class PhaseDDecodeCompareRow(BaseModel):
     projection_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     projection_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    kv_io_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -279,6 +290,7 @@ class PhaseDDecodeCompareRow(BaseModel):
     kv_io_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_io_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    attention_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -312,10 +324,13 @@ class PhaseDDecodeCompareRow(BaseModel):
     attention_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     attention_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     cycles_per_token: SweepScalarDelta
+    fitted_work_cycles_per_token: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     critical_path_cycles_per_token: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_related_cycle_share: SweepScalarDelta
+    kv_related_fitted_work_cycle_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     kv_related_bytes: SweepScalarDelta
     sync_cycles: SweepScalarDelta
+    sync_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -349,6 +364,7 @@ class PhaseDDecodeCompareRow(BaseModel):
     sync_span_imbalance_slots: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     sync_span_balance_ratio: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    other_fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_byte_share: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     other_bytes_per_cycle: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
