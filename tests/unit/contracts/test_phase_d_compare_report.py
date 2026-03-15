@@ -659,3 +659,197 @@ def test_phase_d_compare_report_accepts_legacy_rows_without_critical_path_fields
     assert report.prefill_compares[0].fitted_cycles_per_token.delta_value == 0.0
     assert report.prefill_compares[0].projection_fitted_work_cycles.delta_value == 0.0
     assert report.prefill_compares[0].tokens_per_critical_path_cycle.delta_value == 0.0
+
+
+def test_phase_d_compare_report_contract_accepts_fitted_hotspot_and_layer_rows() -> None:
+    from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
+
+    report = PhaseDCompareReport.model_validate(
+        {
+            "report_name": "phase-d-compare.fitted-rows",
+            "source_sweep_name": "phase-d-fitted-rows",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "comparison_count": 2,
+            "prefill_compare_count": 1,
+            "decode_compare_count": 1,
+            "prefill_compares": [
+                {
+                    "scenario_name": "prefill_seq128",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "baseline_schedule_kind": "single-core",
+                    "candidate_schedule_kind": "dual-core",
+                    "profile_diff_fields": [],
+                    "layer_delta_count": 0,
+                    "node_delta_count": 1,
+                    "fitted_layer_delta_count": 1,
+                    "node_deltas": [
+                        {
+                            "node_id": "nig.node.linear.0",
+                            "baseline_cycles": 3072.0,
+                            "candidate_cycles": 2048.0,
+                            "delta_cycles": -1024.0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_cycle_share": 0.75,
+                            "candidate_cycle_share": 0.6666666667,
+                            "delta_cycle_share": -0.0833333333,
+                            "delta_cycles_ratio": -0.3333333333,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "fitted_layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "estimated_cycles": {
+                        "baseline_value": 4096.0,
+                        "candidate_value": 3072.0,
+                        "delta_value": -1024.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "tokens_per_cycle": {
+                        "baseline_value": 0.03125,
+                        "candidate_value": 0.0416666667,
+                        "delta_value": 0.0104166667,
+                        "delta_ratio": 0.3333333344,
+                    },
+                    "cycles_per_token": {
+                        "baseline_value": 32.0,
+                        "candidate_value": 24.0,
+                        "delta_value": -8.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "bytes_per_cycle": {
+                        "baseline_value": 64.0,
+                        "candidate_value": 64.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "max_region_utilization": {
+                        "baseline_value": 0.75,
+                        "candidate_value": 0.5,
+                        "delta_value": -0.25,
+                        "delta_ratio": -0.3333333333,
+                    },
+                }
+            ],
+            "decode_compares": [
+                {
+                    "scenario_name": "decode_token1_kv2048",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "baseline_schedule_kind": "single-core",
+                    "candidate_schedule_kind": "dual-core",
+                    "profile_diff_fields": [],
+                    "layer_delta_count": 0,
+                    "node_delta_count": 1,
+                    "fitted_layer_delta_count": 1,
+                    "node_deltas": [
+                        {
+                            "node_id": "nig.node.kvload.0",
+                            "baseline_cycles": 900.0,
+                            "candidate_cycles": 700.0,
+                            "delta_cycles": -200.0,
+                            "baseline_fitted_work_cycles": 960.0,
+                            "candidate_fitted_work_cycles": 760.0,
+                            "delta_fitted_work_cycles": -200.0,
+                            "baseline_cycle_share": 0.28125,
+                            "candidate_cycle_share": 0.25,
+                            "delta_cycle_share": -0.03125,
+                            "delta_cycles_ratio": -0.2222222222,
+                            "baseline_fitted_cycle_share": 0.2857142857,
+                            "candidate_fitted_cycle_share": 0.2567567568,
+                            "delta_fitted_cycle_share": -0.0289575289,
+                            "delta_fitted_work_cycles_ratio": -0.2083333333,
+                            "baseline_bytes": 96000.0,
+                            "candidate_bytes": 96000.0,
+                            "delta_bytes": 0.0,
+                            "delta_bytes_ratio": 0.0,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "fitted_layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 2240.0,
+                            "candidate_fitted_work_cycles": 1980.0,
+                            "delta_fitted_work_cycles": -260.0,
+                            "baseline_fitted_cycle_share": 0.6666666667,
+                            "candidate_fitted_cycle_share": 0.6689189189,
+                            "delta_fitted_cycle_share": 0.0022522522,
+                            "delta_fitted_work_cycles_ratio": -0.1160714286,
+                            "baseline_bytes": 114000.0,
+                            "candidate_bytes": 96000.0,
+                            "delta_bytes": -18000.0,
+                            "delta_bytes_ratio": -0.1578947368,
+                            "change_direction": "down",
+                        }
+                    ],
+                    "estimated_cycles": {
+                        "baseline_value": 3200.0,
+                        "candidate_value": 2800.0,
+                        "delta_value": -400.0,
+                        "delta_ratio": -0.125,
+                    },
+                    "cycles_per_token": {
+                        "baseline_value": 3200.0,
+                        "candidate_value": 2800.0,
+                        "delta_value": -400.0,
+                        "delta_ratio": -0.125,
+                    },
+                    "kv_related_cycle_share": {
+                        "baseline_value": 0.28125,
+                        "candidate_value": 0.25,
+                        "delta_value": -0.03125,
+                        "delta_ratio": -0.1111111111,
+                    },
+                    "kv_related_bytes": {
+                        "baseline_value": 96000.0,
+                        "candidate_value": 96000.0,
+                        "delta_value": 0.0,
+                        "delta_ratio": 0.0,
+                    },
+                    "sync_cycles": {
+                        "baseline_value": 120.0,
+                        "candidate_value": 80.0,
+                        "delta_value": -40.0,
+                        "delta_ratio": -0.3333333333,
+                    },
+                }
+            ],
+            "issues": [],
+        }
+    )
+
+    assert report.prefill_compares[0].node_delta_count == 1
+    assert report.prefill_compares[0].node_deltas[0].delta_fitted_work_cycles == pytest.approx(-1024.0)
+    assert report.prefill_compares[0].fitted_layer_delta_count == 1
+    assert report.prefill_compares[0].fitted_layer_deltas[0].delta_bytes == pytest.approx(-32768.0)
+    assert report.decode_compares[0].node_deltas[0].delta_fitted_cycle_share == pytest.approx(
+        -0.0289575289
+    )

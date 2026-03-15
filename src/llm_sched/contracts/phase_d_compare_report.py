@@ -4,7 +4,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from llm_sched.contracts.sweep_report import SweepIssue, SweepScalarDelta
+from llm_sched.contracts.sweep_report import (
+    SweepFittedLayerDelta,
+    SweepIssue,
+    SweepNodeDelta,
+    SweepScalarDelta,
+)
 
 
 def _zero_scalar_delta() -> SweepScalarDelta:
@@ -26,6 +31,10 @@ class PhaseDPrefillCompareRow(BaseModel):
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     profile_diff_fields: list[str] = Field(default_factory=list)
     layer_delta_count: int = Field(ge=0)
+    node_delta_count: int = Field(ge=0, default=0)
+    fitted_layer_delta_count: int = Field(ge=0, default=0)
+    node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
+    fitted_layer_deltas: list[SweepFittedLayerDelta] = Field(default_factory=list)
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -218,6 +227,10 @@ class PhaseDDecodeCompareRow(BaseModel):
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     profile_diff_fields: list[str] = Field(default_factory=list)
     layer_delta_count: int = Field(ge=0)
+    node_delta_count: int = Field(ge=0, default=0)
+    fitted_layer_delta_count: int = Field(ge=0, default=0)
+    node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
+    fitted_layer_deltas: list[SweepFittedLayerDelta] = Field(default_factory=list)
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)

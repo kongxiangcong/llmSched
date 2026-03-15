@@ -41,8 +41,17 @@ def test_run_sweep_analysis_writes_delta_report(tmp_path: Path) -> None:
     assert report.completed_run_count == 2
     assert report.failed_run_count == 0
     assert len(report.comparisons) == 1
+    assert report.run_records[0].node_hotspots
+    assert report.run_records[0].node_hotspots[0].fitted_work_cycles >= (
+        report.run_records[0].node_hotspots[0].estimated_cycles
+    )
+    assert report.run_records[0].node_hotspots[0].fitted_cycle_share >= 0.0
     assert report.run_records[0].layer_breakdown
     assert report.run_records[0].layer_breakdown[0].cycle_share > 0.0
+    assert report.run_records[0].layer_breakdown[0].fitted_work_cycles >= (
+        report.run_records[0].layer_breakdown[0].estimated_cycles
+    )
+    assert report.run_records[0].layer_breakdown[0].fitted_cycle_share >= 0.0
     assert report.comparisons[0].layer_deltas
     assert report.comparisons[0].prefill_compare is not None
     assert report.comparisons[0].decode_compare is None

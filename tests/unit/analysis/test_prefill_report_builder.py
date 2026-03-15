@@ -109,7 +109,11 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
         "nig.node.sdpa.0",
         "nig.node.dma_load.0",
     ]
+    assert report.node_hotspots[0].fitted_work_cycles == pytest.approx(3584.0)
+    assert report.node_hotspots[0].fitted_cycle_share == pytest.approx(3584.0 / 4608.0)
     assert [row.layer_id for row in report.layer_breakdown] == [0, 1]
+    assert report.layer_breakdown[0].fitted_work_cycles == pytest.approx(3584.0)
+    assert report.layer_breakdown[0].fitted_cycle_share == pytest.approx(3584.0 / 4608.0)
 
 
 def test_build_prefill_evaluation_report_rejects_decode_scenarios() -> None:
@@ -329,6 +333,11 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "nig.node.sdpa.0": 768.0,
                 "nig.node.dma_load.0": 256.0,
             },
+            "per_node_fitted_work_cycles": {
+                "nig.node.linear.0": 3584.0,
+                "nig.node.sdpa.0": 768.0,
+                "nig.node.dma_load.0": 256.0,
+            },
             "per_node_bytes": {
                 "nig.node.linear.0": 131072.0,
                 "nig.node.sdpa.0": 98304.0,
@@ -336,6 +345,10 @@ def _perf_summary_report() -> PerfSummaryReport:
             },
             "per_layer_cycles": {
                 "0": 3072.0,
+                "1": 1024.0,
+            },
+            "per_layer_fitted_work_cycles": {
+                "0": 3584.0,
                 "1": 1024.0,
             },
             "per_layer_bytes": {

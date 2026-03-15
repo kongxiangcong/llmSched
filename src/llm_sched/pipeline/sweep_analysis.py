@@ -19,6 +19,7 @@ from llm_sched.contracts.sweep_report import (
     SweepDeltaReport,
     SweepLayerPoint,
     SweepMacroPoint,
+    SweepNodePoint,
     SweepRunRecord,
     SweepSpec,
 )
@@ -435,11 +436,24 @@ def _execute_run_root(
                 )
                 for hotspot in report.macro_hotspots
             ],
+            node_hotspots=[
+                SweepNodePoint(
+                    node_id=hotspot.node_id,
+                    estimated_cycles=hotspot.estimated_cycles,
+                    fitted_work_cycles=hotspot.fitted_work_cycles,
+                    cycle_share=hotspot.cycle_share,
+                    fitted_cycle_share=hotspot.fitted_cycle_share,
+                    total_bytes=hotspot.total_bytes,
+                )
+                for hotspot in report.node_hotspots
+            ],
             layer_breakdown=[
                 SweepLayerPoint(
                     layer_id=row.layer_id,
                     estimated_cycles=row.estimated_cycles,
+                    fitted_work_cycles=row.fitted_work_cycles,
                     cycle_share=row.cycle_share,
+                    fitted_cycle_share=row.fitted_cycle_share,
                     total_bytes=row.total_bytes,
                 )
                 for row in report.layer_breakdown
@@ -567,11 +581,24 @@ def _execute_run_root(
             )
             for hotspot in report.macro_hotspots
         ],
+        node_hotspots=[
+            SweepNodePoint(
+                node_id=hotspot.node_id,
+                estimated_cycles=hotspot.estimated_cycles,
+                fitted_work_cycles=hotspot.fitted_work_cycles,
+                cycle_share=hotspot.cycle_share,
+                fitted_cycle_share=hotspot.fitted_cycle_share,
+                total_bytes=hotspot.total_bytes,
+            )
+            for hotspot in report.node_hotspots
+        ],
         layer_breakdown=[
             SweepLayerPoint(
                 layer_id=row.layer_id,
                 estimated_cycles=row.estimated_cycles,
+                fitted_work_cycles=row.fitted_work_cycles,
                 cycle_share=row.cycle_share,
+                fitted_cycle_share=row.fitted_cycle_share,
                 total_bytes=row.total_bytes,
             )
             for row in report.layer_breakdown
