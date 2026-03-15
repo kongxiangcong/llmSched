@@ -12,10 +12,11 @@ from llm_sched.config.target_profile import TargetProfile
 from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfPhaseSummary, PerfSummaryReport
+from llm_sched.contracts.tiling_plan import TileCandidate, TilingPlanArtifact
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.descriptor_ir import AddressField, DescriptorIR, DescriptorRecord
-from llm_sched.ir.schedule_ir import ScheduleIR
+from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
 
 _LAYER_PATTERNS = (
     re.compile(r"layers\.(\d+)"),
@@ -32,12 +33,39 @@ def estimate_descriptor_analysis(
     coverage_report: ISACoverageReport,
     hardware: TargetProfile | ArchitectureCapabilities,
     scenario: ScenarioProfile,
+    *,
+    schedule_ir: ScheduleIR | None = None,
+    memory_plan: MemoryPlanArtifact | None = None,
+    tiling_plan: TilingPlanArtifact | None = None,
 ) -> AnalysisIR:
     capabilities = _resolve_capabilities(hardware)
+    schedule_blocks_by_id = (
+        {block.block_id: block for block in schedule_ir.blocks}
+        if schedule_ir is not None
+        else {}
+    )
+    tiling_candidates_by_id = (
+        {candidate.candidate_id: candidate for candidate in tiling_plan.candidates}
+        if tiling_plan is not None
+        else {}
+    )
     records: list[AnalysisRecord] = []
 
     for descriptor in descriptor_ir.descriptors:
         metrics, tags = _estimate_descriptor_record(descriptor, capabilities, scenario)
+        schedule_block = schedule_blocks_by_id.get(descriptor.schedule_block_id)
+        tiling_candidate = (
+            tiling_candidates_by_id.get(schedule_block.tiling_candidate_id)
+            if schedule_block is not None and schedule_block.tiling_candidate_id is not None
+            else None
+        )
+        metrics["fitted_work_cycles"] = _fitted_work_cycles_for_descriptor(
+            descriptor,
+            metrics,
+            schedule_block=schedule_block,
+            tiling_candidate=tiling_candidate,
+            capabilities=capabilities,
+        )
         records.append(
             AnalysisRecord(
                 record_id=_analysis_record_id(descriptor.schedule_block_id),
@@ -73,6 +101,37 @@ def estimate_descriptor_analysis(
     )
 
 
+def _fitted_work_cycles_for_descriptor(
+    descriptor: DescriptorRecord,
+    metrics: dict[str, float],
+    *,
+    schedule_block: ScheduleBlock | None,
+    tiling_candidate: TileCandidate | None,
+    capabilities: ArchitectureCapabilities,
+) -> float:
+    stage = _record_stage(descriptor)
+    estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
+    schedule_floor = float(max(0, int(descriptor.ctrl_fields.get("duration_slots", 0))))
+    if schedule_block is not None:
+        schedule_floor = max(schedule_floor, float(max(0, schedule_block.duration_slots)))
+    fitted_cycles = max(estimated_cycles, schedule_floor)
+
+    if stage != "compute" or tiling_candidate is None or tiling_candidate.resource_summary is None:
+        return float(fitted_cycles)
+
+    external_read_bytes = float(
+        tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-backed-staged", 0)
+        + tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-persistent", 0)
+    )
+    if external_read_bytes <= 0.0:
+        return float(fitted_cycles)
+
+    external_read_cycles = float(
+        _bandwidth_cycles(external_read_bytes, capabilities.shared_dma.effective_bandwidth_gbps)
+    )
+    return float(max(fitted_cycles, external_read_cycles))
+
+
 def build_perf_summary_report(
     run_id: str,
     descriptor_ir: DescriptorIR,
@@ -99,15 +158,19 @@ def build_perf_summary_report(
         else {}
     )
     per_macro_cycles: Counter[str] = Counter()
+    per_macro_fitted_work_cycles: Counter[str] = Counter()
     per_macro_bytes: Counter[str] = Counter()
     phase_cycles: Counter[str] = Counter()
+    phase_fitted_work_cycles: Counter[str] = Counter()
     phase_compute_cycles: Counter[str] = Counter()
     phase_memory_cycles: Counter[str] = Counter()
     phase_sync_component_cycles: Counter[str] = Counter()
     phase_bytes: Counter[str] = Counter()
     per_node_cycles: Counter[str] = Counter()
+    per_node_fitted_work_cycles: Counter[str] = Counter()
     per_node_bytes: Counter[str] = Counter()
     per_layer_cycles: Counter[str] = Counter()
+    per_layer_fitted_work_cycles: Counter[str] = Counter()
     per_layer_bytes: Counter[str] = Counter()
     bottleneck_counts: Counter[str] = Counter()
     issues: list[PerfBottleneckIssue] = []
@@ -133,6 +196,7 @@ def build_perf_summary_report(
     )
     totals = {
         "estimated_cycles": 0.0,
+        "fitted_work_cycles": 0.0,
         "total_bytes": 0.0,
         "read_bytes": 0.0,
         "write_bytes": 0.0,
@@ -158,6 +222,7 @@ def build_perf_summary_report(
                         )
                     )
         totals["estimated_cycles"] += record.metrics.get("estimated_cycles", 0.0)
+        totals["fitted_work_cycles"] += _record_fitted_work_cycles(record.metrics)
         totals["total_bytes"] += record.metrics.get("total_bytes", 0.0)
         totals["read_bytes"] += record.metrics.get("read_bytes", 0.0)
         totals["write_bytes"] += record.metrics.get("write_bytes", 0.0)
@@ -165,16 +230,23 @@ def build_perf_summary_report(
         node_id = node_by_subject.get(record.subject_id)
         if node_id is not None:
             per_node_cycles[node_id] += record.metrics.get("estimated_cycles", 0.0)
+            per_node_fitted_work_cycles[node_id] += _record_fitted_work_cycles(record.metrics)
             per_node_bytes[node_id] += record.metrics.get("total_bytes", 0.0)
 
         descriptor = descriptor_by_subject.get(record.subject_id)
         attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
+        attributed_fitted_work_cycles = _phase_fitted_work_cycle_contribution_for_record(
+            descriptor,
+            record.metrics,
+        )
         attributed_compute_cycles, attributed_memory_cycles, attributed_sync_component_cycles = (
             _phase_cycle_components_for_record(descriptor, record.metrics)
         )
         record_phase_name = _classify_record_phase(descriptor)
         for phase_key, estimated_cycles in attributed_cycles.items():
             phase_cycles[phase_key] += estimated_cycles
+        for phase_key, fitted_work_cycles in attributed_fitted_work_cycles.items():
+            phase_fitted_work_cycles[phase_key] += fitted_work_cycles
         for phase_key, compute_cycles in attributed_compute_cycles.items():
             phase_compute_cycles[phase_key] += compute_cycles
         for phase_key, memory_cycles in attributed_memory_cycles.items():
@@ -191,12 +263,14 @@ def build_perf_summary_report(
                 layer_by_subject[record.subject_id] = layer_key
         if layer_key is not None:
             per_layer_cycles[layer_key] += record.metrics.get("estimated_cycles", 0.0)
+            per_layer_fitted_work_cycles[layer_key] += _record_fitted_work_cycles(record.metrics)
             per_layer_bytes[layer_key] += record.metrics.get("total_bytes", 0.0)
 
         if descriptor is None:
             continue
         macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
         per_macro_cycles[macro] += record.metrics.get("estimated_cycles", 0.0)
+        per_macro_fitted_work_cycles[macro] += _record_fitted_work_cycles(record.metrics)
         per_macro_bytes[macro] += record.metrics.get("total_bytes", 0.0)
         _accumulate_data_movement_breakdown(
             descriptor,
@@ -276,6 +350,7 @@ def build_perf_summary_report(
         totals=totals,
         phase_attribution=_build_phase_attribution(
             phase_cycles,
+            phase_fitted_work_cycles=phase_fitted_work_cycles,
             phase_compute_cycles=phase_compute_cycles,
             phase_memory_cycles=phase_memory_cycles,
             phase_sync_component_cycles=phase_sync_component_cycles,
@@ -291,10 +366,13 @@ def build_perf_summary_report(
             total_tokens=total_tokens,
         ),
         per_macro_cycles=dict(per_macro_cycles),
+        per_macro_fitted_work_cycles=dict(per_macro_fitted_work_cycles),
         per_macro_bytes=dict(per_macro_bytes),
         per_node_cycles=dict(sorted(per_node_cycles.items())),
+        per_node_fitted_work_cycles=dict(sorted(per_node_fitted_work_cycles.items())),
         per_node_bytes=dict(sorted(per_node_bytes.items())),
         per_layer_cycles=_sorted_layer_totals(per_layer_cycles),
+        per_layer_fitted_work_cycles=_sorted_layer_totals(per_layer_fitted_work_cycles),
         per_layer_bytes=_sorted_layer_totals(per_layer_bytes),
         bottleneck_counts=dict(bottleneck_counts),
         isa_gap_counts=dict(coverage_report.gap_counts),
@@ -473,7 +551,7 @@ def _phase_contribution_for_record(
     descriptor: DescriptorRecord | None,
     metrics: dict[str, float],
 ) -> tuple[dict[str, float], dict[str, float]]:
-    non_sync_cycles, sync_cycles = _split_sync_cycles(metrics)
+    non_sync_cycles, sync_cycles = _split_metric_with_sync_cycles(metrics, metric_name="estimated_cycles")
     total_bytes = float(metrics.get("total_bytes", 0.0))
 
     cycles = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
@@ -485,11 +563,23 @@ def _phase_contribution_for_record(
     return cycles, bytes_by_phase
 
 
+def _phase_fitted_work_cycle_contribution_for_record(
+    descriptor: DescriptorRecord | None,
+    metrics: dict[str, float],
+) -> dict[str, float]:
+    non_sync_cycles, sync_cycles = _split_metric_with_sync_cycles(metrics, metric_name="fitted_work_cycles")
+    cycles = {phase_name: 0.0 for phase_name in _PERF_PHASE_ORDER}
+    phase_name = _classify_record_phase(descriptor)
+    cycles[phase_name] = non_sync_cycles
+    cycles["sync"] = sync_cycles
+    return cycles
+
+
 def _phase_cycle_components_for_record(
     descriptor: DescriptorRecord | None,
     metrics: dict[str, float],
 ) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
-    non_sync_cycles, sync_cycles = _split_sync_cycles(metrics)
+    non_sync_cycles, sync_cycles = _split_metric_with_sync_cycles(metrics, metric_name="estimated_cycles")
     phase_name = _classify_record_phase(descriptor)
     compute_cycles = {phase_key: 0.0 for phase_key in _PERF_PHASE_ORDER}
     memory_cycles = {phase_key: 0.0 for phase_key in _PERF_PHASE_ORDER}
@@ -503,10 +593,22 @@ def _phase_cycle_components_for_record(
     return compute_cycles, memory_cycles, sync_component_cycles
 
 
-def _split_sync_cycles(metrics: dict[str, float]) -> tuple[float, float]:
-    estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
-    sync_cycles = min(float(metrics.get("sync_cycles", 0.0)), estimated_cycles)
-    return max(0.0, estimated_cycles - sync_cycles), sync_cycles
+def _split_metric_with_sync_cycles(
+    metrics: dict[str, float],
+    *,
+    metric_name: str,
+) -> tuple[float, float]:
+    metric_value = (
+        _record_fitted_work_cycles(metrics)
+        if metric_name == "fitted_work_cycles"
+        else float(metrics.get(metric_name, 0.0))
+    )
+    sync_cycles = min(float(metrics.get("sync_cycles", 0.0)), metric_value)
+    return max(0.0, metric_value - sync_cycles), sync_cycles
+
+
+def _record_fitted_work_cycles(metrics: dict[str, float]) -> float:
+    return float(metrics.get("fitted_work_cycles", metrics.get("estimated_cycles", 0.0)))
 
 
 def _record_stage(descriptor: DescriptorRecord | None) -> str:
@@ -532,6 +634,7 @@ def _classify_record_phase(descriptor: DescriptorRecord | None) -> str:
 def _build_phase_attribution(
     phase_cycles: Counter[str],
     *,
+    phase_fitted_work_cycles: Counter[str],
     phase_compute_cycles: Counter[str],
     phase_memory_cycles: Counter[str],
     phase_sync_component_cycles: Counter[str],
@@ -549,6 +652,7 @@ def _build_phase_attribution(
     summaries: dict[str, PerfPhaseSummary] = {}
     for phase_name in _PERF_PHASE_ORDER:
         estimated_cycles = float(phase_cycles.get(phase_name, 0.0))
+        fitted_work_cycles = float(phase_fitted_work_cycles.get(phase_name, 0.0))
         compute_cycles = float(phase_compute_cycles.get(phase_name, 0.0))
         memory_cycles = float(phase_memory_cycles.get(phase_name, 0.0))
         sync_cycles = float(phase_sync_component_cycles.get(phase_name, 0.0))
@@ -574,6 +678,7 @@ def _build_phase_attribution(
         )
         summaries[phase_name] = PerfPhaseSummary(
             estimated_cycles=estimated_cycles,
+            fitted_work_cycles=fitted_work_cycles,
             compute_cycles=compute_cycles,
             memory_cycles=memory_cycles,
             sync_cycles=sync_cycles,
@@ -1021,6 +1126,7 @@ def _zero_metrics() -> dict[str, float]:
         "write_bytes": 0.0,
         "total_bytes": 0.0,
         "estimated_cycles": 0.0,
+        "fitted_work_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 0.0,
     }

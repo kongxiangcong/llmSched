@@ -16,6 +16,7 @@ from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.perf_report import PerfSummaryReport
 from llm_sched.contracts.run_summary import RunSummary
+from llm_sched.contracts.tiling_plan import TilingPlanArtifact
 from llm_sched.ir.analysis_ir import AnalysisIR
 from llm_sched.ir.descriptor_ir import DescriptorIR
 from llm_sched.ir.io import dump_ir_document, load_ir_document
@@ -53,6 +54,9 @@ def run_performance_estimation(run_root: str | Path) -> PerformanceEstimationRes
         memory_plan_path = layout.run_root / Path(
             artifact_index.get("memory_plan", "artifacts/memory_plan.json")
         )
+        tiling_plan_path = layout.run_root / Path(
+            artifact_index.get("tiling_plan", "artifacts/tiling_plan.json")
+        )
         schedule_path = _resolve_schedule_path(layout.run_root, artifact_index)
         if not descriptor_ir_path.is_file():
             raise FileNotFoundError(f"descriptor_ir not found at {descriptor_ir_path}")
@@ -68,6 +72,7 @@ def run_performance_estimation(run_root: str | Path) -> PerformanceEstimationRes
             coverage_report_path.read_text(encoding="utf-8")
         )
         memory_plan = load_ir_document(memory_plan_path, MemoryPlanArtifact)
+        tiling_plan = _load_optional_ir(tiling_plan_path, TilingPlanArtifact)
         schedule_ir = load_ir_document(schedule_path, ScheduleIR)
 
         analysis_ir = estimate_descriptor_analysis(
@@ -75,6 +80,9 @@ def run_performance_estimation(run_root: str | Path) -> PerformanceEstimationRes
             coverage_report,
             target_profile,
             scenario_profile,
+            schedule_ir=schedule_ir,
+            memory_plan=memory_plan,
+            tiling_plan=tiling_plan,
         )
         perf_summary_report = build_perf_summary_report(
             manifest.run_id,
@@ -146,6 +154,12 @@ def _resolve_schedule_path(run_root: Path, artifact_index: dict[str, str]) -> Pa
         if path.is_file():
             return path
     return run_root / Path(artifact_index.get("schedule_ir", "artifacts/schedule_ir.json"))
+
+
+def _load_optional_ir(path: Path, model_type):
+    if not path.is_file():
+        return None
+    return load_ir_document(path, model_type)
 
 
 def _write_manifest(

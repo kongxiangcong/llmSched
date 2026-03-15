@@ -46,8 +46,10 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert manifest["artifact_index"]["perf_summary_report"] == "reports/perf_summary_report.json"
     assert analysis_ir["records"]
     assert perf_report["totals"]["estimated_cycles"] > 0.0
+    assert perf_report["totals"]["fitted_work_cycles"] >= perf_report["totals"]["estimated_cycles"]
     assert perf_report["totals"]["critical_path_cycles"] > 0.0
     assert perf_report["totals"]["critical_path_cycles"] == perf_report["schedule_makespan_slots"]
+    assert perf_report["phase_attribution"]["projection"]["fitted_work_cycles"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["cycles_per_token"] >= 0.0
     assert perf_report["phase_attribution"]["other"]["bytes_per_token"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["compute_cycles"] >= 0.0
@@ -70,6 +72,8 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert isinstance(perf_report["phase_attribution"]["projection"]["write_bytes_by_backing_store"], dict)
     assert isinstance(perf_report["phase_attribution"]["projection"]["read_bytes_by_memory_class"], dict)
     assert isinstance(perf_report["phase_attribution"]["projection"]["write_bytes_by_memory_class"], dict)
+    assert perf_report["per_node_fitted_work_cycles"]
+    assert perf_report["per_layer_fitted_work_cycles"]
 
 
 def test_run_performance_estimation_rejects_missing_descriptor_without_traceback(

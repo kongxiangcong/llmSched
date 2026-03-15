@@ -1,4 +1,9 @@
 from llm_sched.contracts.isa_coverage_report import ISACoverageIssue, ISACoverageReport
+from llm_sched.contracts.tiling_plan import (
+    TileCandidate,
+    TileCandidateResourceSummary,
+    TilingPlanArtifact,
+)
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.descriptor_ir import (
     AddressField,
@@ -7,6 +12,7 @@ from llm_sched.ir.descriptor_ir import (
     DescriptorRecord,
     TransferFields,
 )
+from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
 
 
 def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records() -> None:
@@ -32,6 +38,7 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "write_bytes": 12288.0,
         "total_bytes": 32768.0,
         "estimated_cycles": 48.0,
+        "fitted_work_cycles": 48.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 682.6666666666666,
     }
@@ -43,6 +50,7 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "write_bytes": 0.0,
         "total_bytes": 8192.0,
         "estimated_cycles": 7.0,
+        "fitted_work_cycles": 7.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 1170.2857142857142,
     }
@@ -54,6 +62,7 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "write_bytes": 8192.0,
         "total_bytes": 16384.0,
         "estimated_cycles": 26.0,
+        "fitted_work_cycles": 26.0,
         "sync_cycles": 18.0,
         "bandwidth_pressure": 630.1538461538462,
     }
@@ -65,6 +74,7 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "write_bytes": 0.0,
         "total_bytes": 0.0,
         "estimated_cycles": 0.0,
+        "fitted_work_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 0.0,
     }
@@ -86,6 +96,24 @@ def test_estimate_descriptor_analysis_uses_schedule_duration_floor() -> None:
 
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 64.0
+    assert compute_record.metrics["fitted_work_cycles"] == 64.0
+
+
+def test_estimate_descriptor_analysis_raises_fitted_work_cycles_for_tiled_external_reads() -> None:
+    from llm_sched.analysis import estimate_descriptor_analysis
+
+    analysis = estimate_descriptor_analysis(
+        _descriptor_ir_fixture(),
+        _coverage_report_fixture(),
+        _test_target_profile(),
+        _test_prefill_scenario(),
+        schedule_ir=_schedule_ir_fixture(),
+        tiling_plan=_tiling_plan_fixture(ddr_backed_staged_bytes=122880),
+    )
+
+    compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
+    assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["fitted_work_cycles"] == 96.0
 
 
 def _descriptor_ir_fixture() -> DescriptorIR:
@@ -294,6 +322,109 @@ def _coverage_report_fixture() -> ISACoverageReport:
                 requested_opcode="ATTENTION_MASK_PREP",
                 code="opcode_not_supported",
                 message="target profile does not advertise ATTENTION_MASK_PREP",
+            )
+        ],
+    )
+
+
+def _schedule_ir_fixture() -> ScheduleIR:
+    return ScheduleIR(
+        ir_version="phase-a.v1",
+        graph_id="spec13-graph",
+        core_mode="dual-core",
+        blocks=[
+            ScheduleBlock(
+                block_id="sched.block.linear.compute",
+                core_id=0,
+                node_id="nig.node.linear.compute",
+                macro_op="WDQ_GEMM",
+                stage="compute",
+                tiling_candidate_id="nig.node.linear.compute.m48.n128.k128",
+                resource_set=["WDQ", "MXU"],
+                buffer_binding={"activation": "ping", "output": "pong"},
+                barrier_in=[],
+                barrier_out=[],
+                depends_on=[],
+                issue_slot=0,
+                duration_slots=48,
+                order_key=0,
+                audit_ref=AuditRef(schedule_block_ids=["sched.block.linear.compute"]),
+            ),
+            ScheduleBlock(
+                block_id="sched.block.linear.dma_in",
+                core_id=0,
+                node_id="nig.node.linear.dma",
+                macro_op="WDQ_GEMM",
+                stage="dma_in",
+                tiling_candidate_id=None,
+                resource_set=["DMA"],
+                buffer_binding={"activation": "ping"},
+                barrier_in=[],
+                barrier_out=[],
+                depends_on=[],
+                issue_slot=48,
+                duration_slots=7,
+                order_key=1,
+                audit_ref=AuditRef(schedule_block_ids=["sched.block.linear.dma_in"]),
+            ),
+            ScheduleBlock(
+                block_id="sched.transfer.linear",
+                core_id=0,
+                peer_core_id=1,
+                node_id="nig.node.linear.transfer",
+                macro_op="WDQ_GEMM",
+                stage="transfer",
+                tiling_candidate_id=None,
+                resource_set=["Core Link"],
+                buffer_binding={"src": "pong", "dst": "ping"},
+                barrier_in=["sync.transfer.linear.in"],
+                barrier_out=["sync.transfer.linear.out"],
+                depends_on=["sched.block.linear.compute"],
+                issue_slot=55,
+                duration_slots=26,
+                transfer_kind="core_link",
+                transfer_bytes=8192,
+                sync_cost_cycles=18,
+                order_key=2,
+                audit_ref=AuditRef(schedule_block_ids=["sched.transfer.linear"]),
+            ),
+        ],
+    )
+
+
+def _tiling_plan_fixture(*, ddr_backed_staged_bytes: int) -> TilingPlanArtifact:
+    return TilingPlanArtifact(
+        graph_id="spec13-graph",
+        scenario_name="prefill-seq128",
+        core_mode="dual-core",
+        candidates=[
+            TileCandidate(
+                candidate_id="nig.node.linear.compute.m48.n128.k128",
+                node_id="nig.node.linear.compute",
+                macro_op="WDQ_GEMM",
+                strategy="throughput-first",
+                m_tile=48,
+                n_tile=128,
+                k_tile=128,
+                read_bytes=32768,
+                write_bytes=12288,
+                total_vmem_bytes=45056,
+                rank=1,
+                ranking_reason="fixture",
+                quant_alignment_ok=True,
+                quant_alignment_message="aligned",
+                source_memory_plan_region_pressure={"ping": 20480, "pong": 12288},
+                resource_summary=TileCandidateResourceSummary(
+                    read_bytes=32768,
+                    write_bytes=12288,
+                    total_vmem_bytes=45056,
+                    dma_bytes=0,
+                    region_pressure_bytes={"ping": 20480, "pong": 12288},
+                    storage_binding_ids=["storage.weight"],
+                    storage_read_bytes_by_source_kind={"weight_tensor": ddr_backed_staged_bytes},
+                    storage_read_bytes_by_backing_store={"ddr-backed-staged": ddr_backed_staged_bytes},
+                ),
+                issues=[],
             )
         ],
     )

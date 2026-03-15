@@ -2656,3 +2656,20 @@ graph TD
   - broader `SPEC-16` compare surfaces beyond the current scalar-plus-phase-plus-share-plus-byte-plus-byte-share-plus-backing-store-plus-memory-class-plus-address-space-plus-cycle-components-plus-schedule-compression-plus-occupied-slot-plus-balance-plus-highlight-plus-layer contract
   - deeper `SPEC-13` cycle fitting below the current summary-grade phase and critical-path surfaces
   - any later `SPEC-19` compare expansion should stay downstream of the current report, sweep, and Phase D compare contracts
+
+## 2026-03-15 SPEC-13 Deeper Cycle Model Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-13-deeper-cycle-model.md`
+- `SPEC-13` now exposes a tile- and memory-aware `fitted_work_cycles` surface alongside the existing summary-grade `estimated_cycles`, without reinterpreting the older cycle fields.
+- the new fitted cycle surface is now available at totals, phase attribution, macro, node, and layer granularity inside the canonical `PerfSummaryReport`.
+- workflow serialization now threads optional `tiling_plan` context into descriptor estimation without making that artifact mandatory for older or minimal run roots.
+- fresh closure evidence:
+  - focused `SPEC-13` verification is green: `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
+  - downstream Phase D consumers remain green: `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- what this closes:
+  - the first deeper-cycle slice for `SPEC-13`, so schedule- and memory-aware fitted work cycles now survive descriptor estimation, perf summary aggregation, workflow serialization, CLI output, and smoke coverage
+  - a contract gap where downstream consumers could only see `estimated_cycles`, even when schedule and tiling evidence supported a more conservative fitted work estimate
+- what still remains for `M3`:
+  - prefill/decode top-level adoption of the new fitted cycle surface remains later `SPEC-14/15` work
+  - richer compare-grade exposure of fitted cycles remains later `SPEC-16` work
+  - any future compare or workbench expansion should continue consuming the existing report and compare contracts instead of reopening this batch's summary-grade surfaces
