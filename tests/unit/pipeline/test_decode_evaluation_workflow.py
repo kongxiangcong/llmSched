@@ -68,8 +68,12 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
     }
     assert report.node_hotspots
     assert report.node_hotspots[0].estimated_cycles > 0.0
+    assert report.node_hotspots[0].fitted_work_cycles >= report.node_hotspots[0].estimated_cycles
+    assert report.node_hotspots[0].fitted_cycle_share >= 0.0
     assert report.layer_breakdown
     assert report.layer_breakdown[0].estimated_cycles > 0.0
+    assert report.layer_breakdown[0].fitted_work_cycles >= report.layer_breakdown[0].estimated_cycles
+    assert report.layer_breakdown[0].fitted_cycle_share >= 0.0
     assert manifest.artifact_index["decode_evaluation_report"] == "reports/decode_evaluation_report.json"
     assert summary.status == "completed"
     assert summary.exit_code == 0

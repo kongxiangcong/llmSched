@@ -79,7 +79,9 @@ class DecodeNodeHotspot(BaseModel):
 
     node_id: str
     estimated_cycles: float = Field(ge=0.0)
+    fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     cycle_share: float = Field(ge=0.0)
+    fitted_cycle_share: float = Field(ge=0.0, default=0.0)
     total_bytes: float = Field(ge=0.0)
 
 
@@ -88,7 +90,9 @@ class DecodeLayerBreakdownRow(BaseModel):
 
     layer_id: int = Field(ge=0)
     estimated_cycles: float = Field(ge=0.0)
+    fitted_work_cycles: float = Field(ge=0.0, default=0.0)
     cycle_share: float = Field(ge=0.0)
+    fitted_cycle_share: float = Field(ge=0.0, default=0.0)
     total_bytes: float = Field(ge=0.0)
 
 

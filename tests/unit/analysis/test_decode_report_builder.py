@@ -120,7 +120,11 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
         "nig.node.kvload.0",
         "nig.node.sdpa_decode.0",
     ]
+    assert report.node_hotspots[0].fitted_work_cycles == pytest.approx(1220.0)
+    assert report.node_hotspots[0].fitted_cycle_share == pytest.approx(1220.0 / 3360.0)
     assert [row.layer_id for row in report.layer_breakdown] == [0, 1]
+    assert report.layer_breakdown[0].fitted_work_cycles == pytest.approx(2240.0)
+    assert report.layer_breakdown[0].fitted_cycle_share == pytest.approx(2240.0 / 3360.0)
 
 
 def test_build_decode_evaluation_report_rejects_prefill_scenarios() -> None:
@@ -346,6 +350,13 @@ def _perf_summary_report() -> PerfSummaryReport:
                 "nig.node.kvstore.0": 200.0,
                 "nig.node.elem_add.0": 100.0,
             },
+            "per_node_fitted_work_cycles": {
+                "nig.node.proj.0": 1220.0,
+                "nig.node.kvload.0": 900.0,
+                "nig.node.sdpa_decode.0": 700.0,
+                "nig.node.kvstore.0": 200.0,
+                "nig.node.elem_add.0": 100.0,
+            },
             "per_node_bytes": {
                 "nig.node.proj.0": 50000.0,
                 "nig.node.kvload.0": 64000.0,
@@ -355,6 +366,10 @@ def _perf_summary_report() -> PerfSummaryReport:
             },
             "per_layer_cycles": {
                 "0": 2000.0,
+                "1": 1120.0,
+            },
+            "per_layer_fitted_work_cycles": {
+                "0": 2240.0,
                 "1": 1120.0,
             },
             "per_layer_bytes": {

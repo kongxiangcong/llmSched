@@ -69,3 +69,9 @@ def test_phase_d_decode_foundation_matrix(
     assert "memory_hotspot" in report
     assert report["memory_hotspot"]["hottest_region_utilization"] >= 0.0
     assert report["macro_hotspots"]
+    assert report["node_hotspots"]
+    assert report["node_hotspots"][0]["fitted_work_cycles"] >= report["node_hotspots"][0]["estimated_cycles"]
+    assert report["node_hotspots"][0]["fitted_cycle_share"] >= 0.0
+    assert report["layer_breakdown"]
+    assert report["layer_breakdown"][0]["fitted_work_cycles"] >= report["layer_breakdown"][0]["estimated_cycles"]
+    assert report["layer_breakdown"][0]["fitted_cycle_share"] >= 0.0

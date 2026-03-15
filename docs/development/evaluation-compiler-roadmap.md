@@ -2720,6 +2720,23 @@ graph TD
   - compare-grade fitted-cycle rollups remain later `SPEC-16` or follow-on `SPEC-14/15` work
   - deeper cycle fitting remains in `SPEC-13`, not in the top-level eval reports
 
+## 2026-03-15 SPEC-14/15 Fitted Layer Hotspots Checkpoint
+
+- plan doc: `../plans/2026-03-15-spec-14-15-fitted-layer-hotspots.md`
+- `SPEC-14` and `SPEC-15` now expose fitted-cycle fields in report-local `node_hotspots` and `layer_breakdown`, extending the earlier top-level fitted topline adoption down into hotspot and per-layer rows.
+- this slice stays intentionally report-local: it reuses `SPEC-13` fitted node/layer rollups already present in `PerfSummaryReport`, but does not yet add fitted compare rows to `SPEC-16` or visualization consumers.
+- new closure evidence:
+  - `PrefillEvaluationReport.node_hotspots` / `layer_breakdown` now carry `fitted_work_cycles` and `fitted_cycle_share` beside the existing estimated-cycle fields
+  - `DecodeEvaluationReport.node_hotspots` / `layer_breakdown` now carry `fitted_work_cycles` and `fitted_cycle_share` beside the existing estimated-cycle fields
+  - focused `SPEC-14/15` builder, workflow, and smoke regression remains green (`16 passed`)
+- what this closes:
+  - one report-surface gap where fitted-cycle adoption had reached only top-level prefill/decode summaries, leaving hotspot and layer rows on estimated-only semantics
+  - one downstream consumer gap where workflow and CLI artifacts could not yet expose fitted node/layer context without recomputing it outside the report builders
+- what still remains for `M3`:
+  - fitted compare rows remain later `SPEC-16` or follow-on `SPEC-14/15` work
+  - visualization-specific adoption of fitted hotspot/layer rows should consume these report fields rather than rebuild parallel fitted rollups
+  - deeper cycle fitting remains in `SPEC-13`, not in these report builders
+
 ## 2026-03-15 SPEC-16 Fitted Topline Compare Checkpoint
 
 - plan doc: `../plans/2026-03-15-spec-16-fitted-topline-compare.md`
