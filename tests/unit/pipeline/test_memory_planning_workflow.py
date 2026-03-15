@@ -31,7 +31,7 @@ def test_run_memory_planning_writes_memory_plan_artifact(tmp_path: Path) -> None
 
     assert artifact.allocations
     assert artifact.storage_bindings
-    assert artifact.kv_formulas == []
+    assert artifact.kv_formulas
     assert artifact.address_diagnostics
     assert artifact.allocations[0].lifetime_bucket in {"preload", "compute", "store", "persist"}
     assert artifact.allocations[0].backing_store in {"vmem-local", "ddr-backed-staged", "ddr-persistent"}

@@ -84,7 +84,7 @@ def test_phase_c_memory_planner_matrix(
 
     assert manifest["status"] == "completed"
     assert manifest["artifact_index"]["memory_plan"] == "artifacts/memory_plan.json"
-    assert memory_plan["kv_formulas"] == []
+    assert memory_plan["kv_formulas"]
     assert memory_plan["storage_bindings"]
     assert memory_plan["address_diagnostics"]
     assert memory_plan["allocations"][0]["lifetime_bucket"] in {"preload", "compute", "store", "persist"}
@@ -102,6 +102,7 @@ def test_phase_c_memory_planner_matrix(
     assert "peak_bytes_by_backing_store" in memory_plan["region_summaries"]["ping"]
     assert "required_bytes_by_memory_class" in memory_plan["diagnostics"][0]
     assert "required_bytes_by_backing_store" in memory_plan["diagnostics"][0]
+    assert "kv" in {diagnostic["address_kind"] for diagnostic in memory_plan["address_diagnostics"]}
     assert "weight" in {diagnostic["address_kind"] for diagnostic in memory_plan["address_diagnostics"]}
     assert "quant" in {diagnostic["address_kind"] for diagnostic in memory_plan["address_diagnostics"]}
     assert {diagnostic["status"] for diagnostic in memory_plan["address_diagnostics"]} == {"bound"}
