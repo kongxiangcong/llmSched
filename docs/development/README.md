@@ -168,7 +168,24 @@
 - `run-performance-estimation` 已经打通 descriptor-driven perf foundation，但还不是完整的 prefill/decode 评估流水线。
 - `run-prefill-evaluation` 已经打通 prefill top-level foundation，但 decode 和跨运行对比还未开始。
 - `run-decode-evaluation` 已经打通 decode top-level foundation，但 sweep/delta comparison 和 UI 还未开始。
-- 还没有进入 sweep/delta comparison 和 UI。
+
+## 2026-03-19 Real-Model Checkpoint
+
+- real Gemma3 frontend import/canonicalize/lowering 已重新打通，`canonical Graph IR -> NIG` 的 unsupported lowering nodes 现在是 `0`
+- `run-frontend-analysis` CLI smoke 已恢复通过
+- 当前测试 checkpoint：
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+  - `python -m pytest -q --durations=30` -> `436 passed`
+- 当前 remaining blockers 已不再停留在 real-model frontend / Phase B/C checkpoint：
+  - `dynamic_shape_unresolved` 已清零
+  - SDPA rope-cache auxiliary input 已不再错误计入 staged `weight`
+  - `run-phase-c-gate` / acceptance matrix 已回到 green checkpoint
+- 因此当前项目状态更准确地说是：
+  - `Phase B = done`
+  - `Phase C = done`
+  - `Phase D/E = in_progress`
+- 当前主线已重新回到 `M3` 收口与 `SPEC-19` hardening。
 
 ## 当前 canonical / lowering surface
 

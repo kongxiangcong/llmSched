@@ -37,6 +37,37 @@ def test_canonicalize_fuses_embedding_lookup_with_post_scale() -> None:
     assert node.audit_ref.graph_node_ids == ["graph.node.embed.gather", "graph.node.embed.scale"]
 
 
+def test_canonicalize_fuses_block_quantized_embedding_lookup_with_post_scale() -> None:
+    from llm_sched.frontend import canonicalize_graph_ir
+
+    canonical = canonicalize_graph_ir(_block_quantized_embedding_graph())
+    compute_nodes = [node for node in canonical.nodes if node.op_kind not in {"Input", "Constant"}]
+
+    assert [node.op_kind for node in compute_nodes] == ["EmbeddingLookup"]
+
+    node = compute_nodes[0]
+    assert node.inputs == [
+        "model.embed_tokens.weight.quant",
+        "input_ids",
+        "model.embed_tokens.weight.scales",
+        "model.embed_tokens.weight.zp",
+        "embed.scale",
+    ]
+    assert node.outputs == ["tokens.embed"]
+    assert node.attrs == {
+        "bits": 4,
+        "block_size": 32,
+        "canonical_pattern": "EmbeddingLookup",
+        "embedding_dim": 1152,
+        "gather_axis": 0,
+        "quantize_axis": 1,
+        "scaled_output": True,
+        "vocab_size": 262144,
+    }
+    assert node.source_ref == ["onnx::Gather_Quant_0", "onnx::Mul_0"]
+    assert node.audit_ref.graph_node_ids == ["graph.node.embed.gather.quant", "graph.node.embed.scale"]
+
+
 def test_canonicalize_fuses_rope_table_preprocessing_chain() -> None:
     from llm_sched.frontend import canonicalize_graph_ir
 
@@ -84,6 +115,41 @@ def test_canonicalize_absorbs_unsqueezed_rope_tables() -> None:
     assert node.outputs == ["q.rot"]
 
 
+def test_canonicalize_normalizes_simplified_layernorm_to_rmsnorm() -> None:
+    from llm_sched.frontend import canonicalize_graph_ir
+
+    canonical = canonicalize_graph_ir(_simplified_layernorm_graph())
+    compute_nodes = [node for node in canonical.nodes if node.op_kind not in {"Input", "Constant"}]
+
+    assert [node.op_kind for node in compute_nodes] == ["RMSNorm"]
+
+    node = compute_nodes[0]
+    assert node.inputs == ["tokens.hidden", "layernorm.weight"]
+    assert node.outputs == ["tokens.norm"]
+    assert node.attrs == {
+        "canonical_pattern": "RMSNorm",
+        "epsilon": pytest.approx(1e-6),
+    }
+    assert node.source_ref == ["onnx::SimplifiedLayerNormalization_0"]
+    assert node.audit_ref.graph_node_ids == ["graph.node.norm"]
+
+
+def test_canonicalize_normalizes_direct_gelu_gate_to_geglu() -> None:
+    from llm_sched.frontend import canonicalize_graph_ir
+
+    canonical = canonicalize_graph_ir(_direct_gelu_geglu_graph())
+    compute_nodes = [node for node in canonical.nodes if node.op_kind not in {"Input", "Constant"}]
+
+    assert [node.op_kind for node in compute_nodes] == ["GeGLU"]
+
+    node = compute_nodes[0]
+    assert node.inputs == ["gate.linear", "up.linear"]
+    assert node.outputs == ["mlp.hidden"]
+    assert node.attrs == {"canonical_pattern": "GeGLU"}
+    assert node.source_ref == ["onnx::FastGelu_0", "onnx::Mul_0"]
+    assert node.audit_ref.graph_node_ids == ["graph.node.act", "graph.node.mul"]
+
+
 def test_canonicalize_classifies_shape_and_layout_fallback_paths() -> None:
     from llm_sched.frontend import canonicalize_graph_ir
 
@@ -106,6 +172,34 @@ def test_canonicalize_classifies_shape_and_layout_fallback_paths() -> None:
     assert compute_nodes[2].attrs == {
         "canonical_pattern": "LayoutFallback",
         "original_op_kind": "Transpose",
+    }
+
+
+def test_canonicalize_normalizes_group_query_attention_and_classifies_bias_mask_prep() -> None:
+    from llm_sched.frontend import canonicalize_graph_ir
+
+    canonical = canonicalize_graph_ir(_group_query_attention_graph())
+    compute_nodes = [node for node in canonical.nodes if node.op_kind not in {"Input", "Constant"}]
+
+    assert [node.op_kind for node in compute_nodes] == [
+        "AttentionMaskPrep",
+        "AttentionMaskPrep",
+        "AttentionMaskPrep",
+        "LayoutFallback",
+        "LayoutFallback",
+        "SDPA",
+    ]
+
+    sdpa_node = compute_nodes[-1]
+    assert sdpa_node.inputs[:4] == ["q.ready", "k.ready", "v.ready", "attn.bias.expanded"]
+    assert sdpa_node.outputs == ["attn.out", "present.key", "present.value"]
+    assert sdpa_node.attrs == {
+        "canonical_pattern": "SDPA",
+        "head_dim": 256,
+        "kv_num_heads": 1,
+        "num_heads": 4,
+        "scale": pytest.approx(0.0625),
+        "source_op_kind": "GroupQueryAttention",
     }
 
 
@@ -211,6 +305,21 @@ def test_lower_graph_ir_to_nig_lowers_attention_mask_prep_nodes() -> None:
     assert nig.nodes[2].legal_opcodes == ["SDPA"]
 
 
+def test_lower_graph_ir_to_nig_accepts_group_query_attention_after_canonicalization() -> None:
+    from llm_sched.frontend import canonicalize_graph_ir, lower_graph_ir_to_nig
+
+    nig = lower_graph_ir_to_nig(canonicalize_graph_ir(_group_query_attention_graph()))
+
+    assert [node.macro_op for node in nig.nodes] == [
+        "ATTENTION_MASK_PREP",
+        "ATTENTION_MASK_PREP",
+        "ATTENTION_MASK_PREP",
+        "LAYOUT_FALLBACK",
+        "LAYOUT_FALLBACK",
+        "SDPA",
+    ]
+
+
 def test_validate_frontend_legality_flags_embedding_without_hardware_mapping() -> None:
     from llm_sched.frontend import FrontendLegalityError, validate_frontend_legality
 
@@ -297,6 +406,73 @@ def _embedding_graph() -> GraphIR:
                 audit_ref=AuditRef(
                     graph_node_ids=["graph.node.embed.gather"],
                     source_ids=["onnx::Gather_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.embed.scale",
+                op_kind="Mul",
+                inputs=["tokens.embed.raw", "embed.scale"],
+                outputs=["tokens.embed"],
+                shape=[1, 1, 1152],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Mul_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.embed.scale"],
+                    source_ids=["onnx::Mul_0"],
+                ),
+            ),
+        ],
+    )
+
+
+def _block_quantized_embedding_graph() -> GraphIR:
+    return GraphIR(
+        ir_version="phase-a.v1",
+        graph_id="block-quantized-embedding-graph",
+        nodes=[
+            _input_node("graph.input.input_ids", "input_ids", [1, 1], "int64"),
+            _constant_node(
+                "graph.const.embed.weight.quant",
+                "model.embed_tokens.weight.quant",
+                [262144, 36],
+                "uint8",
+            ),
+            _constant_node(
+                "graph.const.embed.weight.scales",
+                "model.embed_tokens.weight.scales",
+                [262144, 36],
+                "float16",
+            ),
+            _constant_node(
+                "graph.const.embed.weight.zp",
+                "model.embed_tokens.weight.zp",
+                [262144, 36],
+                "uint8",
+            ),
+            _constant_node("graph.const.embed.scale", "embed.scale", [], "float16"),
+            GraphNode(
+                node_id="graph.node.embed.gather.quant",
+                op_kind="GatherBlockQuantized",
+                inputs=[
+                    "model.embed_tokens.weight.quant",
+                    "input_ids",
+                    "model.embed_tokens.weight.scales",
+                    "model.embed_tokens.weight.zp",
+                ],
+                outputs=["tokens.embed.raw"],
+                shape=[1, 1, 1152],
+                dtype="float16",
+                attrs={
+                    "bits": 4,
+                    "block_size": 32,
+                    "gather_axis": 0,
+                    "quantize_axis": 1,
+                },
+                source_ref=["onnx::Gather_Quant_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.embed.gather.quant"],
+                    source_ids=["onnx::Gather_Quant_0"],
                 ),
             ),
             GraphNode(
@@ -683,6 +859,70 @@ def _rope_with_unsqueezed_tables_graph() -> GraphIR:
     )
 
 
+def _simplified_layernorm_graph() -> GraphIR:
+    return GraphIR(
+        ir_version="phase-a.v1",
+        graph_id="simplified-layernorm-graph",
+        nodes=[
+            _input_node("graph.input.tokens.hidden", "tokens.hidden", [1, 128, 1152], "float16"),
+            _constant_node("graph.const.layernorm.weight", "layernorm.weight", [1152], "float16"),
+            GraphNode(
+                node_id="graph.node.norm",
+                op_kind="SimplifiedLayerNormalization",
+                inputs=["tokens.hidden", "layernorm.weight"],
+                outputs=["tokens.norm"],
+                shape=[1, 128, 1152],
+                dtype="float16",
+                attrs={"epsilon": 1e-6, "axis": -1, "stash_type": 1},
+                source_ref=["onnx::SimplifiedLayerNormalization_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.norm"],
+                    source_ids=["onnx::SimplifiedLayerNormalization_0"],
+                ),
+            ),
+        ],
+    )
+
+
+def _direct_gelu_geglu_graph() -> GraphIR:
+    return GraphIR(
+        ir_version="phase-a.v1",
+        graph_id="direct-gelu-geglu-graph",
+        nodes=[
+            _input_node("graph.input.gate.linear", "gate.linear", [1, 128, 6912], "float16"),
+            _input_node("graph.input.up.linear", "up.linear", [1, 128, 6912], "float16"),
+            GraphNode(
+                node_id="graph.node.act",
+                op_kind="Gelu",
+                inputs=["gate.linear"],
+                outputs=["gate.activated"],
+                shape=[1, 128, 6912],
+                dtype="float16",
+                attrs={"approximate": "tanh"},
+                source_ref=["onnx::FastGelu_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.act"],
+                    source_ids=["onnx::FastGelu_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.mul",
+                op_kind="Mul",
+                inputs=["gate.activated", "up.linear"],
+                outputs=["mlp.hidden"],
+                shape=[1, 128, 6912],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Mul_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.mul"],
+                    source_ids=["onnx::Mul_0"],
+                ),
+            ),
+        ],
+    )
+
+
 def _fallback_classification_graph() -> GraphIR:
     return GraphIR(
         ir_version="phase-a.v1",
@@ -731,6 +971,122 @@ def _fallback_classification_graph() -> GraphIR:
                 audit_ref=AuditRef(
                     graph_node_ids=["graph.node.transpose"],
                     source_ids=["onnx::Transpose_0"],
+                ),
+            ),
+        ],
+    )
+
+
+def _group_query_attention_graph() -> GraphIR:
+    return GraphIR(
+        ir_version="phase-a.v1",
+        graph_id="group-query-attention-graph",
+        nodes=[
+            _input_node("graph.input.q.ready", "q.ready", [1, 16, 1024], "float16"),
+            _input_node("graph.input.k.ready", "k.ready", [1, 16, 256], "float16"),
+            _input_node("graph.input.v.ready", "v.ready", [1, 16, 256], "float16"),
+            _input_node("graph.input.past.key", "past.key", [1, 1, 16, 256], "float16"),
+            _input_node("graph.input.past.value", "past.value", [1, 1, 16, 256], "float16"),
+            _input_node("graph.input.attn.mask.seq", "attn.mask.seq", [], "int32"),
+            _constant_node("graph.const.mask.offset", "mask.offset", [], "int32"),
+            _constant_node("graph.const.attn.one", "attn.one", [], "float16"),
+            _constant_node("graph.const.attn.neg", "attn.neg", [], "float16"),
+            _constant_node("graph.const.cos", "cos_cache_local", [32768, 128], "float16"),
+            _constant_node("graph.const.sin", "sin_cache_local", [32768, 128], "float16"),
+            GraphNode(
+                node_id="graph.node.mask.seq.minus_one",
+                op_kind="Sub",
+                inputs=["attn.mask.seq", "mask.offset"],
+                outputs=["attn.mask.seq.adjusted"],
+                shape=[],
+                dtype="int32",
+                attrs={},
+                source_ref=["onnx::Sub_shape_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.mask.seq.minus_one"],
+                    source_ids=["onnx::Sub_shape_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.attn.bias.sub",
+                op_kind="Sub",
+                inputs=["attn.one", "q.ready"],
+                outputs=["attn.bias.raw"],
+                shape=[1, 16, 1024],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Sub_bias_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.attn.bias.sub"],
+                    source_ids=["onnx::Sub_bias_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.attn.bias.mul",
+                op_kind="Mul",
+                inputs=["attn.bias.raw", "attn.neg"],
+                outputs=["attn.bias.scaled"],
+                shape=[1, 16, 1024],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Mul_bias_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.attn.bias.mul"],
+                    source_ids=["onnx::Mul_bias_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.attn.bias.unsqueeze",
+                op_kind="Unsqueeze",
+                inputs=["attn.bias.scaled", "mask.offset"],
+                outputs=["attn.bias.expanded.3d"],
+                shape=[1, 1, 16, 1024],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Unsqueeze_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.attn.bias.unsqueeze"],
+                    source_ids=["onnx::Unsqueeze_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.attn.bias.expand",
+                op_kind="Expand",
+                inputs=["attn.bias.expanded.3d", "attn.mask.seq.adjusted"],
+                outputs=["attn.bias.expanded"],
+                shape=[1, 1, 16, 1024],
+                dtype="float16",
+                attrs={},
+                source_ref=["onnx::Expand_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.attn.bias.expand"],
+                    source_ids=["onnx::Expand_0"],
+                ),
+            ),
+            GraphNode(
+                node_id="graph.node.attn.gqa",
+                op_kind="GroupQueryAttention",
+                inputs=[
+                    "q.ready",
+                    "k.ready",
+                    "v.ready",
+                    "past.key",
+                    "past.value",
+                    "attn.mask.seq.adjusted",
+                    "attn.mask.seq",
+                    "cos_cache_local",
+                    "sin_cache_local",
+                    "",
+                    "attn.bias.expanded",
+                ],
+                outputs=["attn.out", "present.key", "present.value"],
+                shape=[1, 16, 1024],
+                dtype="float16",
+                attrs={"num_heads": 4, "kv_num_heads": 1, "scale": 0.0625},
+                source_ref=["onnx::GroupQueryAttention_0"],
+                audit_ref=AuditRef(
+                    graph_node_ids=["graph.node.attn.gqa"],
+                    source_ids=["onnx::GroupQueryAttention_0"],
                 ),
             ),
         ],

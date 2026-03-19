@@ -193,23 +193,26 @@ Update rules after each work slice:
 - if a change alters a stable contract or handoff boundary, update the relevant `docs/development/phase-*-handoff.md`
 - if a change starts a new multi-step execution slice, add a new dated plan doc under `docs/plans/`
 
-## 2026-03-14 Audited Status
+## 2026-03-19 Audited Status
 
-Fresh verification evidence on 2026-03-14:
+Fresh verification evidence on 2026-03-19:
 
-- `python -m pytest -q` -> `408 passed, 11 failed`
 - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
 - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+- `python -m pytest -q --durations=30` -> `436 passed`
 
 Current working interpretation:
 
-- accepted smoke scope is stable enough to keep producing canonical-path artifacts
-- full-repository regression is not closed yet
-- main priority remains `P0: close M3`
-- `SPEC-19` stays `P1` hardening unless it directly helps close `M3`
+- real Gemma3 frontend recovery is back on the mainline: `run-frontend-analysis` now passes on the restored ONNX export, and canonical `GraphIR -> NIG` lowering has `0` unsupported nodes
+- the old downstream real-model blockers are closed:
+  - `dynamic_shape_unresolved` is now `0` on the real-model frontend checkpoint
+  - SDPA auxiliary tensor binding no longer misclassifies rope-cache tensors into staged `weight`
+  - `run-phase-c-gate` and the canonical Phase C matrix are back on the accepted path
+- `SPEC-08/09/10/11/12` can return to keep-green status under the restored real-model checkpoint
+- main priority returns to `P0: close M3`
 
 Current execution order:
 
-1. Restore the 11 failing full-regression checks.
-2. Continue `SPEC-13 -> SPEC-14/15 -> SPEC-16` in roadmap order.
-3. Resume `SPEC-19` hardening only after the `M3` path is back under control.
+1. Continue `SPEC-13 -> SPEC-14/15 -> SPEC-16` in roadmap order.
+2. Keep `SPEC-08/09/10/11/12` green with `run-phase-c-gate`, `local_smoke`, and `milestone_matrix`.
+3. Resume `SPEC-19` hardening on top of the restored mainline checkpoint.

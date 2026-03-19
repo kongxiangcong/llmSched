@@ -17,7 +17,7 @@
 | --- | --- | --- | --- |
 | Phase A | SPEC-01, SPEC-02, SPEC-05, SPEC-06 | `done` | 契约、工件、架构模型、IR 栈都已经稳定落地。 |
 | Phase B | SPEC-03, SPEC-04, SPEC-07 | `done` | import/decomposition/bound-NIG/report/smoke gate 已收口。 |
-| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `done` | canonical `run-phase-c-gate` 已可稳定通过，且 `tests/smoke -m local_smoke` / `tests/smoke -m milestone_matrix` 均为绿；`SPEC-08` 到 `SPEC-12` 已按当前 accepted scope 收口。 |
+| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `done` | real-model checkpoint 已重新打通；`run-phase-c-gate`、`local_smoke`、`milestone_matrix` 与 full `pytest` 均已恢复绿色。 |
 | Phase D | SPEC-13, SPEC-14, SPEC-15, SPEC-16 | `in_progress` | `SPEC-13` 已有 descriptor-driven estimator/workflow/CLI/smoke foundation，`SPEC-14` 已有 prefill top-level foundation，`SPEC-15` 已有 decode top-level foundation，`SPEC-16` 已有 sweep/delta workflow、CLI 和 smoke foundation。 |
 | Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，且 `vmem_view.regions` 已带 per-region backing-store/memory-class attribution；`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation、catalog/workbench round-trip return navigation，以及 memory panel 的 per-region backing-store/memory-class visibility。 |
 
@@ -25,7 +25,8 @@
 
 - Phase A 已完成。
 - Phase B 已完成。
-- 当前关键路径已转到 Phase D / `M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
+- Phase C 已重新完成，当前以 `run-phase-c-gate` 与 smoke/full regression 维持 keep-green。
+- 当前关键路径重新回到 `Phase D / M3`。
 
 ## 3. Spec 状态矩阵
 
@@ -58,8 +59,9 @@
 1. `Phase A = done`
 2. `Phase B = done`
 3. `Phase C = done`
-   - canonical `run-phase-c-gate` 已稳定为 `ready_for_acceptance`
-   - `SPEC-08/09/10/11/12` 已按当前 accepted scope 收口，不再作为默认 blocker
+   - real-model frontend 已恢复，unsupported lowering nodes = `0`
+   - canonical `run-phase-c-gate` 已回到 `ready_for_acceptance`
+   - `local_smoke` / `milestone_matrix` / full `pytest` 当前均为绿色
 4. `Phase D = in_progress`
    - 当前真正的主门槛改为 `M3`
    - 重点是把 `SPEC-13/14/15/16` 从 stable foundation 推到更完整的评估闭环
@@ -72,8 +74,8 @@
 1. 先继续收口 `M3`
    - `SPEC-13 -> SPEC-14/15 -> SPEC-16`
 2. `SPEC-18/19` 继续做产品化 hardening，但不再开新的底层 contract
-3. 保持 `run-phase-c-gate` 绿色，但没有 concrete failing workspace / smoke regression 时不主动重开 `SPEC-08/09/10/11/12`
-4. 避免误把 “Phase C 已完成” 当成 “M3 / M4 也已完成”
+3. 以 `run-phase-c-gate`、`local_smoke` 和 `milestone_matrix` 持续维持 `SPEC-08/09/10/11/12` 的 keep-green
+4. 避免因为主线恢复而跳过 `M3` 的 deeper estimator / eval / compare 收口
 
 ### 正式进入下一阶段的门槛
 
@@ -83,7 +85,7 @@
 | 进入 Phase D | `SPEC-08` 到 `SPEC-12` 全部 `done`，且单核/双核计划和 descriptor/ISA coverage 可稳定输出 |
 | 进入 Phase E | `SPEC-13` 到 `SPEC-16` 全部 `done`，且 prefill/decode 全流程评估结果稳定 |
 
-当前已经正式越过 `Phase C / M2` 门槛，项目主门槛改为 `Phase D / M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
+当前项目并不是重新跌回 Phase B；而是 real-model frontend 已恢复，但 `Phase C / M2` checkpoint 因 prefill planner overflow 重新变成 `in_progress`。在这个 checkpoint 重新变绿之前，`M3` 仍应被视为“有上游 keep-green 前置”的主门槛。
 
 ## 5. 依赖图
 
@@ -163,7 +165,7 @@ graph TD
 | 里程碑 | 对应完成条件 | 状态 | 当前判断 |
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
-| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
+| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-19 real-model checkpoint 已重新确认：`run-phase-c-gate` 回到 `ready_for_acceptance`，`tests/smoke -m local_smoke -q`、`tests/smoke -m milestone_matrix -q` 和 full `pytest` 均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
 | M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得 formal top-level compare consumer 与 fitted hotspot/layer compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-backing-store-pressure/phase-memory-class-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows、fitted `node_deltas` / `fitted_layer_deltas`，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、更强的 top-level report compare surface，以及 visualization-specific fitted compare adoption。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
@@ -181,17 +183,23 @@ graph TD
   - richer diff mode
   - multi-metric compare，而不只是 baseline summary
 
-### P1：继续 harden `SPEC-19`
+### P2：继续 harden `SPEC-19`
 
 - richer compare drill-down beyond current shared summary-metric deltas
 - deeper workspace drill-down beyond current selected-panel deep links
 - richer screenshot/export workflow
 
-### P2：保持 `Phase C / M2` 绿色
+### P1：保持 `Phase C / M2` 绿色
 
 - 持续以 `run-phase-c-gate` 和 milestone smoke 维护 canonical `single-core/dual-core x prefill/decode` matrix
 - 只有在出现 concrete failing workspace、smoke regression 或 downstream consumer failure 时，才重开 `SPEC-08/09/10/11/12`
 - 不再默认重开宏观 coverage、per-record drilldown 或无证据的 generic exploration
+
+### P2：继续 harden `SPEC-19`
+
+- richer compare drill-down beyond current shared summary-metric deltas
+- deeper workspace drill-down beyond current selected-panel deep links
+- richer screenshot/export workflow
 
 ## 8. 风险前置结论
 

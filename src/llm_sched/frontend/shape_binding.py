@@ -56,6 +56,7 @@ def build_gemma3_shape_bindings(
             "batch_size": scenario.batch,
             "sequence_length": scenario.seq_len,
             "past_sequence_length": scenario.kv_len,
+            "total_sequence_length": present_kv_len,
         },
         kv_tensor_shape=[
             scenario.batch,

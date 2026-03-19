@@ -49,6 +49,7 @@ def test_build_gemma3_shape_bindings_maps_scenario_symbols() -> None:
         "batch_size": 1,
         "sequence_length": 1,
         "past_sequence_length": 2048,
+        "total_sequence_length": 2049,
     }
     assert binding.kv_tensor_shape == [1, 1, 2048, 256]
     assert binding.mode == "decode"
@@ -83,6 +84,7 @@ def test_build_gemma3_shape_bindings_uses_prefill_zero_kv_length() -> None:
 
     assert binding.symbol_values["sequence_length"] == 128
     assert binding.symbol_values["past_sequence_length"] == 0
+    assert binding.symbol_values["total_sequence_length"] == 128
     assert binding.kv_tensor_shape == [1, 1, 0, 256]
     assert binding.mode == "prefill"
     assert binding.query_len == 128
