@@ -48,14 +48,25 @@ def test_run_visualization_workbench_writes_assets_and_updates_manifest(tmp_path
     assert "packed_field_name_counts" in app_js
     assert "Layer Deltas" in app_js
     assert "layer_deltas" in app_js
+    assert "compare_focus" in app_js
+    assert "layer_delta_focus" in app_js
+    assert "analysis_flow" in app_js
     assert "sweep_candidate" in app_js
     assert "sweep_layer_focus" in app_js
+    assert "function currentAnalysisFlow" in app_js
+    assert "function resolveAnalysisFlowState" in app_js
+    assert "focused_analysis_flow" in app_js
+    assert "focused_analysis_flow_summary" in app_js
+    assert "focused_compare_focus" in app_js
+    assert "focused_layer_delta_mode" in app_js
     assert "focused_sweep_candidate" in app_js
     assert "focused_sweep_layer" in app_js
     assert "focused_comparison_count" in app_js
     assert "focused_layer_delta_count" in app_js
     assert "focused_layer_delta_summary" in app_js
+    assert "Analysis Workflow" in app_js
     assert "Baseline Sweep Target" in app_js
+    assert "Focused Analysis Workflow" in app_js
     assert "Focused Comparisons" in app_js
     assert "Focused Layer Deltas" in app_js
     assert "Focused Layer Summary" in app_js
@@ -68,6 +79,10 @@ def test_run_visualization_workbench_writes_assets_and_updates_manifest(tmp_path
     assert "snapshot_metadata" in app_js
     assert "header_rows" in app_js
     assert "Snapshot Focus" in app_js
+    assert "Focused Compare Focus" in app_js
+    assert "Throughput / Latency Focus" in app_js
+    assert "Phase Shape Focus" in app_js
+    assert "Focused Layer Delta Mode" in app_js
     index_html = (run_root / "workbench" / "index.html").read_text(encoding="utf-8")
     assert "back-to-catalog-link" in index_html
     assert "function updateCatalogReturnLink" in app_js

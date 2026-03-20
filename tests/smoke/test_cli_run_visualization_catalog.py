@@ -53,13 +53,25 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     assert "function selectSweepLayerDeltas" in app_js
     assert "sweep_candidate" in app_js
     assert "sweep_layer_focus" in app_js
+    assert "workspace_candidate" in app_js
+    assert "workspace_detail_focus" in app_js
+    assert "workspace_secondary_detail_focus" in app_js
+    assert "workspace_detail_preset" in app_js
+    assert "workspace_analysis_flow" in app_js
     assert "function serializeCatalogState" in app_js
     assert "function hydrateCatalogStateFromUrl" in app_js
     assert "layer_delta_focus" in app_js
     assert "catalog_return" in app_js
+    assert "analysis_flow: currentWorkspaceAnalysisFlow()" in app_js
+    assert "Focused Workspace Analysis Recommendation" in app_js
+    assert "Analysis Flow Candidate Recommendation" in app_js
+    assert "Recommended For Current Flow" in app_js
+    assert "focused_workspace_analysis_recommendation" in app_js
+    assert "analysis_flow_recommendation" in app_js
     assert "Open Selected Panel" in app_js
     assert "function resolveSweepComparison" in app_js
     assert "function renderSweepLayerDeltaRows" in app_js
+    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow() })' in app_js
     assert "function orderedSweepLayerDeltas" in app_js
     assert "function buildSweepDrilldownLink" in app_js
     assert "function buildSweepLayerDrilldownLink" in app_js
@@ -71,6 +83,45 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     assert "Showing top 3 of" in app_js
     assert "|delta_cycles|" in app_js
     assert "|delta_bytes|" in app_js
+    assert "function resolveFocusedWorkspaceCandidate" in app_js
+    assert "function buildWorkspaceFocusLink" in app_js
+    assert "function renderFocusedWorkspaceDrilldown" in app_js
+    assert "function currentWorkspaceDetailFocus" in app_js
+    assert "function currentWorkspaceDetailFocusLabel" in app_js
+    assert "function currentWorkspaceSecondaryDetailFocus" in app_js
+    assert "function currentWorkspaceSecondaryDetailFocusLabel" in app_js
+    assert "function currentWorkspaceDetailPreset" in app_js
+    assert "function resolveWorkspaceDetailPreset" in app_js
+    assert "function currentWorkspaceAnalysisFlow" in app_js
+    assert "function resolveWorkspaceAnalysisFlow" in app_js
+    assert "function buildWorkspaceRowAnalysisFlowLink" in app_js
+    assert "function buildWorkspaceDetailFocusLink" in app_js
+    assert "function buildWorkspaceRowPresetLink" in app_js
+    assert "function buildWorkspaceRowSectionFocusLink" in app_js
+    assert "function orderWorkspaceDrilldownSections" in app_js
+    assert "Focused Workspace Candidate" in app_js
+    assert "Focused Workspace Detail" in app_js
+    assert "Focused Workspace Compare-Against Detail" in app_js
+    assert "Focused Workspace Compare Preset" in app_js
+    assert "Focused Workspace Analysis Flow" in app_js
+    assert "Focused Workspace Analysis Flow Summary" in app_js
+    assert "focused_workspace_candidate" in app_js
+    assert "focused_workspace_detail_focus" in app_js
+    assert "focused_workspace_secondary_detail_focus" in app_js
+    assert "focused_workspace_detail_preset" in app_js
+    assert "focused_workspace_analysis_flow" in app_js
+    assert "focused_workspace_analysis_flow_summary" in app_js
+    assert "Focused Workspace Compare Drilldown" in app_js
+    assert "Focus In Workspace" in app_js
+    assert "Focus Compare Section" in app_js
+    assert 'buildWorkspaceRowSectionFocusLink(candidateEntry, "summary", "Summary Compare")' in app_js
+    assert 'buildWorkspaceRowSectionFocusLink(candidateEntry, "grouped-metrics", "Grouped Metric Deltas")' in app_js
+    assert 'buildWorkspaceRowSectionFocusLink(candidateEntry, "estimated-layer", "Estimated Layer Deltas")' in app_js
+    assert 'buildWorkspaceRowPresetLink(candidateEntry, "grouped-vs-estimated-layer", "Grouped Metrics vs Estimated Layer")' in app_js
+    assert 'buildWorkspaceRowPresetLink(candidateEntry, "summary-vs-estimated-layer", "Summary vs Estimated Layer")' in app_js
+    assert 'buildWorkspaceRowAnalysisFlowLink(candidateEntry, "grouped-hotspots", "Grouped Hotspots")' in app_js
+    assert 'buildWorkspaceRowAnalysisFlowLink(candidateEntry, "summary-hotspots", "Summary Hotspots")' in app_js
+    assert "Analysis Flow Summary" in app_js
     assert "Open Sweep Panel" in app_js
     assert "Open Layer In Sweep" in app_js
     assert "sweep_comparisons" in app_js

@@ -362,3 +362,227 @@ def test_visualization_bundle_rejects_unknown_view_keys() -> None:
                 "section_ids": {"graph": "graph_view", "unknown": "unknown_view"},
             }
         )
+
+
+def test_visualization_bundle_accepts_compare_focus_metadata() -> None:
+    from llm_sched.contracts.visualization_bundle import VisualizationBundle
+
+    bundle = VisualizationBundle.model_validate(
+        {
+            "bundle_id": "viz.run-prefill-focus",
+            "metadata": {
+                "run_id": "run-prefill-focus",
+                "graph_id": "gemma3-prefill",
+                "scenario_name": "prefill_seq128",
+                "mode": "prefill",
+                "schedule_kind": "single-core",
+                "target_profile_name": "riscv_npu_single_core_v1",
+                "target_profile_path": "profiles/targets/riscv_npu_single_core_v1.json",
+                "scenario_profile_path": "profiles/scenarios/prefill_seq128.json",
+                "run_root": "tmp/run-prefill-focus",
+                "sweep_root": "tmp/sweep-phase-d",
+            },
+            "view_index": {
+                "available_views": ["graph", "timeline", "kv", "vmem", "coverage", "sweep"],
+                "section_ids": {
+                    "graph": "graph_view",
+                    "timeline": "timeline_view",
+                    "kv": "kv_view",
+                    "vmem": "vmem_view",
+                    "coverage": "coverage_view",
+                    "sweep": "sweep_view",
+                },
+            },
+            "report_summary": {
+                "report_kind": "prefill",
+                "primary_metrics": {"estimated_cycles": 4096.0},
+                "hotspot_macro_ops": ["WDQ_GEMM"],
+            },
+            "graph_view": {
+                "graph_id": "gemma3-prefill",
+                "node_count": 0,
+                "edge_count": 0,
+                "op_counts": {},
+                "nodes": [],
+                "edges": [],
+            },
+            "timeline_view": {
+                "core_mode": "single-core",
+                "total_block_count": 0,
+                "core_block_counts": {},
+                "blocks": [],
+            },
+            "kv_view": {
+                "kv_len": 0,
+                "kv_formula_count": 0,
+                "unresolved_address_count": 0,
+                "formulas": [],
+            },
+            "vmem_view": {
+                "max_region_utilization": 0.0,
+                "overflow_region_count": 0,
+                "regions": [],
+                "diagnostics": [],
+            },
+            "coverage_view": {
+                "mapped_descriptor_count": 0,
+                "unmapped_block_count": 0,
+                "opcode_counts": {},
+                "gap_counts": {},
+                "issues": [],
+            },
+            "sweep_view": {
+                "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                "comparison_count": 1,
+                "issue_count": 0,
+                "comparisons": [
+                    {
+                        "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                        "scenario_name": "prefill_seq128",
+                        "mode": "prefill",
+                        "metric_deltas": {"estimated_cycles": -1024.0},
+                        "compare_summary": {
+                            "baseline_schedule_kind": "single-core",
+                            "candidate_schedule_kind": "dual-core",
+                            "profile_diff_fields": ["core_mode", "num_cores"],
+                            "highlighted_scalar_deltas": [
+                                {
+                                    "metric_name": "estimated_cycles",
+                                    "baseline_value": 4096.0,
+                                    "candidate_value": 3072.0,
+                                    "delta_value": -1024.0,
+                                    "delta_ratio": -0.25,
+                                }
+                            ],
+                            "scalar_deltas": [
+                                {
+                                    "metric_name": "estimated_cycles",
+                                    "baseline_value": 4096.0,
+                                    "candidate_value": 3072.0,
+                                    "delta_value": -1024.0,
+                                    "delta_ratio": -0.25,
+                                }
+                            ],
+                            "scalar_delta_groups": [
+                                {
+                                    "group_id": "headline",
+                                    "title": "Headline",
+                                    "scalar_deltas": [
+                                        {
+                                            "metric_name": "estimated_cycles",
+                                            "baseline_value": 4096.0,
+                                            "candidate_value": 3072.0,
+                                            "delta_value": -1024.0,
+                                            "delta_ratio": -0.25,
+                                        }
+                                    ],
+                                }
+                            ],
+                            "available_focus_modes": [
+                                {
+                                    "focus_id": "summary",
+                                    "title": "Summary",
+                                    "summary_label": "Estimated cycles",
+                                },
+                                {
+                                    "focus_id": "throughput-latency",
+                                    "title": "Throughput / Latency",
+                                    "summary_label": "Throughput and latency shifts",
+                                },
+                                {
+                                    "focus_id": "phase-shape",
+                                    "title": "Phase Shape",
+                                    "summary_label": "Phase balance shifts",
+                                },
+                                {
+                                    "focus_id": "memory-pressure",
+                                    "title": "Memory Pressure",
+                                    "summary_label": "VMEM pressure shifts",
+                                },
+                                {
+                                    "focus_id": "schedule-shape",
+                                    "title": "Schedule Shape",
+                                    "summary_label": "Schedule balance changes",
+                                },
+                                {
+                                    "focus_id": "estimated-layer",
+                                    "title": "Estimated Layer",
+                                    "summary_label": "Estimated layer regressions",
+                                },
+                                {
+                                    "focus_id": "fitted-layer",
+                                    "title": "Fitted Layer",
+                                    "summary_label": "Fitted layer regressions",
+                                },
+                            ],
+                            "available_layer_delta_modes": [
+                                {
+                                    "mode_id": "top-cycle",
+                                    "focus_id": "estimated-layer",
+                                    "title": "Top By Cycles",
+                                    "summary_label": "Largest estimated cycle deltas",
+                                },
+                                {
+                                    "mode_id": "regressions-only",
+                                    "focus_id": "estimated-layer",
+                                    "title": "Candidate Regressions",
+                                    "summary_label": "Estimated cycle regressions only",
+                                },
+                                {
+                                    "mode_id": "top-by-bytes",
+                                    "focus_id": "estimated-layer",
+                                    "title": "Top By Bytes",
+                                    "summary_label": "Largest byte deltas",
+                                },
+                                {
+                                    "mode_id": "top-by-fitted-work",
+                                    "focus_id": "fitted-layer",
+                                    "title": "Top By Fitted Work",
+                                    "summary_label": "Largest fitted-work deltas",
+                                },
+                                {
+                                    "mode_id": "fitted-regressions-only",
+                                    "focus_id": "fitted-layer",
+                                    "title": "Fitted Work Regressions",
+                                    "summary_label": "Fitted-work regressions only",
+                                },
+                            ],
+                            "default_focus_id": "summary",
+                        },
+                        "layer_deltas": [],
+                        "fitted_layer_deltas": [],
+                    }
+                ],
+            },
+            "issues": [],
+        }
+    )
+
+    compare_summary = bundle.sweep_view.comparisons[0].compare_summary
+    assert compare_summary is not None
+    assert [focus.focus_id for focus in compare_summary.available_focus_modes] == [
+        "summary",
+        "throughput-latency",
+        "phase-shape",
+        "memory-pressure",
+        "schedule-shape",
+        "estimated-layer",
+        "fitted-layer",
+    ]
+    assert [mode.mode_id for mode in compare_summary.available_layer_delta_modes] == [
+        "top-cycle",
+        "regressions-only",
+        "top-by-bytes",
+        "top-by-fitted-work",
+        "fitted-regressions-only",
+    ]
+    assert compare_summary.available_layer_delta_modes[0].focus_id == "estimated-layer"
+    assert compare_summary.available_layer_delta_modes[3].focus_id == "fitted-layer"
+    assert compare_summary.default_focus_id == "summary"
+    assert compare_summary.available_focus_modes[0].summary_label == "Estimated cycles"
+    assert compare_summary.available_focus_modes[1].summary_label == "Throughput and latency shifts"
+    assert compare_summary.available_focus_modes[2].summary_label == "Phase balance shifts"
+    assert (
+        compare_summary.available_layer_delta_modes[4].summary_label
+        == "Fitted-work regressions only"
+    )

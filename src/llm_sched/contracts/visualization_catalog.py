@@ -4,6 +4,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from llm_sched.compare_grouping import (
+    CompareFocusId,
+    LayerDeltaFocusId,
+    default_compare_focus_id,
+)
 from llm_sched.contracts.memory_planner_closure_report import (
     MemoryPlannerAcceptanceStatus,
     MemoryPlannerConsumerId,
@@ -187,6 +192,23 @@ class VisualizationCatalogSweepCompareScalarDeltaGroup(BaseModel):
     scalar_deltas: list[VisualizationCatalogSweepCompareScalarDelta] = Field(default_factory=list)
 
 
+class VisualizationCatalogSweepCompareFocusMode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    focus_id: CompareFocusId
+    title: str
+    summary_label: str
+
+
+class VisualizationCatalogSweepCompareLayerDeltaMode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode_id: LayerDeltaFocusId
+    focus_id: CompareFocusId
+    title: str
+    summary_label: str
+
+
 class VisualizationCatalogSweepCompareSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -200,6 +222,11 @@ class VisualizationCatalogSweepCompareSummary(BaseModel):
     scalar_delta_groups: list[VisualizationCatalogSweepCompareScalarDeltaGroup] = Field(
         default_factory=list
     )
+    available_focus_modes: list[VisualizationCatalogSweepCompareFocusMode] = Field(default_factory=list)
+    available_layer_delta_modes: list[VisualizationCatalogSweepCompareLayerDeltaMode] = Field(
+        default_factory=list
+    )
+    default_focus_id: CompareFocusId = Field(default_factory=default_compare_focus_id)
     bandwidth_pressure_compare: VisualizationCatalogSweepBandwidthPressureCompare | None = None
     vmem_pressure_compare: VisualizationCatalogSweepVMEMPressureCompare | None = None
 

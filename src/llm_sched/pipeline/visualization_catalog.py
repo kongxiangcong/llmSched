@@ -9,6 +9,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from llm_sched.compare_grouping import (
+    build_compare_focus_rows,
+    build_layer_delta_focus_rows,
+    headline_metric_names_for_mode,
+)
 from llm_sched.config.loader import Diagnostic
 from llm_sched.contracts.phase_c_acceptance_report import PhaseCAcceptanceReport
 from llm_sched.contracts.sweep_report import SweepDeltaReport
@@ -19,6 +24,8 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogPhaseCGateSummary,
     VisualizationCatalogSweepBandwidthPressureCompare,
     VisualizationCatalogSweepCompareLabelDelta,
+    VisualizationCatalogSweepCompareFocusMode,
+    VisualizationCatalogSweepCompareLayerDeltaMode,
     VisualizationCatalogSweepCompareScalarDelta,
     VisualizationCatalogSweepCompareScalarDeltaGroup,
     VisualizationCatalogSweepCompareSummary,
@@ -206,6 +213,30 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                         )
                         for scalar_delta_group in comparison.compare_summary.scalar_delta_groups
                     ],
+                    available_focus_modes=[
+                        VisualizationCatalogSweepCompareFocusMode(
+                            focus_id=focus_mode.focus_id,
+                            title=focus_mode.title,
+                            summary_label=focus_mode.summary_label,
+                        )
+                        for focus_mode in (
+                            comparison.compare_summary.available_focus_modes
+                            or _build_catalog_compare_focus_modes(comparison)
+                        )
+                    ],
+                    available_layer_delta_modes=[
+                        VisualizationCatalogSweepCompareLayerDeltaMode(
+                            mode_id=layer_mode.mode_id,
+                            focus_id=layer_mode.focus_id,
+                            title=layer_mode.title,
+                            summary_label=layer_mode.summary_label,
+                        )
+                        for layer_mode in (
+                            comparison.compare_summary.available_layer_delta_modes
+                            or _build_catalog_layer_delta_modes(comparison)
+                        )
+                    ],
+                    default_focus_id=comparison.compare_summary.default_focus_id,
                     bandwidth_pressure_compare=(
                         VisualizationCatalogSweepBandwidthPressureCompare(
                             peak_bandwidth_pressure=VisualizationCatalogSweepCompareScalarDelta(
@@ -337,6 +368,44 @@ def _build_catalog_optional_scalar_delta(
         delta_value=scalar_delta.delta_value,
         delta_ratio=scalar_delta.delta_ratio,
     )
+
+
+def _build_catalog_compare_focus_modes(
+    comparison,
+) -> list[VisualizationCatalogSweepCompareFocusMode]:
+    headline_metric_names = headline_metric_names_for_mode(comparison.mode)
+    return [
+        VisualizationCatalogSweepCompareFocusMode(
+            focus_id=focus_id,
+            title=title,
+            summary_label=summary_label,
+        )
+        for focus_id, title, summary_label in build_compare_focus_rows(
+            headline_metric_names=headline_metric_names,
+            available_group_ids={group.group_id for group in comparison.compare_summary.scalar_delta_groups},
+            has_bandwidth_pressure=comparison.compare_summary.bandwidth_pressure_compare is not None,
+            has_vmem_pressure=comparison.compare_summary.vmem_pressure_compare is not None,
+            has_estimated_layers=bool(comparison.layer_deltas),
+            has_fitted_layers=bool(comparison.fitted_layer_deltas),
+        )
+    ]
+
+
+def _build_catalog_layer_delta_modes(
+    comparison,
+) -> list[VisualizationCatalogSweepCompareLayerDeltaMode]:
+    return [
+        VisualizationCatalogSweepCompareLayerDeltaMode(
+            mode_id=mode_id,
+            focus_id=focus_id,
+            title=title,
+            summary_label=summary_label,
+        )
+        for mode_id, focus_id, title, summary_label in build_layer_delta_focus_rows(
+            has_estimated_layers=bool(comparison.layer_deltas),
+            has_fitted_layers=bool(comparison.fitted_layer_deltas),
+        )
+    ]
 
 
 def _resolve_run_roots(

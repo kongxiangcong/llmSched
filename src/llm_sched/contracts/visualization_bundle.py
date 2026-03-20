@@ -4,6 +4,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from llm_sched.compare_grouping import (
+    CompareFocusId,
+    LayerDeltaFocusId,
+    default_compare_focus_id,
+)
+
 
 VisualizationViewName = Literal["graph", "timeline", "kv", "vmem", "coverage", "sweep"]
 VisualizationCompareGroupId = Literal[
@@ -290,6 +296,23 @@ class VisualizationSweepCompareScalarDeltaGroupView(BaseModel):
     scalar_deltas: list[VisualizationSweepCompareScalarDeltaView] = Field(default_factory=list)
 
 
+class VisualizationSweepCompareFocusModeView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    focus_id: CompareFocusId
+    title: str
+    summary_label: str
+
+
+class VisualizationSweepCompareLayerDeltaModeView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode_id: LayerDeltaFocusId
+    focus_id: CompareFocusId
+    title: str
+    summary_label: str
+
+
 class VisualizationSweepCompareSummaryView(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -301,6 +324,11 @@ class VisualizationSweepCompareSummaryView(BaseModel):
     scalar_delta_groups: list[VisualizationSweepCompareScalarDeltaGroupView] = Field(
         default_factory=list
     )
+    available_focus_modes: list[VisualizationSweepCompareFocusModeView] = Field(default_factory=list)
+    available_layer_delta_modes: list[VisualizationSweepCompareLayerDeltaModeView] = Field(
+        default_factory=list
+    )
+    default_focus_id: CompareFocusId = Field(default_factory=default_compare_focus_id)
     bandwidth_pressure_compare: VisualizationSweepBandwidthPressureCompareView | None = None
     vmem_pressure_compare: VisualizationSweepVMEMPressureCompareView | None = None
 

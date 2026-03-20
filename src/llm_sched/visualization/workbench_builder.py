@@ -137,6 +137,9 @@ const UI_STATE = {
   memoryQuery: "",
   coverageQuery: "",
   coverageFocus: "",
+  compareFocus: "summary",
+  layerDeltaFocus: "top-cycle",
+  analysisFlow: "",
   sweepCandidate: "",
   sweepLayerFocus: "",
   activeDetailBlockId: null,
@@ -182,6 +185,82 @@ function getActivePanelId() {
   return UI_STATE.requestedPanel || "summary";
 }
 
+function currentCompareFocusLabel() {
+  const focusLabels = {
+    summary: "Summary Focus",
+    "throughput-latency": "Throughput / Latency Focus",
+    "phase-shape": "Phase Shape Focus",
+    "memory-pressure": "Memory Pressure Focus",
+    "schedule-shape": "Schedule Shape Focus",
+    "estimated-layer": "Estimated Layer Focus",
+    "fitted-layer": "Fitted Layer Focus",
+  };
+  return focusLabels[UI_STATE.compareFocus] || focusLabels.summary;
+}
+
+function currentAnalysisFlow() {
+  return UI_STATE.analysisFlow || "";
+}
+
+function resolveAnalysisFlowState() {
+  const flows = {
+    "summary-hotspots": {
+      flow_id: "summary-hotspots",
+      label: "Summary Hotspots",
+      compare_focus: "summary",
+      layer_delta_focus: "top-cycle",
+    },
+    "grouped-hotspots": {
+      flow_id: "grouped-hotspots",
+      label: "Grouped Hotspots",
+      compare_focus: "throughput-latency",
+      layer_delta_focus: "top-cycle",
+    },
+    "memory-regression": {
+      flow_id: "memory-regression",
+      label: "Memory Regression",
+      compare_focus: "memory-pressure",
+      layer_delta_focus: "top-by-fitted-work",
+    },
+  };
+  return flows[currentAnalysisFlow()] || null;
+}
+
+function groupedCompareGroupIdsForFocus(compareFocus) {
+  const mapping = {
+    summary: ["headline"],
+    "throughput-latency": ["throughput_latency"],
+    "phase-shape": ["phase_shape"],
+    "memory-pressure": ["memory_pressure"],
+    "schedule-shape": ["schedule_shape"],
+  };
+  return mapping[compareFocus] || [];
+}
+
+function focusedGroupedScalarDeltaGroups(compareSummary) {
+  const focusGroupIds = groupedCompareGroupIdsForFocus(UI_STATE.compareFocus);
+  const groups = compareSummary.scalar_delta_groups || [];
+  if (!focusGroupIds.length) {
+    return [];
+  }
+  return groups.filter((group) => focusGroupIds.includes(group.group_id));
+}
+
+function currentLayerDeltaFocus() {
+  return UI_STATE.layerDeltaFocus || "top-cycle";
+}
+
+function currentLayerDeltaFocusLabel() {
+  const focusLabels = {
+    "top-cycle": "Top By Cycles",
+    "regressions-only": "Candidate Regressions",
+    "top-by-bytes": "Top By Bytes",
+    "top-by-fitted-work": "Top By Fitted Work",
+    "fitted-regressions-only": "Fitted Work Regressions",
+  };
+  return focusLabels[currentLayerDeltaFocus()] || focusLabels["top-cycle"];
+}
+
 function serializeUiState() {
   return {
     panel: getActivePanelId(),
@@ -192,6 +271,9 @@ function serializeUiState() {
     memory_query: UI_STATE.memoryQuery,
     coverage_query: UI_STATE.coverageQuery,
     coverage_focus: UI_STATE.coverageFocus,
+    compare_focus: UI_STATE.compareFocus,
+    layer_delta_focus: UI_STATE.layerDeltaFocus,
+    analysis_flow: currentAnalysisFlow(),
     sweep_candidate: UI_STATE.sweepCandidate,
     sweep_layer_focus: UI_STATE.sweepLayerFocus,
     detail_block: UI_STATE.activeDetailBlockId,
@@ -208,6 +290,11 @@ function buildCurrentViewUrl() {
 
 function hydrateStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
+  const requestedAnalysisFlow = params.get("analysis_flow") || "";
+  const resolvedAnalysisFlow = (() => {
+    UI_STATE.analysisFlow = requestedAnalysisFlow;
+    return resolveAnalysisFlowState();
+  })();
   UI_STATE.requestedPanel = params.get("panel") || "summary";
   UI_STATE.graphQuery = params.get("graph_query") || "";
   UI_STATE.timelineQuery = params.get("timeline_query") || "";
@@ -216,6 +303,12 @@ function hydrateStateFromUrl() {
   UI_STATE.memoryQuery = params.get("memory_query") || "";
   UI_STATE.coverageQuery = params.get("coverage_query") || "";
   UI_STATE.coverageFocus = params.get("coverage_focus") || "";
+  UI_STATE.compareFocus = params.has("compare_focus")
+    ? (params.get("compare_focus") || "summary")
+    : (resolvedAnalysisFlow ? resolvedAnalysisFlow.compare_focus : "summary");
+  UI_STATE.layerDeltaFocus = params.has("layer_delta_focus")
+    ? (params.get("layer_delta_focus") || "top-cycle")
+    : (resolvedAnalysisFlow ? resolvedAnalysisFlow.layer_delta_focus : "top-cycle");
   UI_STATE.sweepCandidate = params.get("sweep_candidate") || "";
   UI_STATE.sweepLayerFocus = params.get("sweep_layer_focus") || "";
   UI_STATE.activeDetailBlockId = params.get("detail_block");
@@ -642,20 +735,62 @@ function selectedSweepComparisons(comparisons) {
   );
 }
 
+function layerDeltaFocusUsesFittedRows() {
+  return currentLayerDeltaFocus() === "top-by-fitted-work"
+    || currentLayerDeltaFocus() === "fitted-regressions-only";
+}
+
+function orderedSweepLayerDeltas(layerDeltas) {
+  const focus = currentLayerDeltaFocus();
+  return [...(layerDeltas || [])].sort((left, right) => {
+    const leftScore = focus === "top-by-bytes"
+      ? Math.abs(Number(left.delta_bytes || 0))
+      : focus === "top-by-fitted-work" || focus === "fitted-regressions-only"
+        ? Math.abs(Number(left.delta_fitted_work_cycles || 0))
+        : Math.abs(Number(left.delta_cycles || 0));
+    const rightScore = focus === "top-by-bytes"
+      ? Math.abs(Number(right.delta_bytes || 0))
+      : focus === "top-by-fitted-work" || focus === "fitted-regressions-only"
+        ? Math.abs(Number(right.delta_fitted_work_cycles || 0))
+        : Math.abs(Number(right.delta_cycles || 0));
+    const deltaDiff = rightScore - leftScore;
+    if (deltaDiff !== 0) {
+      return deltaDiff;
+    }
+    return Number(left.layer_id || 0) - Number(right.layer_id || 0);
+  });
+}
+
 function selectedSweepLayerDeltas(comparison) {
-  if (!UI_STATE.sweepLayerFocus) {
-    return comparison.layer_deltas || [];
+  if (layerDeltaFocusUsesFittedRows()) {
+    return [];
   }
-  return (comparison.layer_deltas || []).filter(
+  const focus = currentLayerDeltaFocus();
+  const filtered = focus === "regressions-only"
+    ? (comparison.layer_deltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0)
+    : (comparison.layer_deltas || []);
+  const ordered = orderedSweepLayerDeltas(filtered);
+  if (!UI_STATE.sweepLayerFocus) {
+    return ordered;
+  }
+  return ordered.filter(
     (layerDelta) => String(layerDelta.layer_id) === String(UI_STATE.sweepLayerFocus)
   );
 }
 
 function selectedSweepFittedLayerDeltas(comparison) {
-  if (!UI_STATE.sweepLayerFocus) {
-    return comparison.fitted_layer_deltas || [];
+  if (!layerDeltaFocusUsesFittedRows()) {
+    return [];
   }
-  return (comparison.fitted_layer_deltas || []).filter(
+  const focus = currentLayerDeltaFocus();
+  const filtered = focus === "fitted-regressions-only"
+    ? (comparison.fitted_layer_deltas || []).filter((layerDelta) => Number(layerDelta.delta_fitted_work_cycles || 0) > 0)
+    : (comparison.fitted_layer_deltas || []);
+  const ordered = orderedSweepLayerDeltas(filtered);
+  if (!UI_STATE.sweepLayerFocus) {
+    return ordered;
+  }
+  return ordered.filter(
     (layerDelta) => String(layerDelta.layer_id) === String(UI_STATE.sweepLayerFocus)
   );
 }
@@ -792,7 +927,7 @@ function renderGroupedScalarDeltaSection(group) {
 }
 
 function renderScalarDeltaGroups(compareSummary) {
-  return (compareSummary.scalar_delta_groups || [])
+  return focusedGroupedScalarDeltaGroups(compareSummary)
     .filter((group) => (group.scalar_deltas || []).length)
     .map((group) => renderGroupedScalarDeltaSection(group))
     .join("");
@@ -837,6 +972,9 @@ function renderPressureCompareScalarRow(label, scalarDelta) {
 }
 
 function renderPressureCompareSummary(compareSummary) {
+  if (!["summary", "memory-pressure"].includes(UI_STATE.compareFocus)) {
+    return "";
+  }
   const bandwidth = compareSummary.bandwidth_pressure_compare;
   const vmem = compareSummary.vmem_pressure_compare;
   if (!bandwidth && !vmem) {
@@ -921,10 +1059,38 @@ function renderSweepCompareSummary(compareSummary, metricDeltas) {
   return metricRows.map(([key, value]) => `${key}: ${formatNumber(value)}`).join("<br>");
 }
 
+function buildSweepAnalysisFlowSummary(sweepData) {
+  if (!sweepData.focused_analysis_flow_summary) {
+    return "";
+  }
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">Analysis Workflow</p>
+      </div>
+      <ul class="metric-detail-list">
+        <li>Focused Analysis Workflow: ${sweepData.focused_analysis_flow_summary.flow_label}</li>
+        <li>Flow Id: ${sweepData.focused_analysis_flow_summary.flow_id}</li>
+        <li>Resolved Compare Focus: ${sweepData.focused_analysis_flow_summary.compare_focus_label}</li>
+        <li>Resolved Layer Delta Mode: ${sweepData.focused_analysis_flow_summary.layer_delta_focus_label}</li>
+      </ul>
+    </section>
+  `;
+}
+
 function buildSweepSnapshotMetadata(sweepData) {
   const headerRows = [
     sweepData.baseline_target_profile_name
       ? `Baseline Sweep Target: ${sweepData.baseline_target_profile_name}`
+      : "",
+    sweepData.focused_analysis_flow_summary
+      ? `Focused Analysis Workflow: ${sweepData.focused_analysis_flow_summary.flow_label} -> ${sweepData.focused_analysis_flow_summary.compare_focus_label} + ${sweepData.focused_analysis_flow_summary.layer_delta_focus_label}`
+      : "",
+    sweepData.focused_compare_focus
+      ? `Focused Compare Focus: ${currentCompareFocusLabel()}`
+      : "",
+    sweepData.focused_layer_delta_mode
+      ? `Focused Layer Delta Mode: ${currentLayerDeltaFocusLabel()}`
       : "",
     sweepData.focused_sweep_candidate
       ? `Focused Sweep Candidate: ${sweepData.focused_sweep_candidate}`
@@ -954,8 +1120,23 @@ function buildSweepSnapshotMetadata(sweepData) {
 }
 
 function buildSweepExportData(bundle) {
+  const analysisFlowState = resolveAnalysisFlowState();
+  const focusedAnalysisFlowSummary = analysisFlowState
+    ? {
+        flow_id: analysisFlowState.flow_id,
+        flow_label: analysisFlowState.label,
+        compare_focus: UI_STATE.compareFocus || analysisFlowState.compare_focus,
+        compare_focus_label: currentCompareFocusLabel(),
+        layer_delta_focus: currentLayerDeltaFocus(),
+        layer_delta_focus_label: currentLayerDeltaFocusLabel(),
+      }
+    : null;
   const emptySweepData = {
     baseline_target_profile_name: null,
+    focused_analysis_flow: currentAnalysisFlow() || null,
+    focused_analysis_flow_summary: focusedAnalysisFlowSummary,
+    focused_compare_focus: UI_STATE.compareFocus || "summary",
+    focused_layer_delta_mode: currentLayerDeltaFocus(),
     focused_sweep_candidate: UI_STATE.sweepCandidate || null,
     focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
     focused_comparison_count: 0,
@@ -1016,6 +1197,10 @@ function buildSweepExportData(bundle) {
     : null;
   const sweepData = {
     baseline_target_profile_name: bundle.sweep_view.baseline_target_profile_name || null,
+    focused_analysis_flow: currentAnalysisFlow() || null,
+    focused_analysis_flow_summary: focusedAnalysisFlowSummary,
+    focused_compare_focus: UI_STATE.compareFocus || "summary",
+    focused_layer_delta_mode: currentLayerDeltaFocus(),
     focused_sweep_candidate: UI_STATE.sweepCandidate || null,
     focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
     focused_comparison_count: comparisons.length,
@@ -1046,6 +1231,15 @@ function renderSweep(bundle) {
   const focusSummary = [
     sweepData.baseline_target_profile_name
       ? `Baseline Sweep Target: ${sweepData.baseline_target_profile_name}`
+      : "",
+    sweepData.focused_analysis_flow_summary
+      ? `Focused Analysis Workflow: ${sweepData.focused_analysis_flow_summary.flow_label}`
+      : "",
+    sweepData.focused_compare_focus
+      ? `Focused Compare Focus: ${currentCompareFocusLabel()}`
+      : "",
+    sweepData.focused_layer_delta_mode
+      ? `Focused Layer Delta Mode: ${currentLayerDeltaFocusLabel()}`
       : "",
     sweepData.focused_sweep_candidate
       ? `Focused Sweep Candidate: ${sweepData.focused_sweep_candidate}`
@@ -1082,6 +1276,7 @@ function renderSweep(bundle) {
   return `
     <article class="card wide-card">
       <h2>Sweep Comparison</h2>
+      ${buildSweepAnalysisFlowSummary(sweepData)}
       ${focusSummary}
       <table class="data-table">
         <thead><tr><th>Candidate</th><th>Scenario</th><th>Mode</th><th>Metric Deltas</th><th>Layer Deltas</th></tr></thead>

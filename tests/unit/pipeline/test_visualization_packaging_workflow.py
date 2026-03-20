@@ -204,6 +204,26 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         .compare_summary.vmem_pressure_compare.hottest_region.changed
         is True
     )
+    assert [
+        focus.focus_id
+        for focus in bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes
+    ] == [
+        "summary",
+        "throughput-latency",
+        "phase-shape",
+        "memory-pressure",
+        "schedule-shape",
+        "estimated-layer",
+    ]
+    assert bundle.sweep_view.comparisons[0].compare_summary.default_focus_id == "summary"
+    assert [
+        mode.mode_id
+        for mode in bundle.sweep_view.comparisons[0].compare_summary.available_layer_delta_modes
+    ] == [
+        "top-cycle",
+        "regressions-only",
+        "top-by-bytes",
+    ]
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store

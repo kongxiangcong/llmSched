@@ -263,6 +263,53 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
         bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio
         == pytest.approx(-0.2857142857)
     )
+    assert [
+        focus.focus_id
+        for focus in bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes
+    ] == [
+        "summary",
+        "throughput-latency",
+        "phase-shape",
+        "memory-pressure",
+        "schedule-shape",
+        "estimated-layer",
+        "fitted-layer",
+    ]
+    assert bundle.sweep_view.comparisons[0].compare_summary.default_focus_id == "summary"
+    assert (
+        bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes[0].summary_label
+        == "Estimated cycles"
+    )
+    assert (
+        bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes[1].summary_label
+        == "Throughput and latency shifts"
+    )
+    assert (
+        bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes[2].summary_label
+        == "Phase balance shifts"
+    )
+    assert [
+        mode.mode_id
+        for mode in bundle.sweep_view.comparisons[0].compare_summary.available_layer_delta_modes
+    ] == [
+        "top-cycle",
+        "regressions-only",
+        "top-by-bytes",
+        "top-by-fitted-work",
+        "fitted-regressions-only",
+    ]
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.available_layer_delta_modes[0]
+        .focus_id
+        == "estimated-layer"
+    )
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.available_layer_delta_modes[-1]
+        .focus_id
+        == "fitted-layer"
+    )
 
 
 def test_build_visualization_bundle_for_decode_without_sweep() -> None:
@@ -330,6 +377,31 @@ def test_build_visualization_bundle_builds_compare_summary_from_raw_sweep_report
     assert grouped_metric_names["headline"] == ["estimated_cycles"]
     assert grouped_metric_names["throughput_latency"] == ["estimated_cycles"]
     assert bundle.sweep_view.comparisons[0].compare_summary.bandwidth_pressure_compare is None
+    assert [
+        focus.focus_id
+        for focus in bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes
+    ] == [
+        "summary",
+        "throughput-latency",
+        "estimated-layer",
+    ]
+    assert bundle.sweep_view.comparisons[0].compare_summary.default_focus_id == "summary"
+    assert (
+        bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes[1].summary_label
+        == "Throughput and latency shifts"
+    )
+    assert (
+        bundle.sweep_view.comparisons[0].compare_summary.available_focus_modes[2].summary_label
+        == "Estimated layer regressions"
+    )
+    assert [
+        mode.mode_id
+        for mode in bundle.sweep_view.comparisons[0].compare_summary.available_layer_delta_modes
+    ] == [
+        "top-cycle",
+        "regressions-only",
+        "top-by-bytes",
+    ]
     assert bundle.sweep_view.comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
 
 

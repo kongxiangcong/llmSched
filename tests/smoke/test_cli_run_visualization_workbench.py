@@ -58,8 +58,13 @@ def test_run_visualization_workbench_writes_static_assets(
     assert "memory-search-input" in index_html
     assert "function updateCatalogReturnLink" in app_js
     assert "catalog_return" in app_js
+    assert "analysis_flow" in app_js
+    assert "function currentAnalysisFlow" in app_js
+    assert "function resolveAnalysisFlowState" in app_js
     assert "sweep_candidate" in app_js
     assert "sweep_layer_focus" in app_js
+    assert "focused_analysis_flow" in app_js
+    assert "focused_analysis_flow_summary" in app_js
     assert "focused_sweep_candidate" in app_js
     assert "focused_sweep_layer" in app_js
     assert "focused_comparison_count" in app_js
@@ -67,7 +72,9 @@ def test_run_visualization_workbench_writes_static_assets(
     assert "focused_layer_delta_summary" in app_js
     assert "memory_query" in app_js
     assert "Back to Catalog Compare" in app_js
+    assert "Analysis Workflow" in app_js
     assert "Baseline Sweep Target" in app_js
+    assert "Focused Analysis Workflow" in app_js
     assert "Focused Comparisons" in app_js
     assert "Focused Layer Deltas" in app_js
     assert "Focused Layer Summary" in app_js

@@ -147,19 +147,31 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
             <h2>Workspace Compare</h2>
             <p class="muted">The first selected run acts as the baseline for visible runs in the current compare scope.</p>
           </div>
-          <div class="compare-workspace-controls">
-            <label class="control control-compact" for="catalog-compare-scope-filter">
-              <span>Compare Scope</span>
-              <select id="catalog-compare-scope-filter">
-                <option value="same-scenario">Same scenario</option>
-                <option value="all-visible">All visible runs</option>
-              </select>
-            </label>
-            <button id="copy-workspace-link-button" type="button">Copy Workspace Link</button>
-            <button id="download-workspace-json-button" type="button">Export Workspace JSON</button>
-            <button id="download-workspace-svg-button" type="button">Export Workspace SVG</button>
-            <button class="compare-toggle" id="swap-compare-order-button" type="button">Swap Baseline/Candidate</button>
-          </div>
+        <div class="compare-workspace-controls">
+          <label class="control control-compact" for="catalog-compare-scope-filter">
+            <span>Compare Scope</span>
+            <select id="catalog-compare-scope-filter">
+              <option value="same-scenario">Same scenario</option>
+              <option value="all-visible">All visible runs</option>
+            </select>
+          </label>
+          <label class="control control-compact" for="catalog-compare-focus-filter">
+            <span>Compare Focus</span>
+            <select id="catalog-compare-focus-filter">
+              <option value="summary">Summary Focus</option>
+              <option value="throughput-latency">Throughput / Latency Focus</option>
+              <option value="phase-shape">Phase Shape Focus</option>
+              <option value="memory-pressure">Memory Pressure Focus</option>
+              <option value="schedule-shape">Schedule Shape Focus</option>
+              <option value="estimated-layer">Estimated Layer Focus</option>
+              <option value="fitted-layer">Fitted Layer Focus</option>
+            </select>
+          </label>
+          <button id="copy-workspace-link-button" type="button">Copy Workspace Link</button>
+          <button id="download-workspace-json-button" type="button">Export Workspace JSON</button>
+          <button id="download-workspace-svg-button" type="button">Export Workspace SVG</button>
+          <button class="compare-toggle" id="swap-compare-order-button" type="button">Swap Baseline/Candidate</button>
+        </div>
         </div>
         <p class="muted" id="catalog-workspace-action-status" aria-live="polite"></p>
         <div id="catalog-compare-workspace-content">
@@ -225,12 +237,38 @@ function panelLink(entry, panel) {
 }
 
 const COMPARE_SELECTION = [];
+let CURRENT_WORKSPACE_CANDIDATE_ID = "";
+let CURRENT_WORKSPACE_DETAIL_FOCUS = "summary";
+let CURRENT_WORKSPACE_SECONDARY_DETAIL_FOCUS = "";
+let CURRENT_WORKSPACE_DETAIL_PRESET = "";
+let CURRENT_WORKSPACE_ANALYSIS_FLOW = "";
+
+function currentWorkspaceCandidate() {
+  return CURRENT_WORKSPACE_CANDIDATE_ID || "";
+}
+
+function currentWorkspaceDetailFocus() {
+  return CURRENT_WORKSPACE_DETAIL_FOCUS || "summary";
+}
+
+function currentWorkspaceSecondaryDetailFocus() {
+  return CURRENT_WORKSPACE_SECONDARY_DETAIL_FOCUS || "";
+}
+
+function currentWorkspaceDetailPreset() {
+  return CURRENT_WORKSPACE_DETAIL_PRESET || "";
+}
+
+function currentWorkspaceAnalysisFlow() {
+  return CURRENT_WORKSPACE_ANALYSIS_FLOW || "";
+}
 
 function serializeCatalogState() {
   const searchInput = document.querySelector("#catalog-search-input");
   const modeFilter = document.querySelector("#catalog-mode-filter");
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const compareFocusFilter = document.querySelector("#catalog-compare-focus-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
   const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   return {
@@ -238,14 +276,23 @@ function serializeCatalogState() {
     mode: modeFilter ? modeFilter.value : "all",
     schedule: scheduleFilter ? scheduleFilter.value : "all",
     compare_scope: compareScopeFilter ? compareScopeFilter.value : "same-scenario",
+    compare_focus: compareFocusFilter ? compareFocusFilter.value : "summary",
     workbench_panel: workbenchPanelFilter ? workbenchPanelFilter.value : "summary",
     layer_delta_focus: layerDeltaFocusFilter ? layerDeltaFocusFilter.value : "top-cycle",
+    workspace_candidate: currentWorkspaceCandidate(),
+    workspace_detail_focus: currentWorkspaceDetailFocus(),
+    workspace_secondary_detail_focus: currentWorkspaceSecondaryDetailFocus(),
+    workspace_detail_preset: currentWorkspaceDetailPreset(),
+    workspace_analysis_flow: currentWorkspaceAnalysisFlow(),
     compare_ids: COMPARE_SELECTION.join(","),
   };
 }
 
-function buildCatalogReturnUrl() {
-  const state = serializeCatalogState();
+function buildCatalogReturnUrl(extraState = {}) {
+  const state = {
+    ...serializeCatalogState(),
+    ...extraState,
+  };
   const params = new URLSearchParams();
   Object.entries(state).forEach(([key, value]) => {
     if (value === null || value === undefined || String(value) === "") {
@@ -258,6 +305,9 @@ function buildCatalogReturnUrl() {
       return;
     }
     if (key === "compare_scope" && value === "same-scenario") {
+      return;
+    }
+    if (key === "compare_focus" && value === "summary") {
       return;
     }
     if (key === "workbench_panel" && value === "summary") {
@@ -280,6 +330,7 @@ function hydrateCatalogStateFromUrl() {
   const modeFilter = document.querySelector("#catalog-mode-filter");
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const compareFocusFilter = document.querySelector("#catalog-compare-focus-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
   const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   if (searchInput) {
@@ -294,12 +345,20 @@ function hydrateCatalogStateFromUrl() {
   if (compareScopeFilter) {
     compareScopeFilter.value = params.get("compare_scope") || "same-scenario";
   }
+  if (compareFocusFilter) {
+    compareFocusFilter.value = params.get("compare_focus") || "summary";
+  }
   if (workbenchPanelFilter) {
     workbenchPanelFilter.value = params.get("workbench_panel") || "summary";
   }
   if (layerDeltaFocusFilter) {
     layerDeltaFocusFilter.value = params.get("layer_delta_focus") || "top-cycle";
   }
+  CURRENT_WORKSPACE_CANDIDATE_ID = params.get("workspace_candidate") || "";
+  CURRENT_WORKSPACE_DETAIL_FOCUS = params.get("workspace_detail_focus") || "summary";
+  CURRENT_WORKSPACE_SECONDARY_DETAIL_FOCUS = params.get("workspace_secondary_detail_focus") || "";
+  CURRENT_WORKSPACE_DETAIL_PRESET = params.get("workspace_detail_preset") || "";
+  CURRENT_WORKSPACE_ANALYSIS_FLOW = params.get("workspace_analysis_flow") || "";
   COMPARE_SELECTION.splice(0, COMPARE_SELECTION.length);
   (params.get("compare_ids") || "")
     .split(",")
@@ -352,6 +411,193 @@ function currentWorkbenchPanel() {
   return panelFilter ? panelFilter.value : "summary";
 }
 
+function currentCompareFocus() {
+  const compareFocusFilter = document.querySelector("#catalog-compare-focus-filter");
+  return compareFocusFilter ? compareFocusFilter.value : "summary";
+}
+
+function currentCompareFocusLabel() {
+  const labels = {
+    summary: "Summary Focus",
+    "throughput-latency": "Throughput / Latency Focus",
+    "phase-shape": "Phase Shape Focus",
+    "memory-pressure": "Memory Pressure Focus",
+    "schedule-shape": "Schedule Shape Focus",
+    "estimated-layer": "Estimated Layer Focus",
+    "fitted-layer": "Fitted Layer Focus",
+  };
+  return labels[currentCompareFocus()] || "Summary Focus";
+}
+
+function currentWorkspaceDetailFocusLabel() {
+  const labels = {
+    summary: "Summary Compare",
+    "grouped-metrics": "Grouped Metric Deltas",
+    pressure: "Pressure Compare",
+    "estimated-layer": "Estimated Layer Deltas",
+    "fitted-layer": "Fitted Layer Deltas",
+  };
+  const preset = resolveWorkspaceDetailPreset();
+  const focus = preset ? preset.primary : currentWorkspaceDetailFocus();
+  return labels[focus] || "Summary Compare";
+}
+
+function currentWorkspaceSecondaryDetailFocusLabel() {
+  const labels = {
+    summary: "Summary Compare",
+    "grouped-metrics": "Grouped Metric Deltas",
+    pressure: "Pressure Compare",
+    "estimated-layer": "Estimated Layer Deltas",
+    "fitted-layer": "Fitted Layer Deltas",
+  };
+  const preset = resolveWorkspaceDetailPreset();
+  const focus = preset ? preset.secondary : currentWorkspaceSecondaryDetailFocus();
+  return labels[focus] || "";
+}
+
+function resolveWorkspaceDetailPreset() {
+  const flow = resolveWorkspaceAnalysisFlow();
+  if (flow) {
+    return {
+      label: flow.label,
+      primary: flow.primary,
+      secondary: flow.secondary,
+      preset_id: flow.preset_id,
+    };
+  }
+  const presets = {
+    "summary-vs-estimated-layer": {
+      label: "Summary vs Estimated Layer",
+      primary: "summary",
+      secondary: "estimated-layer",
+    },
+    "grouped-vs-estimated-layer": {
+      label: "Grouped Metrics vs Estimated Layer",
+      primary: "grouped-metrics",
+      secondary: "estimated-layer",
+    },
+    "pressure-vs-fitted-layer": {
+      label: "Pressure vs Fitted Layer",
+      primary: "pressure",
+      secondary: "fitted-layer",
+    },
+  };
+  return presets[currentWorkspaceDetailPreset()] || null;
+}
+
+function resolveWorkspaceAnalysisFlow() {
+  const flows = {
+    "summary-hotspots": {
+      label: "Summary Hotspots",
+      preset_id: "summary-vs-estimated-layer",
+      primary: "summary",
+      secondary: "estimated-layer",
+    },
+    "grouped-hotspots": {
+      label: "Grouped Hotspots",
+      preset_id: "grouped-vs-estimated-layer",
+      primary: "grouped-metrics",
+      secondary: "estimated-layer",
+    },
+    "memory-regression": {
+      label: "Memory Regression",
+      preset_id: "pressure-vs-fitted-layer",
+      primary: "pressure",
+      secondary: "fitted-layer",
+    },
+  };
+  return flows[currentWorkspaceAnalysisFlow()] || null;
+}
+
+function maxAbsoluteLayerDelta(layerDeltas, fieldName) {
+  return (layerDeltas || []).reduce((best, layerDelta) => {
+    const value = Math.abs(Number(layerDelta && layerDelta[fieldName] || 0));
+    return value > best ? value : best;
+  }, 0);
+}
+
+function resolveWorkspaceAnalysisFlowRecommendation(baselineEntry, candidateEntry, rowState) {
+  const flow = resolveWorkspaceAnalysisFlow();
+  if (!flow || !baselineEntry || !candidateEntry || !rowState) {
+    return null;
+  }
+  const compareSummary = rowState.sweepComparison && rowState.sweepComparison.compare_summary
+    ? rowState.sweepComparison.compare_summary
+    : null;
+  const groupedDeltaMagnitude = ((compareSummary && compareSummary.scalar_delta_groups) || [])
+    .reduce((total, group) => total + ((group.scalar_deltas || []).reduce((groupTotal, scalarDelta) => (
+      groupTotal + Math.abs(Number(scalarDelta.delta_value || 0))
+    ), 0)), 0);
+  const pressureMagnitude = Math.max(
+    Math.abs(Number(compareSummary && compareSummary.bandwidth_pressure_compare
+      && compareSummary.bandwidth_pressure_compare.peak_bandwidth_pressure
+      && compareSummary.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value || 0)),
+    Math.abs(Number(compareSummary && compareSummary.vmem_pressure_compare
+      && compareSummary.vmem_pressure_compare.hottest_region_utilization
+      && compareSummary.vmem_pressure_compare.hottest_region_utilization.delta_value || 0)),
+  );
+  const estimatedLayerMagnitude = maxAbsoluteLayerDelta(
+    rowState.sweepComparison ? rowState.sweepComparison.layer_deltas : [],
+    "delta_cycles",
+  );
+  const fittedLayerMagnitude = maxAbsoluteLayerDelta(
+    rowState.sweepComparison ? rowState.sweepComparison.fitted_layer_deltas : [],
+    "delta_fitted_work_cycles",
+  );
+  const topLineMagnitude = Math.abs(Number(rowState.delta || 0));
+  const ratioMagnitude = Math.abs(Number((rowState.ratio || 1) - 1));
+  const score = flow.preset_id === "summary-vs-estimated-layer"
+    ? (topLineMagnitude * 1.0) + (estimatedLayerMagnitude * 0.5) + (ratioMagnitude * 100)
+    : flow.preset_id === "grouped-vs-estimated-layer"
+      ? (groupedDeltaMagnitude * 1.0) + (estimatedLayerMagnitude * 0.5)
+      : (pressureMagnitude * 1000) + (fittedLayerMagnitude * 0.5) + (estimatedLayerMagnitude * 0.1);
+  const reason = flow.preset_id === "summary-vs-estimated-layer"
+    ? `Top-line delta ${formatMetricDelta(rowState.delta)} with strongest estimated-layer delta ${formatMetricValue(estimatedLayerMagnitude)} cycles.`
+    : flow.preset_id === "grouped-vs-estimated-layer"
+      ? `Grouped metric movement ${formatMetricValue(groupedDeltaMagnitude)} with strongest estimated-layer delta ${formatMetricValue(estimatedLayerMagnitude)} cycles.`
+      : `Pressure shift ${formatMetricValue(pressureMagnitude)} with strongest fitted-layer delta ${formatMetricValue(fittedLayerMagnitude)} cycles.`;
+  return {
+    flow_id: currentWorkspaceAnalysisFlow(),
+    flow_label: flow.label,
+    preset_id: flow.preset_id,
+    score,
+    reason,
+  };
+}
+
+function recommendationTierForRank(rankIndex, recommendation) {
+  if (!recommendation) {
+    return "";
+  }
+  if (rankIndex === 0) {
+    return "primary";
+  }
+  if (rankIndex < 3) {
+    return "watch";
+  }
+  return "background";
+}
+
+function groupedCompareGroupIdsForFocus(compareFocus) {
+  const mapping = {
+    summary: ["headline"],
+    "throughput-latency": ["throughput_latency"],
+    "phase-shape": ["phase_shape"],
+    "memory-pressure": ["memory_pressure"],
+    "schedule-shape": ["schedule_shape"],
+  };
+  return mapping[compareFocus] || [];
+}
+
+function focusedGroupedScalarDeltaGroups(compareSummary) {
+  const focusGroupIds = groupedCompareGroupIdsForFocus(currentCompareFocus());
+  const groups = compareSummary.scalar_delta_groups || [];
+  if (!focusGroupIds.length) {
+    return [];
+  }
+  return groups.filter((group) => focusGroupIds.includes(group.group_id));
+}
+
 function currentLayerDeltaFocus() {
   const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   return layerDeltaFocusFilter ? layerDeltaFocusFilter.value : "top-cycle";
@@ -385,11 +631,16 @@ function workbenchPanelLabel(panel) {
 
 function buildComparePanelLinks(entry) {
   const panel = currentWorkbenchPanel();
+  const workbenchCompareParams = {
+    compare_focus: currentCompareFocus(),
+    layer_delta_focus: currentLayerDeltaFocus(),
+    analysis_flow: currentWorkspaceAnalysisFlow(),
+  };
   const links = [
-    `<a class="panel-link" href="${buildWorkbenchLink(entry, panel)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
+    `<a class="panel-link" href="${buildWorkbenchHref(entry.workbench_entry_path, panel, workbenchCompareParams)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
   ];
   if (panel !== "summary") {
-    links.push(`<a class="panel-link" href="${buildWorkbenchLink(entry, "summary")}">Open Summary</a>`);
+    links.push(`<a class="panel-link" href="${buildWorkbenchHref(entry.workbench_entry_path, "summary", workbenchCompareParams)}">Open Summary</a>`);
   }
   return `<div class="compare-link-row">${links.join("")}</div>`;
 }
@@ -599,7 +850,7 @@ function resolveWorkspaceCompareRowState(baselineEntry, candidateEntry) {
   const delta = candidateEntry.primary_metric_value - baselineEntry.primary_metric_value;
   const ratio = baselineEntry.primary_metric_value !== 0 ? candidateEntry.primary_metric_value / baselineEntry.primary_metric_value : null;
   const sweepComparison = resolveSweepComparison(baselineEntry, candidateEntry);
-  return {
+  const baseRowState = {
     sameMetric,
     delta,
     ratio,
@@ -608,22 +859,58 @@ function resolveWorkspaceCompareRowState(baselineEntry, candidateEntry) {
     workspaceRatioSummaryTag: buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry),
     workspaceSweepSummaryTag: buildWorkspaceSweepSummaryTag(sweepComparison),
   };
+  return {
+    ...baseRowState,
+    analysisFlowRecommendation: resolveWorkspaceAnalysisFlowRecommendation(
+      baselineEntry,
+      candidateEntry,
+      baseRowState,
+    ),
+  };
 }
 
 function renderWorkspaceSummaryCell(tagMarkup, contentMarkup) {
   return `<td>${renderWorkspaceSummaryStack(tagMarkup, contentMarkup)}</td>`;
 }
 
+function buildWorkspaceRowSectionFocusLink(candidateEntry, sectionId, label) {
+  return `
+    <div class="compare-link-row">
+      <a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: candidateEntry.entry_id, workspace_detail_focus: sectionId, workspace_secondary_detail_focus: "", workspace_detail_preset: "" })}">Focus Compare Section: ${label}</a>
+    </div>
+  `;
+}
+
+function buildWorkspaceRowPresetLink(candidateEntry, presetId, label) {
+  return `
+    <div class="compare-link-row">
+      <a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: candidateEntry.entry_id, workspace_detail_preset: presetId })}">Open Compare Preset: ${label}</a>
+    </div>
+  `;
+}
+
+function buildWorkspaceRowAnalysisFlowLink(candidateEntry, flowId, label) {
+  return `
+    <div class="compare-link-row">
+      <a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: candidateEntry.entry_id, workspace_analysis_flow: flowId, workspace_detail_preset: "" })}">Open Analysis Flow: ${label}</a>
+    </div>
+  `;
+}
+
 function buildWorkspaceSweepSummaryContent(baselineEntry, candidateEntry, sweepComparison) {
-  return `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}${buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison)}`;
+  return `${buildWorkspaceRowSectionFocusLink(candidateEntry, "estimated-layer", "Estimated Layer Deltas")}${buildWorkspaceRowPresetLink(candidateEntry, "summary-vs-estimated-layer", "Summary vs Estimated Layer")}${buildWorkspaceRowAnalysisFlowLink(candidateEntry, "summary-hotspots", "Summary Hotspots")}${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}${buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison)}`;
 }
 
-function buildWorkspacePrimaryDeltaContent(sameMetric, deltaValue) {
-  return sameMetric ? formatMetricDelta(deltaValue) : "metric mismatch";
+function buildWorkspacePrimaryDeltaContent(candidateEntry, sameMetric, deltaValue) {
+  return `${sameMetric ? formatMetricDelta(deltaValue) : "metric mismatch"}${buildWorkspaceRowSectionFocusLink(candidateEntry, "summary", "Summary Compare")}`;
 }
 
-function buildWorkspacePrimaryRatioContent(sameMetric, ratioValue) {
-  return sameMetric && ratioValue !== null ? `${ratioValue.toFixed(3)}x` : "n/a";
+function buildWorkspacePrimaryRatioContent(candidateEntry, sameMetric, ratioValue) {
+  return `${sameMetric && ratioValue !== null ? `${ratioValue.toFixed(3)}x` : "n/a"}${buildWorkspaceRowSectionFocusLink(candidateEntry, "summary", "Summary Compare")}`;
+}
+
+function buildWorkspaceSharedMetricContent(baselineEntry, candidateEntry, sweepComparison) {
+  return `${buildWorkspaceRowSectionFocusLink(candidateEntry, "grouped-metrics", "Grouped Metric Deltas")}${buildWorkspaceRowPresetLink(candidateEntry, "grouped-vs-estimated-layer", "Grouped Metrics vs Estimated Layer")}${buildWorkspaceRowAnalysisFlowLink(candidateEntry, "grouped-hotspots", "Grouped Hotspots")}${buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison)}`;
 }
 
 function renderWorkspaceSummaryStack(tagMarkup, contentMarkup) {
@@ -729,7 +1016,7 @@ function renderGroupedScalarDeltaSection(group) {
 }
 
 function renderScalarDeltaGroups(compareSummary) {
-  return (compareSummary.scalar_delta_groups || [])
+  return focusedGroupedScalarDeltaGroups(compareSummary)
     .filter((group) => (group.scalar_deltas || []).length)
     .map((group) => renderGroupedScalarDeltaSection(group))
     .join("");
@@ -774,6 +1061,9 @@ function renderPressureCompareScalarRow(label, scalarDelta) {
 }
 
 function renderPressureCompareSummary(compareSummary) {
+  if (!["summary", "memory-pressure"].includes(currentCompareFocus())) {
+    return "";
+  }
   const bandwidth = compareSummary.bandwidth_pressure_compare;
   const vmem = compareSummary.vmem_pressure_compare;
   if (!bandwidth && !vmem) {
@@ -807,16 +1097,125 @@ function renderPressureCompareSummary(compareSummary) {
   `;
 }
 
-function renderWorkspaceCompareDrilldownSection(title, contentMarkup) {
-  if (!contentMarkup) {
-    return "";
+function buildWorkspaceDetailFocusLink(sectionId, label) {
+  const isActive = currentWorkspaceDetailFocus() === sectionId;
+  return `<a class="panel-link workspace-detail-focus-link${isActive ? " is-active" : ""}" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: currentWorkspaceCandidate(), workspace_detail_focus: sectionId, workspace_secondary_detail_focus: "", workspace_detail_preset: "" })}">Focus Compare Section: ${label}${isActive ? " (Active)" : ""}</a>`;
+}
+
+function buildWorkspaceDetailPresetLink(presetId, label) {
+  const isActive = currentWorkspaceDetailPreset() === presetId;
+  return `<a class="panel-link workspace-detail-preset-link${isActive ? " is-active" : ""}" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: currentWorkspaceCandidate(), workspace_detail_preset: presetId, workspace_analysis_flow: "" })}">${label}${isActive ? " (Active)" : ""}</a>`;
+}
+
+function renderWorkspaceDetailPresetLinks() {
+  return `
+    <div class="compare-link-row">
+      ${buildWorkspaceDetailPresetLink("summary-vs-estimated-layer", "Summary vs Estimated Layer")}
+      ${buildWorkspaceDetailPresetLink("grouped-vs-estimated-layer", "Grouped Metrics vs Estimated Layer")}
+      ${buildWorkspaceDetailPresetLink("pressure-vs-fitted-layer", "Pressure vs Fitted Layer")}
+    </div>
+  `;
+}
+
+function buildWorkspaceAnalysisFlowLink(flowId, label) {
+  const isActive = currentWorkspaceAnalysisFlow() === flowId;
+  return `<a class="panel-link workspace-analysis-flow-link${isActive ? " is-active" : ""}" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: currentWorkspaceCandidate(), workspace_analysis_flow: flowId, workspace_detail_preset: "" })}">${label}${isActive ? " (Active)" : ""}</a>`;
+}
+
+function renderWorkspaceAnalysisFlowLinks() {
+  return `
+    <div class="compare-link-row">
+      ${buildWorkspaceAnalysisFlowLink("summary-hotspots", "Summary Hotspots")}
+      ${buildWorkspaceAnalysisFlowLink("grouped-hotspots", "Grouped Hotspots")}
+      ${buildWorkspaceAnalysisFlowLink("memory-regression", "Memory Regression")}
+    </div>
+  `;
+}
+
+function buildWorkspaceAnalysisFlowSummary() {
+  const flow = resolveWorkspaceAnalysisFlow();
+  if (!flow) {
+    return '<p class="muted">No analysis flow selected.</p>';
   }
   return `
-    <section class="compare-summary-group">
+    <ul class="metric-detail-list">
+      <li><span>Flow</span><div class="metric-detail-values"><strong>${flow.label}</strong><em>${currentWorkspaceAnalysisFlow()}</em></div></li>
+      <li><span>Preset</span><div class="metric-detail-values"><strong>${flow.preset_id}</strong><em>${flow.primary} vs ${flow.secondary}</em></div></li>
+    </ul>
+  `;
+}
+
+function buildWorkspaceAnalysisFlowRecommendationSummary(rowState, recommendationRank) {
+  const recommendation = rowState && rowState.analysisFlowRecommendation;
+  if (!recommendation) {
+    return '<p class="muted">No recommendation is available without an active analysis flow.</p>';
+  }
+  const recommendationTier = recommendationTierForRank(recommendationRank, recommendation);
+  return `
+    <ul class="metric-detail-list">
+      <li><span>Recommended For Current Flow</span><div class="metric-detail-values"><strong>${recommendationTier}</strong><em>rank ${recommendationRank + 1}</em></div></li>
+      <li><span>Reason</span><div class="metric-detail-values"><strong>${recommendation.reason}</strong><em>${recommendation.preset_id}</em></div></li>
+      <li><span>Score</span><div class="metric-detail-values"><strong>${formatMetricValue(recommendation.score)}</strong><em>${recommendation.flow_label}</em></div></li>
+    </ul>
+  `;
+}
+
+function renderWorkspaceRecommendationBadge(rowState, recommendationRank) {
+  const recommendation = rowState && rowState.analysisFlowRecommendation;
+  if (!recommendation) {
+    return "";
+  }
+  const tier = recommendationTierForRank(recommendationRank, recommendation);
+  return `<p class="muted">Recommended For Current Flow: ${tier} (${recommendation.reason})</p>`;
+}
+
+function orderWorkspaceCandidatesForCurrentFlow(baselineEntry, candidates) {
+  return [...(candidates || [])].sort((left, right) => {
+    if (!currentWorkspaceAnalysisFlow()) {
+      return left.primary_metric_value - right.primary_metric_value;
+    }
+    const leftRowState = resolveWorkspaceCompareRowState(baselineEntry, left);
+    const rightRowState = resolveWorkspaceCompareRowState(baselineEntry, right);
+    const leftScore = Number(leftRowState.analysisFlowRecommendation && leftRowState.analysisFlowRecommendation.score || 0);
+    const rightScore = Number(rightRowState.analysisFlowRecommendation && rightRowState.analysisFlowRecommendation.score || 0);
+    const scoreDiff = rightScore - leftScore;
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+    return left.primary_metric_value - right.primary_metric_value;
+  });
+}
+
+function orderWorkspaceDrilldownSections(sections) {
+  const preset = resolveWorkspaceDetailPreset();
+  const activeSectionId = preset ? preset.primary : currentWorkspaceDetailFocus();
+  const secondarySectionId = preset ? preset.secondary : currentWorkspaceSecondaryDetailFocus();
+  return [...(sections || [])].sort((left, right) => {
+    if (left.section_id === activeSectionId && right.section_id !== activeSectionId) {
+      return -1;
+    }
+    if (right.section_id === activeSectionId && left.section_id !== activeSectionId) {
+      return 1;
+    }
+    if (left.section_id === secondarySectionId && right.section_id !== secondarySectionId) {
+      return -1;
+    }
+    if (right.section_id === secondarySectionId && left.section_id !== secondarySectionId) {
+      return 1;
+    }
+    return left.title.localeCompare(right.title);
+  });
+}
+
+function renderWorkspaceCompareDrilldownSection(sectionId, title, contentMarkup) {
+  const content = contentMarkup || '<p class="empty">No compare details for this section.</p>';
+  return `
+    <section class="compare-summary-group${currentWorkspaceDetailFocus() === sectionId ? " is-focused-section" : ""}">
       <div class="compare-group-heading">
         <p class="muted">${title}</p>
+        ${buildWorkspaceDetailFocusLink(sectionId, title)}
       </div>
-      ${contentMarkup}
+      ${content}
     </section>
   `;
 }
@@ -921,32 +1320,76 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
 }
 
 function buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison) {
-  if (!sweepComparison || !sweepComparison.compare_summary) {
-    return "";
-  }
-  const compareSummary = sweepComparison.compare_summary;
-  const groupedScalarContent = hasScalarDeltaGroups(compareSummary)
+  const compareSummary = sweepComparison && sweepComparison.compare_summary
+    ? sweepComparison.compare_summary
+    : null;
+  const summaryContent = buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison);
+  const groupedScalarContent = compareSummary && hasScalarDeltaGroups(compareSummary)
     ? renderScalarDeltaGroups(compareSummary)
     : "";
-  const pressureContent = renderPressureCompareSummary(compareSummary);
+  const pressureContent = compareSummary
+    ? renderPressureCompareSummary(compareSummary)
+    : "";
   const estimatedLayerContent = renderWorkspaceLayerDrilldownRows(
     baselineEntry,
     candidateEntry,
-    sweepComparison.layer_deltas || [],
+    sweepComparison ? sweepComparison.layer_deltas || [] : [],
     "estimated",
   );
   const fittedLayerContent = renderWorkspaceLayerDrilldownRows(
     baselineEntry,
     candidateEntry,
-    sweepComparison.fitted_layer_deltas || [],
+    sweepComparison ? sweepComparison.fitted_layer_deltas || [] : [],
     "fitted",
   );
-  const drilldownSections = [
-    renderWorkspaceCompareDrilldownSection("Grouped Metric Deltas", groupedScalarContent),
-    renderWorkspaceCompareDrilldownSection("Pressure Compare", pressureContent),
-    renderWorkspaceCompareDrilldownSection("Estimated Layer Deltas", estimatedLayerContent),
-    renderWorkspaceCompareDrilldownSection("Fitted Layer Deltas", fittedLayerContent),
-  ].filter(Boolean).join("");
+  const orderedSections = orderWorkspaceDrilldownSections([
+    {
+      section_id: "summary",
+      title: "Summary Compare",
+      content: summaryContent,
+    },
+    {
+      section_id: "grouped-metrics",
+      title: "Grouped Metric Deltas",
+      content: groupedScalarContent,
+    },
+    {
+      section_id: "pressure",
+      title: "Pressure Compare",
+      content: pressureContent,
+    },
+    {
+      section_id: "estimated-layer",
+      title: "Estimated Layer Deltas",
+      content: estimatedLayerContent,
+    },
+    {
+      section_id: "fitted-layer",
+      title: "Fitted Layer Deltas",
+      content: fittedLayerContent,
+    },
+  ]);
+  const preset = resolveWorkspaceDetailPreset();
+  const activeSectionId = preset ? preset.primary : currentWorkspaceDetailFocus();
+  const secondarySectionId = preset ? preset.secondary : currentWorkspaceSecondaryDetailFocus();
+  const drilldownSections = orderedSections
+    .filter((section, index) => {
+      if (index === 0) {
+        return true;
+      }
+      if (!secondarySectionId) {
+        return section.section_id !== activeSectionId;
+      }
+      return section.section_id === secondarySectionId;
+    })
+    .filter((section, index, sections) =>
+      sections.findIndex((candidate) => candidate.section_id === section.section_id) === index
+    )
+    .map((section) => renderWorkspaceCompareDrilldownSection(
+      section.section_id,
+      section.title,
+      section.content,
+    )).join("");
   if (!drilldownSections) {
     return "";
   }
@@ -1023,7 +1466,7 @@ function buildSweepDrilldownLink(baselineEntry, candidateEntry) {
   if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
     return "";
   }
-  return `<div class="compare-link-row"><a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep")}">Open Sweep Panel (${match.sourceEntry.run_id})</a></div>`;
+  return `<div class="compare-link-row"><a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow() })}">Open Sweep Panel (${match.sourceEntry.run_id})</a></div>`;
 }
 
 function buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerId) {
@@ -1031,7 +1474,7 @@ function buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerId) {
   if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
     return "";
   }
-  return `<a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { sweep_candidate: candidateEntry.target_profile_name, sweep_layer_focus: layerId })}">Open Layer In Sweep</a>`;
+  return `<a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow(), sweep_candidate: candidateEntry.target_profile_name, sweep_layer_focus: layerId })}">Open Layer In Sweep</a>`;
 }
 
 function renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison) {
@@ -1257,31 +1700,52 @@ function resolveCurrentWorkspaceState() {
     || CATALOG_ENTRIES.find((entry) => entry.entry_id === baselineEntryId)
     || null;
   if (!baselineEntry) {
+    CURRENT_WORKSPACE_CANDIDATE_ID = "";
     return {
       baselineEntry: null,
       visibleEntries,
       candidates: [],
       compareScope: currentCompareScope(),
+      focusedWorkspaceCandidate: null,
+      focusedWorkspaceDetailFocus: currentWorkspaceDetailFocus(),
+      focusedWorkspaceSecondaryDetailFocus: currentWorkspaceSecondaryDetailFocus(),
+      focusedWorkspaceDetailPreset: currentWorkspaceDetailPreset(),
+      focusedWorkspaceAnalysisFlow: currentWorkspaceAnalysisFlow(),
       focusedSweepCandidate: null,
       focusedSweepLayer: null,
+      focusedCompareFocus: currentCompareFocus(),
       focusedLayerDeltaMode: currentLayerDeltaFocus(),
     };
   }
   const urlParams = new URLSearchParams(window.location.search);
+  const candidates = orderWorkspaceCandidatesForCurrentFlow(
+    baselineEntry,
+    buildWorkspaceCandidateSet(baselineEntry, visibleEntries, currentCompareScope()),
+  );
+  const focusedWorkspaceCandidate = resolveFocusedWorkspaceCandidate(
+    candidates,
+    currentWorkspaceCandidate() || urlParams.get("workspace_candidate") || "",
+  );
+  CURRENT_WORKSPACE_CANDIDATE_ID = focusedWorkspaceCandidate ? focusedWorkspaceCandidate.entry_id : "";
   return {
     baselineEntry,
     visibleEntries,
-    candidates: buildWorkspaceCandidateSet(baselineEntry, visibleEntries, currentCompareScope())
-      .sort((left, right) => left.primary_metric_value - right.primary_metric_value),
+    candidates,
     compareScope: currentCompareScope(),
+    focusedWorkspaceCandidate,
+    focusedWorkspaceDetailFocus: currentWorkspaceDetailFocus(),
+    focusedWorkspaceSecondaryDetailFocus: currentWorkspaceSecondaryDetailFocus(),
+    focusedWorkspaceDetailPreset: currentWorkspaceDetailPreset(),
+    focusedWorkspaceAnalysisFlow: currentWorkspaceAnalysisFlow(),
     focusedSweepCandidate: urlParams.get("sweep_candidate") || null,
     focusedSweepLayer: urlParams.get("sweep_layer_focus") || null,
+    focusedCompareFocus: currentCompareFocus(),
     focusedLayerDeltaMode: currentLayerDeltaFocus(),
   };
 }
 
-function buildCurrentCatalogWorkspaceUrl() {
-  return buildCatalogReturnUrl();
+function buildCurrentCatalogWorkspaceUrl(extraState = {}) {
+  return buildCatalogReturnUrl(extraState);
 }
 
 async function copyCurrentWorkspaceLink() {
@@ -1297,14 +1761,53 @@ async function copyCurrentWorkspaceLink() {
 function buildWorkspaceExportData() {
   const workspaceState = resolveCurrentWorkspaceState();
   const baselineEntry = workspaceState.baselineEntry;
+  const focusedWorkspaceCandidate = workspaceState.focusedWorkspaceCandidate;
+  const focusedWorkspaceRowState = baselineEntry && focusedWorkspaceCandidate
+    ? resolveWorkspaceCompareRowState(baselineEntry, focusedWorkspaceCandidate)
+    : null;
+  const focusedWorkspaceRecommendationRank = focusedWorkspaceCandidate
+    ? workspaceState.candidates.findIndex((entry) => entry.entry_id === focusedWorkspaceCandidate.entry_id)
+    : -1;
   const snapshotHeaderRows = [
     {
       label: "Focused Compare Scope",
       value: workspaceState.compareScope,
     },
     {
+      label: "Focused Compare Focus",
+      value: currentCompareFocusLabel(),
+    },
+    {
       label: "Focused Layer Delta Mode",
       value: workspaceState.focusedLayerDeltaMode,
+    },
+    {
+      label: "Focused Workspace Detail",
+      value: currentWorkspaceDetailFocusLabel(),
+    },
+    {
+      label: "Focused Workspace Compare-Against Detail",
+      value: currentWorkspaceSecondaryDetailFocusLabel() || "none",
+    },
+    {
+      label: "Focused Workspace Compare Preset",
+      value: workspaceState.focusedWorkspaceDetailPreset || "none",
+    },
+    {
+      label: "Focused Workspace Analysis Flow",
+      value: workspaceState.focusedWorkspaceAnalysisFlow || "none",
+    },
+    {
+      label: "Focused Workspace Analysis Flow Summary",
+      value: workspaceState.focusedWorkspaceAnalysisFlow
+        ? `${workspaceState.focusedWorkspaceAnalysisFlow} -> ${currentWorkspaceDetailFocusLabel()}${currentWorkspaceSecondaryDetailFocusLabel() ? ` + ${currentWorkspaceSecondaryDetailFocusLabel()}` : ""}`
+        : "none",
+    },
+    {
+      label: "Focused Workspace Analysis Recommendation",
+      value: focusedWorkspaceRowState && focusedWorkspaceRowState.analysisFlowRecommendation
+        ? `${recommendationTierForRank(focusedWorkspaceRecommendationRank, focusedWorkspaceRowState.analysisFlowRecommendation)} -> ${focusedWorkspaceRowState.analysisFlowRecommendation.reason}`
+        : "none",
     },
     {
       label: "Focused Baseline",
@@ -1315,6 +1818,12 @@ function buildWorkspaceExportData() {
       value: String(workspaceState.candidates.length),
     },
   ];
+  if (focusedWorkspaceCandidate) {
+    snapshotHeaderRows.push({
+      label: "Focused Workspace Candidate",
+      value: `${focusedWorkspaceCandidate.run_id} (${focusedWorkspaceCandidate.target_profile_name})`,
+    });
+  }
   if (workspaceState.focusedSweepCandidate) {
     snapshotHeaderRows.push({
       label: "Focused Sweep Candidate",
@@ -1331,19 +1840,44 @@ function buildWorkspaceExportData() {
     exported_at: new Date().toISOString(),
     workspace_url: buildCurrentCatalogWorkspaceUrl(),
     compare_scope: workspaceState.compareScope,
+    compare_focus: workspaceState.focusedCompareFocus,
     layer_delta_focus: workspaceState.focusedLayerDeltaMode,
+    focused_workspace_detail_focus: workspaceState.focusedWorkspaceDetailFocus,
+    focused_workspace_secondary_detail_focus: workspaceState.focusedWorkspaceSecondaryDetailFocus,
+    focused_workspace_detail_preset: workspaceState.focusedWorkspaceDetailPreset,
+    focused_workspace_analysis_flow: workspaceState.focusedWorkspaceAnalysisFlow,
+    focused_workspace_analysis_flow_summary: workspaceState.focusedWorkspaceAnalysisFlow
+      ? {
+        flow_id: workspaceState.focusedWorkspaceAnalysisFlow,
+        primary_detail: currentWorkspaceDetailFocusLabel(),
+        secondary_detail: currentWorkspaceSecondaryDetailFocusLabel() || null,
+      }
+      : null,
+    focused_workspace_analysis_recommendation: focusedWorkspaceRowState && focusedWorkspaceRowState.analysisFlowRecommendation
+      ? {
+        recommendation_tier: recommendationTierForRank(focusedWorkspaceRecommendationRank, focusedWorkspaceRowState.analysisFlowRecommendation),
+        recommendation_rank: focusedWorkspaceRecommendationRank + 1,
+        recommendation_reason: focusedWorkspaceRowState.analysisFlowRecommendation.reason,
+        recommendation_score: focusedWorkspaceRowState.analysisFlowRecommendation.score,
+      }
+      : null,
     baseline_entry_id: baselineEntry ? baselineEntry.entry_id : null,
     baseline_run_id: baselineEntry ? baselineEntry.run_id : null,
+    focused_workspace_candidate: focusedWorkspaceCandidate ? {
+      entry_id: focusedWorkspaceCandidate.entry_id,
+      run_id: focusedWorkspaceCandidate.run_id,
+      target_profile_name: focusedWorkspaceCandidate.target_profile_name,
+    } : null,
     focused_sweep_candidate: workspaceState.focusedSweepCandidate,
     focused_sweep_layer: workspaceState.focusedSweepLayer,
     snapshot_metadata: {
       title: baselineEntry
-        ? `catalog workspace snapshot ${baselineEntry.run_id}`
+        ? `catalog workspace snapshot ${baselineEntry.run_id}${focusedWorkspaceCandidate ? ` vs ${focusedWorkspaceCandidate.run_id}` : ""} (${workspaceState.focusedWorkspaceAnalysisFlow || workspaceState.focusedWorkspaceDetailPreset || `${workspaceState.focusedWorkspaceDetailFocus}${workspaceState.focusedWorkspaceSecondaryDetailFocus ? ` + ${workspaceState.focusedWorkspaceSecondaryDetailFocus}` : ""}`})`
         : "catalog workspace snapshot",
       header_rows: snapshotHeaderRows,
     },
     visible_entry_ids: workspaceState.visibleEntries.map((entry) => entry.entry_id),
-    candidate_rows: workspaceState.candidates.map((entry) => {
+    candidate_rows: workspaceState.candidates.map((entry, index) => {
       const rowState = baselineEntry ? resolveWorkspaceCompareRowState(baselineEntry, entry) : null;
       return {
         entry_id: entry.entry_id,
@@ -1354,12 +1888,23 @@ function buildWorkspaceExportData() {
         target_profile_name: entry.target_profile_name,
         primary_metric_name: entry.primary_metric_name,
         primary_metric_value: entry.primary_metric_value,
+        is_focused_workspace_candidate: Boolean(
+          focusedWorkspaceCandidate && focusedWorkspaceCandidate.entry_id === entry.entry_id,
+        ),
         metric_values: entry.metric_values || {},
         sweep_comparisons: entry.sweep_comparisons || [],
         compare_summary: rowState && rowState.sweepComparison ? rowState.sweepComparison.compare_summary || null : null,
         profile_diff_fields: rowState && rowState.sweepComparison && rowState.sweepComparison.compare_summary
           ? rowState.sweepComparison.compare_summary.profile_diff_fields || []
           : [],
+        analysis_flow_recommendation: rowState && rowState.analysisFlowRecommendation
+          ? {
+            recommendation_tier: recommendationTierForRank(index, rowState.analysisFlowRecommendation),
+            recommendation_rank: index + 1,
+            recommendation_reason: rowState.analysisFlowRecommendation.reason,
+            recommendation_score: rowState.analysisFlowRecommendation.score,
+          }
+          : null,
       };
     }),
   };
@@ -1443,10 +1988,67 @@ function buildWorkspaceCandidateSet(baselineEntry, entries, scope) {
   return visibleCandidates.filter((entry) => entry.scenario_name === baselineEntry.scenario_name);
 }
 
-function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
-  const candidates = buildWorkspaceCandidateSet(baselineEntry, entries, scope)
-    .sort((left, right) => left.primary_metric_value - right.primary_metric_value);
+function resolveFocusedWorkspaceCandidate(candidates, focusedCandidateId) {
+  if (!(candidates || []).length) {
+    return null;
+  }
+  const explicitCandidateId = String(focusedCandidateId || "").trim();
+  return candidates.find((entry) => entry.entry_id === explicitCandidateId) || candidates[0] || null;
+}
 
+function buildWorkspaceFocusLink(entry, focusedCandidateEntry) {
+  const isFocused = Boolean(
+    focusedCandidateEntry && entry.entry_id === focusedCandidateEntry.entry_id,
+  );
+  return `
+    <div class="compare-link-row">
+      <a class="panel-link workspace-focus-link${isFocused ? " is-active" : ""}" data-entry-id="${entry.entry_id}" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: entry.entry_id })}">Focus In Workspace${isFocused ? " (Focused)" : ""}</a>
+    </div>
+  `;
+}
+
+function renderFocusedWorkspaceDrilldown(baselineEntry, focusedCandidateEntry, recommendationRank = -1) {
+  if (!baselineEntry || !focusedCandidateEntry) {
+    return `
+      <article class="compare-card">
+        <h3>Focused Workspace Compare Drilldown</h3>
+        <p class="empty">No workspace candidate is currently focused.</p>
+      </article>
+    `;
+  }
+  const rowState = resolveWorkspaceCompareRowState(baselineEntry, focusedCandidateEntry);
+  const sweepComparison = rowState.sweepComparison;
+  const drilldownContent = buildWorkspaceCompareDrilldownContent(
+    baselineEntry,
+    focusedCandidateEntry,
+    sweepComparison,
+  ) || '<p class="empty">No matched compare drilldown sections.</p>';
+  return `
+    <article class="compare-card">
+      <h3>Focused Workspace Compare Drilldown</h3>
+      <p><strong>${baselineEntry.run_id}</strong> -> <strong>${focusedCandidateEntry.run_id}</strong></p>
+      <p class="muted">Focused candidate: ${focusedCandidateEntry.target_profile_name} | Compare Focus: ${currentCompareFocusLabel()} | Workspace Detail: ${currentWorkspaceDetailFocusLabel()}${currentWorkspaceSecondaryDetailFocusLabel() ? ` | Compare-Against Detail: ${currentWorkspaceSecondaryDetailFocusLabel()}` : ""}${currentWorkspaceDetailPreset() ? ` | Compare Preset: ${currentWorkspaceDetailPreset()}` : ""}${currentWorkspaceAnalysisFlow() ? ` | Analysis Flow: ${currentWorkspaceAnalysisFlow()}` : ""} | Layer Mode: ${currentLayerDeltaFocus()}</p>
+      ${renderWorkspaceAnalysisFlowLinks()}
+      ${renderWorkspaceDetailPresetLinks()}
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">Analysis Flow Summary</p>
+        </div>
+        ${buildWorkspaceAnalysisFlowSummary()}
+      </section>
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">Analysis Flow Candidate Recommendation</p>
+        </div>
+        ${buildWorkspaceAnalysisFlowRecommendationSummary(rowState, recommendationRank)}
+      </section>
+      ${buildComparePanelLinks(focusedCandidateEntry)}
+      ${drilldownContent}
+    </article>
+  `;
+}
+
+function buildWorkspaceCompareRows(baselineEntry, candidates, scope, focusedCandidateEntry) {
   if (!candidates.length) {
     return scope === "all-visible"
       ? '<p class="empty">No additional visible runs are available for the current baseline.</p>'
@@ -1472,29 +2074,33 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
         ${candidates.map((entry) => {
           const rowState = resolveWorkspaceCompareRowState(baselineEntry, entry);
           const sweepComparison = rowState.sweepComparison;
+          const recommendationRank = candidates.findIndex((candidate) => candidate.entry_id === entry.entry_id);
+          const isFocusedWorkspaceCandidate = Boolean(
+            focusedCandidateEntry && entry.entry_id === focusedCandidateEntry.entry_id,
+          );
             return `
-              <tr>
+              <tr${isFocusedWorkspaceCandidate ? ' class="workspace-focused-row"' : ""}>
                 <td>${entry.run_id}</td>
                 <td>${entry.schedule_kind}</td>
                 <td>${entry.target_profile_name}</td>
                 <td>${entry.primary_metric_name}</td>
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceSummaryTag,
-                  buildWorkspacePrimaryDeltaContent(rowState.sameMetric, rowState.delta)
+                  buildWorkspacePrimaryDeltaContent(entry, rowState.sameMetric, rowState.delta)
                 )}
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceRatioSummaryTag,
-                  buildWorkspacePrimaryRatioContent(rowState.sameMetric, rowState.ratio)
+                  buildWorkspacePrimaryRatioContent(entry, rowState.sameMetric, rowState.ratio)
                 )}
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceSummaryTag,
-                  buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
+                  buildWorkspaceSharedMetricContent(baselineEntry, entry, sweepComparison)
                 )}
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceSweepSummaryTag,
                   buildWorkspaceSweepSummaryContent(baselineEntry, entry, sweepComparison)
                 )}
-                <td>${buildComparePanelLinks(entry)}</td>
+                <td>${renderWorkspaceRecommendationBadge(rowState, recommendationRank)}${buildComparePanelLinks(entry)}${buildWorkspaceFocusLink(entry, focusedCandidateEntry)}</td>
               </tr>
             `;
           }).join("")}
@@ -1508,20 +2114,27 @@ function renderCompareWorkspace(entries) {
   if (!container) {
     return;
   }
-  const baselineEntryId = COMPARE_SELECTION[0];
-  const baselineEntry = entries.find((entry) => entry.entry_id === baselineEntryId) || CATALOG_ENTRIES.find((entry) => entry.entry_id === baselineEntryId);
+  const workspaceState = resolveCurrentWorkspaceState();
+  const baselineEntry = workspaceState.baselineEntry;
   if (!baselineEntry) {
     container.innerHTML = '<p class="empty">Select a baseline run to open the scenario compare workspace.</p>';
     return;
   }
-  const scope = currentCompareScope();
+  const scope = workspaceState.compareScope;
   container.innerHTML = `
     <article class="compare-card">
       <h3>Baseline: ${baselineEntry.run_id}</h3>
       <p>${baselineEntry.scenario_name} · ${baselineEntry.primary_metric_name}: <strong>${baselineEntry.primary_metric_value}</strong></p>
       <p class="muted">${scope === "all-visible" ? "Comparing against all visible runs." : "Comparing against visible runs in the same scenario."}</p>
       ${buildComparePanelLinks(baselineEntry)}
-      ${buildWorkspaceCompareRows(baselineEntry, entries, scope)}
+      ${buildWorkspaceCompareRows(baselineEntry, workspaceState.candidates, scope, workspaceState.focusedWorkspaceCandidate)}
+      ${renderFocusedWorkspaceDrilldown(
+        baselineEntry,
+        workspaceState.focusedWorkspaceCandidate,
+        workspaceState.focusedWorkspaceCandidate
+          ? workspaceState.candidates.findIndex((entry) => entry.entry_id === workspaceState.focusedWorkspaceCandidate.entry_id)
+          : -1,
+      )}
     </article>
   `;
 }
@@ -1586,10 +2199,11 @@ function bindCatalogFilters() {
   const modeFilter = document.querySelector("#catalog-mode-filter");
   const scheduleFilter = document.querySelector("#catalog-schedule-filter");
   const compareScopeFilter = document.querySelector("#catalog-compare-scope-filter");
+  const compareFocusFilter = document.querySelector("#catalog-compare-focus-filter");
   const workbenchPanelFilter = document.querySelector("#catalog-workbench-panel-filter");
   const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   const swapCompareOrderButton = document.querySelector("#swap-compare-order-button");
-  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !workbenchPanelFilter || !layerDeltaFocusFilter || !swapCompareOrderButton) {
+  if (!searchInput || !modeFilter || !scheduleFilter || !compareScopeFilter || !compareFocusFilter || !workbenchPanelFilter || !layerDeltaFocusFilter || !swapCompareOrderButton) {
     return;
   }
   hydrateCatalogStateFromUrl();
@@ -1600,6 +2214,7 @@ function bindCatalogFilters() {
       modeFilter.value,
       scheduleFilter.value,
     );
+    resolveCurrentWorkspaceState();
     renderCatalogRows(filtered);
     renderCatalogGroups(filtered);
     bindCompareToggles(CATALOG_ENTRIES);
@@ -1611,6 +2226,7 @@ function bindCatalogFilters() {
   modeFilter.addEventListener("change", refresh);
   scheduleFilter.addEventListener("change", refresh);
   compareScopeFilter.addEventListener("change", refresh);
+  compareFocusFilter.addEventListener("change", refresh);
   workbenchPanelFilter.addEventListener("change", refresh);
   layerDeltaFocusFilter.addEventListener("change", refresh);
   swapCompareOrderButton.addEventListener("click", () => {
@@ -1761,6 +2377,26 @@ def _build_styles_css() -> str:
   padding: 14px;
 }
 
+.workspace-focused-row {
+  background: rgba(214, 199, 171, 0.18);
+}
+
+.workspace-focus-link.is-active {
+  font-weight: 700;
+}
+
+.workspace-detail-focus-link.is-active {
+  font-weight: 700;
+}
+
+.workspace-detail-preset-link.is-active {
+  font-weight: 700;
+}
+
+.workspace-analysis-flow-link.is-active {
+  font-weight: 700;
+}
+
 .compare-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1812,6 +2448,11 @@ def _build_styles_css() -> str:
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.compare-summary-group.is-focused-section {
+  border-left: 3px solid rgba(160, 120, 56, 0.45);
+  padding-left: 10px;
 }
 
 .compare-group-heading .muted {

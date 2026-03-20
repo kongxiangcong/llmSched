@@ -12,6 +12,22 @@ CompareGroupId = Literal[
     "memory_pressure",
     "schedule_shape",
 ]
+CompareFocusId = Literal[
+    "summary",
+    "throughput-latency",
+    "phase-shape",
+    "memory-pressure",
+    "schedule-shape",
+    "estimated-layer",
+    "fitted-layer",
+]
+LayerDeltaFocusId = Literal[
+    "top-cycle",
+    "regressions-only",
+    "top-by-bytes",
+    "top-by-fitted-work",
+    "fitted-regressions-only",
+]
 
 COMPARE_GROUP_TITLES: dict[CompareGroupId, str] = {
     "headline": "Headline",
@@ -19,6 +35,22 @@ COMPARE_GROUP_TITLES: dict[CompareGroupId, str] = {
     "phase_shape": "Phase Shape",
     "memory_pressure": "Memory Pressure",
     "schedule_shape": "Schedule Shape",
+}
+COMPARE_FOCUS_TITLES: dict[CompareFocusId, str] = {
+    "summary": "Summary",
+    "throughput-latency": "Throughput / Latency",
+    "phase-shape": "Phase Shape",
+    "memory-pressure": "Memory Pressure",
+    "schedule-shape": "Schedule Shape",
+    "estimated-layer": "Estimated Layer",
+    "fitted-layer": "Fitted Layer",
+}
+LAYER_DELTA_FOCUS_TITLES: dict[LayerDeltaFocusId, str] = {
+    "top-cycle": "Top By Cycles",
+    "regressions-only": "Candidate Regressions",
+    "top-by-bytes": "Top By Bytes",
+    "top-by-fitted-work": "Top By Fitted Work",
+    "fitted-regressions-only": "Fitted Work Regressions",
 }
 PHASE_METRIC_PREFIXES = ("projection", "kv_io", "attention", "sync", "other")
 PREFILL_HEADLINE_METRIC_NAMES = (
@@ -122,6 +154,153 @@ def headline_metric_names_for_mode(compare_mode: str) -> tuple[str, ...]:
     if compare_mode == "prefill":
         return PREFILL_HEADLINE_METRIC_NAMES
     return DECODE_HEADLINE_METRIC_NAMES
+
+
+def default_compare_focus_id() -> CompareFocusId:
+    return "summary"
+
+
+def grouped_compare_group_id_for_focus(compare_focus_id: CompareFocusId) -> CompareGroupId | None:
+    if compare_focus_id == "summary":
+        return "headline"
+    if compare_focus_id == "throughput-latency":
+        return "throughput_latency"
+    if compare_focus_id == "phase-shape":
+        return "phase_shape"
+    if compare_focus_id == "schedule-shape":
+        return "schedule_shape"
+    return None
+
+
+def default_layer_delta_focus_id(compare_focus_id: CompareFocusId) -> LayerDeltaFocusId | None:
+    if compare_focus_id == "estimated-layer":
+        return "top-cycle"
+    if compare_focus_id == "fitted-layer":
+        return "top-by-fitted-work"
+    return None
+
+
+def build_compare_focus_rows(
+    *,
+    headline_metric_names: tuple[str, ...],
+    available_group_ids: set[CompareGroupId],
+    has_bandwidth_pressure: bool,
+    has_vmem_pressure: bool,
+    has_estimated_layers: bool,
+    has_fitted_layers: bool,
+) -> list[tuple[CompareFocusId, str, str]]:
+    rows: list[tuple[CompareFocusId, str, str]] = [
+        (
+            "summary",
+            COMPARE_FOCUS_TITLES["summary"],
+            humanize_metric_name(headline_metric_names[0]) if headline_metric_names else "Summary",
+        )
+    ]
+    if "throughput_latency" in available_group_ids:
+        rows.append(
+            (
+                "throughput-latency",
+                COMPARE_FOCUS_TITLES["throughput-latency"],
+                "Throughput and latency shifts",
+            )
+        )
+    if "phase_shape" in available_group_ids:
+        rows.append(
+            (
+                "phase-shape",
+                COMPARE_FOCUS_TITLES["phase-shape"],
+                "Phase balance shifts",
+            )
+        )
+    if has_bandwidth_pressure or has_vmem_pressure or "memory_pressure" in available_group_ids:
+        rows.append(
+            (
+                "memory-pressure",
+                COMPARE_FOCUS_TITLES["memory-pressure"],
+                "VMEM pressure shifts" if has_vmem_pressure else "Memory pressure shifts",
+            )
+        )
+    if "schedule_shape" in available_group_ids:
+        rows.append(
+            (
+                "schedule-shape",
+                COMPARE_FOCUS_TITLES["schedule-shape"],
+                "Schedule balance changes",
+            )
+        )
+    if has_estimated_layers:
+        rows.append(
+            (
+                "estimated-layer",
+                COMPARE_FOCUS_TITLES["estimated-layer"],
+                "Estimated layer regressions",
+            )
+        )
+    if has_fitted_layers:
+        rows.append(
+            (
+                "fitted-layer",
+                COMPARE_FOCUS_TITLES["fitted-layer"],
+                "Fitted layer regressions",
+            )
+        )
+    return rows
+
+
+def build_layer_delta_focus_rows(
+    *,
+    has_estimated_layers: bool,
+    has_fitted_layers: bool,
+) -> list[tuple[LayerDeltaFocusId, CompareFocusId, str, str]]:
+    rows: list[tuple[LayerDeltaFocusId, CompareFocusId, str, str]] = []
+    if has_estimated_layers:
+        rows.extend(
+            [
+                (
+                    "top-cycle",
+                    "estimated-layer",
+                    LAYER_DELTA_FOCUS_TITLES["top-cycle"],
+                    "Largest estimated cycle deltas",
+                ),
+                (
+                    "regressions-only",
+                    "estimated-layer",
+                    LAYER_DELTA_FOCUS_TITLES["regressions-only"],
+                    "Estimated cycle regressions only",
+                ),
+                (
+                    "top-by-bytes",
+                    "estimated-layer",
+                    LAYER_DELTA_FOCUS_TITLES["top-by-bytes"],
+                    "Largest byte deltas",
+                ),
+            ]
+        )
+    if has_fitted_layers:
+        rows.extend(
+            [
+                (
+                    "top-by-fitted-work",
+                    "fitted-layer",
+                    LAYER_DELTA_FOCUS_TITLES["top-by-fitted-work"],
+                    "Largest fitted-work deltas",
+                ),
+                (
+                    "fitted-regressions-only",
+                    "fitted-layer",
+                    LAYER_DELTA_FOCUS_TITLES["fitted-regressions-only"],
+                    "Fitted-work regressions only",
+                ),
+            ]
+        )
+    return rows
+
+
+def humanize_metric_name(metric_name: str) -> str:
+    parts = [part.lower() for part in str(metric_name).replace("-", "_").split("_") if part]
+    if not parts:
+        return "Summary"
+    return " ".join([parts[0].capitalize(), *parts[1:]])
 
 
 def select_highlighted_metric_rows(

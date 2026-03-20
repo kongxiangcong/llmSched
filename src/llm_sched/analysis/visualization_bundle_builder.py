@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+from llm_sched.compare_grouping import build_compare_focus_rows, build_layer_delta_focus_rows
 from llm_sched.config.scenario_profile import ScenarioProfile
 from llm_sched.config.target_profile import TargetProfile
 from llm_sched.contracts.decode_report import DecodeEvaluationReport
@@ -31,6 +32,8 @@ from llm_sched.contracts.visualization_bundle import (
     VisualizationKVView,
     VisualizationReportSummary,
     VisualizationSweepBandwidthPressureCompareView,
+    VisualizationSweepCompareFocusModeView,
+    VisualizationSweepCompareLayerDeltaModeView,
     VisualizationSweepCompareLabelDeltaView,
     VisualizationSweepCompareScalarDeltaView,
     VisualizationSweepCompareScalarDeltaGroupView,
@@ -704,6 +707,11 @@ def _build_compare_summary(
             "kv_related_bytes",
         )
 
+    scalar_delta_groups = _build_scalar_delta_groups(
+        scalar_deltas,
+        compare_mode=compare_mode,
+        headline_metric_names=headline_metric_names,
+    )
     return VisualizationSweepCompareSummaryView(
         baseline_schedule_kind=compare_row.baseline_schedule_kind,
         candidate_schedule_kind=compare_row.candidate_schedule_kind,
@@ -713,10 +721,18 @@ def _build_compare_summary(
             headline_metric_names=headline_metric_names,
         ),
         scalar_deltas=scalar_deltas,
-        scalar_delta_groups=_build_scalar_delta_groups(
-            scalar_deltas,
-            compare_mode=compare_mode,
+        scalar_delta_groups=scalar_delta_groups,
+        available_focus_modes=_build_compare_focus_modes(
             headline_metric_names=headline_metric_names,
+            scalar_delta_groups=scalar_delta_groups,
+            has_bandwidth_pressure=getattr(compare_row, "bandwidth_pressure_compare", None) is not None,
+            has_vmem_pressure=getattr(compare_row, "vmem_pressure_compare", None) is not None,
+            has_estimated_layers=bool(getattr(compare_row, "layer_delta_count", 0)),
+            has_fitted_layers=bool(getattr(compare_row, "fitted_layer_delta_count", 0)),
+        ),
+        available_layer_delta_modes=_build_compare_layer_delta_modes(
+            has_estimated_layers=bool(getattr(compare_row, "layer_delta_count", 0)),
+            has_fitted_layers=bool(getattr(compare_row, "fitted_layer_delta_count", 0)),
         ),
         bandwidth_pressure_compare=_build_bandwidth_pressure_compare_view(
             getattr(compare_row, "bandwidth_pressure_compare", None)
@@ -799,6 +815,18 @@ def _build_compare_summary_from_sweep_comparison(
         ),
         scalar_deltas=scalar_deltas,
         scalar_delta_groups=scalar_delta_groups,
+        available_focus_modes=_build_compare_focus_modes(
+            headline_metric_names=headline_metric_names,
+            scalar_delta_groups=scalar_delta_groups,
+            has_bandwidth_pressure=getattr(comparison, "bandwidth_pressure_compare", None) is not None,
+            has_vmem_pressure=getattr(comparison, "vmem_pressure_compare", None) is not None,
+            has_estimated_layers=bool(getattr(comparison, "layer_deltas", [])),
+            has_fitted_layers=bool(getattr(comparison, "fitted_layer_deltas", [])),
+        ),
+        available_layer_delta_modes=_build_compare_layer_delta_modes(
+            has_estimated_layers=bool(getattr(comparison, "layer_deltas", [])),
+            has_fitted_layers=bool(getattr(comparison, "fitted_layer_deltas", [])),
+        ),
         bandwidth_pressure_compare=_build_bandwidth_pressure_compare_view(
             getattr(comparison, "bandwidth_pressure_compare", None)
         ),
@@ -806,6 +834,51 @@ def _build_compare_summary_from_sweep_comparison(
             getattr(comparison, "vmem_pressure_compare", None)
         ),
     )
+
+
+def _build_compare_focus_modes(
+    *,
+    headline_metric_names: tuple[str, ...],
+    scalar_delta_groups: list[VisualizationSweepCompareScalarDeltaGroupView],
+    has_bandwidth_pressure: bool,
+    has_vmem_pressure: bool,
+    has_estimated_layers: bool,
+    has_fitted_layers: bool,
+) -> list[VisualizationSweepCompareFocusModeView]:
+    return [
+        VisualizationSweepCompareFocusModeView(
+            focus_id=focus_id,
+            title=title,
+            summary_label=summary_label,
+        )
+        for focus_id, title, summary_label in build_compare_focus_rows(
+            headline_metric_names=headline_metric_names,
+            available_group_ids={group.group_id for group in scalar_delta_groups},
+            has_bandwidth_pressure=has_bandwidth_pressure,
+            has_vmem_pressure=has_vmem_pressure,
+            has_estimated_layers=has_estimated_layers,
+            has_fitted_layers=has_fitted_layers,
+        )
+    ]
+
+
+def _build_compare_layer_delta_modes(
+    *,
+    has_estimated_layers: bool,
+    has_fitted_layers: bool,
+) -> list[VisualizationSweepCompareLayerDeltaModeView]:
+    return [
+        VisualizationSweepCompareLayerDeltaModeView(
+            mode_id=mode_id,
+            focus_id=focus_id,
+            title=title,
+            summary_label=summary_label,
+        )
+        for mode_id, focus_id, title, summary_label in build_layer_delta_focus_rows(
+            has_estimated_layers=has_estimated_layers,
+            has_fitted_layers=has_fitted_layers,
+        )
+    ]
 
 
 def _build_bandwidth_pressure_compare_view(

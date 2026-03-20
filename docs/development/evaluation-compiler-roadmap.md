@@ -47,10 +47,10 @@
 | SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure、summary-grade `bandwidth_pressure_summary` / `vmem_pressure_summary`，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
 | SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前也已直接复用 `SPEC-13.bandwidth_pressure_summary` / `SPEC-13.vmem_pressure_summary`；`SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
 | SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前也已直接复用 `SPEC-13.bandwidth_pressure_summary` / `SPEC-13.vmem_pressure_summary`；`SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
-| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；当前 `SPEC-16` 也已并行比较 summary-grade fitted toplines，并通过 standalone `PhaseDCompareReport` 透传这些 prefill/decode fitted compare rows；最新 slice 也已从保留的 `node_hotspots` / `layer_breakdown` 构建 fitted `node_deltas` 与 `fitted_layer_deltas`，并在 sweep compare 与 standalone compare report 中公开；当前又进一步把 `SPEC-13/14/15` 的 `bandwidth_pressure_summary` / `vmem_pressure_summary` 提升成 compare-grade `bandwidth_pressure_compare` / `vmem_pressure_compare`，并在 standalone compare report 中透传，且 `SPEC-18/19` 已正式消费这两个 pressure compare summaries；raw `SweepComparison` 现在也已保留 grouped `metric_delta_groups` 与 schedule-kind context，downstream visualization packaging 无需依赖 `PhaseDCompareReport` 也能合成 multi-metric compare summary。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
+| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；当前 `SPEC-16` 也已并行比较 summary-grade fitted toplines，并通过 standalone `PhaseDCompareReport` 透传这些 prefill/decode fitted compare rows；最新 slice 也已从保留的 `node_hotspots` / `layer_breakdown` 构建 fitted `node_deltas` 与 `fitted_layer_deltas`，并在 sweep compare 与 standalone compare report 中公开；当前又进一步把 `SPEC-13/14/15` 的 `bandwidth_pressure_summary` / `vmem_pressure_summary` 提升成 compare-grade `bandwidth_pressure_compare` / `vmem_pressure_compare`，并在 standalone compare report 中透传，且 `SPEC-18/19` 已正式消费这两个 pressure compare summaries；raw `SweepComparison` 现在也已保留 grouped `metric_delta_groups` 与 schedule-kind context，downstream visualization packaging 无需依赖 `PhaseDCompareReport` 也能合成 multi-metric compare summary；compare-focus slice 已把 `summary` / `throughput-latency` / `phase-shape` / `memory-pressure` / `schedule-shape` / `estimated-layer` / `fitted-layer` 这组稳定 focus modes 贯通到 visualization bundle、catalog 和 workbench，随后 layer-diff modes 也已接入 bundle/catalog/workbench deep-link、render、export 路径。 | 仍缺更深的 compare/workspace drill-down、并行执行与缓存复用，以及高于当前 grouped-scalar-plus-pressure-plus-layer surface 的更强 compare interaction。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution；`sweep_view.comparisons` 现在也已直接带结构化 `layer_deltas`。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks；最新 slice 也已把 `bandwidth_pressure_compare` / `vmem_pressure_compare` 接到 workbench 与 catalog compare surface。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 scalar-plus-layer-plus-pressure summary compare 的更强 compare modes。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks；最新 slice 也已把 `bandwidth_pressure_compare` / `vmem_pressure_compare` 接到 workbench 与 catalog compare surface，并进一步支持 shared compare-focus deep links、export metadata 与 focused snapshot summaries。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及高于当前 focus-mode compare summaries 的更深 compare interaction。 |
 
 ## 4. 当前主路径
 
@@ -2849,13 +2849,249 @@ graph TD
 - focused verification for this slice:
   - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/contracts/test_visualization_catalog.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `22 passed`
   - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
-  - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+- `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+
+## 2026-03-20 SPEC-16 Compare Focus Modes Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-16-compare-focus-modes.md`
+- this slice keeps Phase D compare math unchanged and adds a shared visualization-facing compare focus taxonomy on top of the existing grouped scalar, pressure, estimated-layer, and fitted-layer rows.
+- new closure evidence:
+  - `VisualizationBundle` compare summaries now expose stable `available_focus_modes` plus `default_focus_id`
+  - visualization bundle packaging can synthesize compare focus rows directly from either standalone compare reports or raw `SweepComparison` payloads
+  - catalog workspace now persists `compare_focus` in URL state, workbench deep links, export payloads, and snapshot metadata
+  - workbench sweep exports and snapshot summaries now preserve the selected compare focus instead of dropping it after a catalog drill-down
+  - focused verification remains green:
+    - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `18 passed`
+    - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
+    - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+- what this closes:
+  - one visualization contract gap where compare surfaces had stable grouped/layer payloads but no shared focus taxonomy for downstream consumers
+  - one catalog/workbench continuity gap where compare drill-down links could carry layer focus but not the higher-level compare intent
+  - one export gap where snapshot metadata and JSON payloads dropped the compare focus after entering the workbench
+- what still remains for `M3`:
+  - richer compare modes beyond the current `summary` / `memory-pressure` / `schedule-shape` / `estimated-layer` / `fitted-layer` focus set
+  - deeper layer-level diff semantics inside the current estimated/fitted layer focus modes
+  - parallel execution and cache reuse remain separate `SPEC-16` follow-on work
+
+## 2026-03-20 SPEC-16 Layer Diff Modes Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-16-layer-diff-modes.md`
+- this slice keeps Phase D compare math unchanged and promotes layer-diff modes into a shared visualization surface rather than leaving them as catalog-only UI state.
+- new closure evidence:
+  - compare summaries in `VisualizationBundle` and `VisualizationCatalogArtifact` now expose stable layer-diff mode metadata for estimated and fitted layer surfaces
+  - visualization packaging now synthesizes layer-diff mode rows directly from existing estimated/fitted layer availability without recomputing compare math
+  - catalog deep links now preserve both `compare_focus` and `layer_delta_focus` when opening workbench sweep views
+  - workbench sweep rendering/export now hydrates `layer_delta_focus`, applies the corresponding estimated/fitted sorting and regression filters, and records the focused layer-diff mode in snapshot metadata
+  - focused verification remains green:
+    - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `18 passed`
+    - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
+    - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+- what this closes:
+  - one contract gap where richer layer-diff modes existed only as catalog-local string choices rather than bundle/catalog/workbench metadata
+  - one deep-link gap where workbench sweep views could preserve compare focus but not the selected layer-diff mode
+  - one workbench parity gap where catalog supported richer layer diff ordering/filtering but workbench exports and sweep summaries still showed raw layer rows
+- what still remains for `M3`:
+  - broader compare grouping beyond the current grouped scalar, pressure, and estimated/fitted layer focus surfaces
+  - deeper compare/workspace drill-down inside the now-stable layer diff payload
+  - parallel execution and cache reuse remain separate `SPEC-16` follow-on work
+
+## 2026-03-20 SPEC-16 Broader Compare Grouping Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-16-broader-compare-grouping.md`
+- this slice keeps Phase D compare math unchanged and upgrades already-stable grouped scalar sections into first-class compare focus modes rather than treating grouped compare as an always-on summary block.
+- new closure evidence:
+  - compare summaries now expose the broader grouped focus set:
+    - `summary`
+    - `throughput-latency`
+    - `phase-shape`
+    - `memory-pressure`
+    - `schedule-shape`
+    - `estimated-layer`
+    - `fitted-layer`
+  - visualization packaging and catalog artifacts now emit grouped compare focus metadata directly from existing `scalar_delta_groups`
+  - catalog compare rendering now selects grouped scalar sections by active compare focus instead of always rendering the full grouped block
+  - workbench sweep compare rendering now applies the same grouped focus selection, keeping catalog and workbench semantics aligned
+  - focused verification remains green:
+    - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `18 passed`
+    - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
+    - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+- what this closes:
+  - one compare-taxonomy gap where `throughput_latency` and `phase_shape` were stable grouped sections but not selectable compare focuses
+  - one catalog rendering gap where grouped compare content stayed “show everything” even after focus-mode metadata landed
+  - one workbench parity gap where grouped compare focus semantics did not match the catalog workspace
+- what still remains for `M3`:
+  - deeper compare/workspace drill-down on top of the now-stable grouped focus, pressure, and layer diff payload
+  - any richer compare interaction above the current grouped-scalar-plus-pressure-plus-layer surface
+  - parallel execution and cache reuse remain separate `SPEC-16` follow-on work
+
+## 2026-03-20 SPEC-16 Focused Workspace Candidate Drill-Down Checkpoint
+
+- `SPEC-16` catalog workspace now promotes one explicit `workspace_candidate` state above the current compare table, so users can persist which baseline-versus-candidate pair they are actively investigating instead of relying on transient row scanning.
+- catalog workspace rows now expose `Focus In Workspace` actions, preserve the focused candidate in copied workspace links, and render a dedicated `Focused Workspace Compare Drilldown` card below the workspace table.
+- workspace-local JSON/SVG export metadata now includes:
+  - `Focused Workspace Candidate`
+  - top-level structured `focused_workspace_candidate`
+  - snapshot titles that preserve the focused baseline-versus-candidate pair
+- this closes one concrete `SPEC-16` drill-down gap where richer compare details existed only as repeated row-local fragments, with no stable focused candidate state to drive links, exports, or a deeper workspace inspection flow.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep `SPEC-16` on richer compare interaction inside the now-focused workspace/catalog drill-down surface
+  - continue to avoid reopening Phase D compare contracts unless a concrete downstream failure appears
+
+## 2026-03-20 SPEC-16 Workspace Compare Section Focus Checkpoint
+
+- `SPEC-16` focused catalog workspace drill-down now promotes a second persistent navigation state, `workspace_detail_focus`, on top of `workspace_candidate`.
+- the focused workspace card now exposes stable compare-section links for:
+  - `summary`
+  - `grouped-metrics`
+  - `pressure`
+  - `estimated-layer`
+  - `fitted-layer`
+- focused workspace links, JSON export, and SVG snapshot metadata now preserve:
+  - `Focused Workspace Detail`
+  - top-level `focused_workspace_detail_focus`
+  - snapshot titles that reflect the active compare-section view
+- this closes one concrete compare-interaction gap where users could preserve the candidate they were inspecting but still could not deep-link or snapshot the exact compare section inside the focused workspace drill-down.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - continue richer compare interaction above the current candidate-plus-section workspace surface without reopening compare contracts
+  - keep any later `SPEC-19` polish downstream of the now-stable workspace detail state
+
+## 2026-03-20 SPEC-16 Workspace Row Section Actions Checkpoint
+
+- `SPEC-16` catalog workspace overview rows now participate directly in the focused compare workflow instead of only delegating users into the focused workspace card first.
+- workspace row summary cells now expose one-step candidate-plus-section focus links:
+  - `Primary Delta` -> `summary`
+  - `Primary Ratio` -> `summary`
+  - `Shared Metric Deltas` -> `grouped-metrics`
+  - `Sweep Layer Deltas` -> `estimated-layer`
+- this closes one concrete compare-interaction gap where users could persist a focused candidate and section, but row-level scanning still required a second navigation step to land on the relevant compare section.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current row-plus-card workspace surface without reopening compare contracts
+  - only return to `SPEC-19` polish after the current `SPEC-16` compare workflow feels complete enough for day-to-day analysis
+
+## 2026-03-20 SPEC-16 Workspace Dual-Section Compare Checkpoint
+
+- `SPEC-16` focused catalog workspace drill-down now supports one optional secondary compare section alongside the primary focused section.
+- catalog workspace state now preserves:
+  - `workspace_detail_focus`
+  - `workspace_secondary_detail_focus`
+- focused workspace metadata and snapshot output now include:
+  - `Focused Workspace Detail`
+  - `Focused Workspace Compare-Against Detail`
+  - top-level `focused_workspace_secondary_detail_focus`
+- this closes one concrete interaction gap where users could focus one section reliably, but still had no stable way to inspect two compare sections against the same candidate pair in one focused workspace view.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current dual-section focused workspace surface without reopening compare contracts
+  - keep any later `SPEC-19` work downstream of the now-stable workspace compare state model
+
+## 2026-03-20 SPEC-16 Workspace Compare Presets Checkpoint
+
+- `SPEC-16` focused catalog workspace compare now supports a thin preset layer above explicit section ids.
+- catalog workspace state now preserves:
+  - `workspace_detail_preset`
+  - resolved `workspace_detail_focus`
+  - resolved `workspace_secondary_detail_focus`
+- initial preset set is intentionally small and built around common section pairings:
+  - `summary-vs-estimated-layer`
+  - `grouped-vs-estimated-layer`
+  - `pressure-vs-fitted-layer`
+- focused workspace metadata and snapshot output now include:
+  - `Focused Workspace Compare Preset`
+  - top-level `focused_workspace_detail_preset`
+- this closes one workflow gap where dual-section compare existed, but users still had to manually reassemble common section pairings rather than snapping to a stable preset.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current preset-backed focused workspace surface without reopening compare contracts
+  - leave any later `SPEC-19` work downstream of the now-stable workspace compare state model
+
+## 2026-03-20 SPEC-16 Workspace Row Preset Actions Checkpoint
+
+- `SPEC-16` catalog workspace overview rows can now open richer preset-backed compare workflows directly, instead of requiring users to enter the focused workspace card first and then choose a preset.
+- row-level preset actions currently cover the highest-signal follow-on workflows:
+  - `Shared Metric Deltas` -> `grouped-vs-estimated-layer`
+  - `Sweep Layer Deltas` -> `summary-vs-estimated-layer`
+- this closes one concrete workflow gap where row-level navigation had direct section links but no equally direct path into the newer preset-backed compare flows.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current row-plus-preset workspace surface without reopening compare contracts
+  - leave any later `SPEC-19` work downstream of the now-stable catalog workspace compare state
+
+## 2026-03-20 SPEC-16 Workspace Analysis Flows Checkpoint
+
+- `SPEC-16` catalog workspace compare now has a thin analysis-flow layer above the existing preset system.
+- analysis flows currently map stable user intent labels onto existing preset-backed section pairings:
+  - `summary-hotspots`
+  - `grouped-hotspots`
+  - `memory-regression`
+- focused workspace links, metadata, and snapshot output now preserve:
+  - `workspace_analysis_flow`
+  - top-level `focused_workspace_analysis_flow`
+  - user-facing `Focused Workspace Analysis Flow` labels
+- this closes one product-surface gap where preset-backed compare workflows existed, but still exposed mainly implementation-oriented names instead of analysis-oriented entry points.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current analysis-flow-backed workspace surface without reopening compare contracts
+  - keep later `SPEC-19` work downstream of the now-stable catalog compare workflow model
+
+## 2026-03-20 SPEC-16 Workspace Analysis Flow Surface Checkpoint
+
+- `SPEC-16` catalog workspace compare now treats analysis flows as a broader analyst-facing surface rather than only a hidden state layer.
+- this slice bundled three coordinated improvements on top of the existing `workspace_analysis_flow` state:
+  - row-level analysis-flow shortcuts from the workspace overview table
+  - a focused-card `Analysis Flow Summary` block
+  - stronger export continuity via human-readable active-flow metadata
+- this closes one workflow gap where analysis-flow state existed, but still felt fragmented across row actions, focused drill-down, and exported snapshots.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current analysis-flow-backed workspace surface without reopening compare contracts
+  - only then return to `SPEC-19` for downstream polish on top of the now-stable workflow model
+
+## 2026-03-20 SPEC-16 Analysis Flow Workbench Bridge Checkpoint
+
+- `SPEC-16` analysis flows now bridge cleanly from focused catalog workspace compare into workbench sweep exploration instead of stopping at the catalog surface.
+- this slice bundled three coordinated downstream improvements:
+  - focused catalog workbench links now preserve `analysis_flow` alongside compare and layer-diff state
+  - workbench sweep now renders an `Analysis Workflow` summary block for the active flow
+  - workbench JSON/SVG export metadata now preserves both raw and human-readable analysis-flow context
+- this closes one workflow gap where analysis-flow-backed compare state existed in catalog workspace, but the higher-level analyst intent disappeared once users jumped into workbench or exported a focused sweep snapshot.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `9 passed`
+  - `python -m pytest tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `19 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current analysis-flow-backed catalog/workbench workflow surface without reopening compare contracts
+  - only then return to downstream `SPEC-19` polish on top of the now-stable cross-surface workflow model
+
+## 2026-03-21 SPEC-16 Analysis Flow Candidate Inspection Checkpoint
+
+- `SPEC-16` analysis flows now rank catalog workspace candidates instead of only preserving detail/focus state after a candidate is already chosen.
+- this slice bundled three coordinated candidate-inspection improvements:
+  - workspace row state now computes flow-aware recommendation score and reason strings from existing summary, grouped, pressure, and layer-delta surfaces
+  - workspace rows and the focused workspace card now render analyst-facing recommendation summaries such as `Recommended For Current Flow`
+  - workspace JSON/SVG export payloads now preserve both focused and per-row recommendation metadata
+- this closes one workflow gap where analysis-flow-backed navigation existed, but analysts still had to manually infer which candidate row deserved inspection first.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py -q` -> `4 passed`
+  - `python -m pytest tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `13 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current analysis-flow-ranked candidate inspection surface without reopening compare contracts
+  - only then return to downstream `SPEC-19` polish
 
 ## Current Next Slice
 
 - `SPEC-16`
-  - stronger compare modes beyond the current estimated/fitted layer and grouped-scalar summaries
-  - next best slice is richer layer-level diff or broader compare grouping on top of the now-stable visualization payload
+  - richer compare interaction above the current analysis-flow-ranked catalog/workbench workflow surface
+  - keep building on compare-focus plus layer-diff plus grouped-focus plus workspace-candidate plus workspace-detail-focus plus workspace-secondary-detail-focus plus workspace-detail-preset plus workspace-analysis-flow plus workbench-analysis-flow plus candidate-recommendation state without reopening Phase D compare contracts
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
   - any next `SPEC-19` slice should stay downstream of the current compare/export payloads and focus on higher-value compare interaction rather than reopening contracts
