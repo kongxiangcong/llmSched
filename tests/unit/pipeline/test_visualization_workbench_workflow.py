@@ -53,18 +53,45 @@ def test_run_visualization_workbench_writes_assets_and_updates_manifest(tmp_path
     assert "analysis_flow" in app_js
     assert "sweep_candidate" in app_js
     assert "sweep_layer_focus" in app_js
+    assert "recommendation_queue_position" in app_js
+    assert "recommendation_prev_candidate" in app_js
+    assert "recommendation_next_candidate" in app_js
+    assert "recommendation_top_candidates" in app_js
     assert "function currentAnalysisFlow" in app_js
     assert "function resolveAnalysisFlowState" in app_js
+    assert "function currentRecommendationQueueState" in app_js
+    assert "function buildRecommendationQueuePanelLink" in app_js
+    assert "function buildSweepRecommendationQueueSummary" in app_js
+    assert "function buildTopRecommendationComparisonCards" in app_js
+    assert "function renderTopRecommendationComparisonCard" in app_js
+    assert "function buildTopRecommendationDetailBlocks" in app_js
+    assert "function renderRecommendationDetailBlock" in app_js
+    assert "focused_recommendation_details" in app_js
+    assert "Top Recommendation Detail Candidates" in app_js
+    assert "function buildRecommendationDetailEntries" in app_js
+    assert "function buildRecommendationDetailLayerSummary" in app_js
+    assert "function buildRecommendationDetailSnapshotLines" in app_js
+    assert "function renderRecommendationDetailEntryMarkup" in app_js
     assert "focused_analysis_flow" in app_js
     assert "focused_analysis_flow_summary" in app_js
     assert "focused_compare_focus" in app_js
     assert "focused_layer_delta_mode" in app_js
     assert "focused_sweep_candidate" in app_js
     assert "focused_sweep_layer" in app_js
+    assert "focused_recommendation_queue" in app_js
     assert "focused_comparison_count" in app_js
     assert "focused_layer_delta_count" in app_js
     assert "focused_layer_delta_summary" in app_js
     assert "Analysis Workflow" in app_js
+    assert "Recommendation Queue" in app_js
+    assert "Top Recommended Candidates" in app_js
+    assert "Top Recommendation Compare Strip" in app_js
+    assert "Top Recommended Candidate Comparisons" in app_js
+    assert "Recommendation Detail Blocks" in app_js
+    assert "Side-by-Side Candidate Detail" in app_js
+    assert "Previous Recommended Candidate" in app_js
+    assert "Next Recommended Candidate" in app_js
+    assert "Open Top Recommendation" in app_js
     assert "Baseline Sweep Target" in app_js
     assert "Focused Analysis Workflow" in app_js
     assert "Focused Comparisons" in app_js

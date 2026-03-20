@@ -53,11 +53,23 @@ def test_run_phase_d_compare_writes_report(
     assert report["source_sweep_name"] == "phase-d-compare-cli"
     assert report["prefill_compare_count"] == 1
     assert report["decode_compare_count"] == 0
+    assert report["prefill_summary"]["compare_count"] == 1
     assert len(report["prefill_compares"]) == 1
     assert report["prefill_compares"][0]["node_delta_count"] > 0
     assert report["prefill_compares"][0]["fitted_layer_delta_count"] > 0
     assert report["prefill_compares"][0]["node_deltas"]
     assert report["prefill_compares"][0]["fitted_layer_deltas"]
+    assert report["prefill_compares"][0]["verdict_summary"]["verdict"] in {
+        "candidate-better",
+        "baseline-better",
+        "mixed",
+        "neutral",
+    }
+    assert report["prefill_compares"][0]["verdict_summary"]["primary_metric"] in {
+        "cycles_per_token",
+        "critical_path_cycles",
+        "tokens_per_cycle",
+    }
     assert report["prefill_compares"][0]["fitted_work_cycles"]["baseline_value"] >= report["prefill_compares"][0]["estimated_cycles"]["baseline_value"]
     assert report["prefill_compares"][0]["tokens_per_fitted_work_cycle"]["candidate_value"] > 0.0
 

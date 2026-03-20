@@ -22,8 +22,14 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     report = PhaseDCompareReport.model_validate_json(result.report_path.read_text(encoding="utf-8"))
     assert report.prefill_compare_count == 1
     assert report.decode_compare_count == 1
+    assert report.prefill_summary.compare_count == 1
+    assert report.prefill_summary.candidate_better_count == 1
+    assert report.decode_summary.compare_count == 1
+    assert report.decode_summary.candidate_better_count == 1
     prefill_payload = report.prefill_compares[0].model_dump(mode="json")
     decode_payload = report.decode_compares[0].model_dump(mode="json")
+    assert "verdict_summary" in prefill_payload
+    assert "verdict_summary" in decode_payload
     assert "fitted_work_cycles" in prefill_payload
     assert "tokens_per_fitted_work_cycle" in prefill_payload
     assert "projection_fitted_work_cycles" in prefill_payload
@@ -104,6 +110,17 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert report.prefill_compares[0].projection_occupied_slots_per_token.delta_value == pytest.approx(0.0)
     assert report.decode_compares[0].kv_io_occupied_slots.delta_value == pytest.approx(0.0)
     assert report.decode_compares[0].kv_io_occupied_slots_per_token.delta_value == pytest.approx(0.0)
+    assert report.prefill_compares[0].verdict_summary.primary_metric in {
+        "cycles_per_token",
+        "critical_path_cycles",
+        "tokens_per_cycle",
+    }
+    assert report.decode_compares[0].verdict_summary.verdict in {
+        "candidate-better",
+        "baseline-better",
+        "mixed",
+        "neutral",
+    }
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].fitted_work_cycles.delta_value == -1024.0

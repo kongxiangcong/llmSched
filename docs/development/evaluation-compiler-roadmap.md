@@ -3087,14 +3087,237 @@ graph TD
   - keep pushing richer compare interaction above the current analysis-flow-ranked candidate inspection surface without reopening compare contracts
   - only then return to downstream `SPEC-19` polish
 
+## 2026-03-21 SPEC-16 Recommendation Queue Checkpoint
+
+- `SPEC-16` analysis-flow recommendations now form a navigable workspace recommendation queue instead of stopping at per-row rank labels and one focused candidate summary.
+- this slice bundled three coordinated workflow upgrades:
+  - focused workspace drill-down now renders a `Recommendation Queue` summary with queue position and top recommended candidates
+  - focused workspace navigation now exposes direct `Open Top Recommendation`, `Previous Recommended Candidate`, and `Next Recommended Candidate` actions
+  - workspace JSON/SVG export payloads and snapshot headers now preserve queue-aware context such as `focused_workspace_recommendation_queue`, `queue_position`, neighbor candidate ids, and top recommendation ids
+- this closes one workflow gap where analysis-flow scoring could identify interesting candidates, but analysts still had to manually step through the ranked set after focusing the first row.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current recommendation-queue workspace surface without reopening compare contracts
+  - prefer the next slice to deepen queue-to-workbench continuity or multi-candidate side-by-side inspection before returning to downstream `SPEC-19` polish
+
+## 2026-03-21 SPEC-16 Workbench Recommendation Queue Continuity Checkpoint
+
+- `SPEC-16` recommendation queues now survive the jump from catalog workspace compare into workbench sweep exploration instead of collapsing back to a single focused candidate.
+- this slice bundled three coordinated downstream upgrades:
+  - catalog workbench links now preserve recommendation queue context alongside compare-focus, layer-diff, analysis-flow, and focused sweep candidate state
+  - workbench sweep now renders a `Recommendation Queue` summary with queue position, top recommended candidates, and direct `Open Top Recommendation` / `Previous Recommended Candidate` / `Next Recommended Candidate` actions
+  - sweep export payloads and snapshot headers now preserve `focused_recommendation_queue` context for queue-aware JSON/SVG continuity
+- this closes one cross-surface workflow gap where catalog workspace could rank and navigate recommendations, but workbench sweep still lost that ranked context after the transition.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `9 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current catalog-to-workbench recommendation queue surface without reopening compare contracts
+  - prefer the next slice to deepen workbench-side multi-candidate inspection or bring the same queue continuity into the dedicated sweep deep links before returning to downstream `SPEC-19` polish
+
+## 2026-03-21 SPEC-16 Sweep Deep-Link Queue Continuity Checkpoint
+
+- `SPEC-16` recommendation queue continuity now covers all catalog sweep deep links instead of only the focused selected-panel workbench jump.
+- this slice bundled two coordinated hardening upgrades:
+  - catalog now uses one shared `buildWorkspaceRecommendationParams` helper for recommendation-aware workbench deep links
+  - both `Open Sweep Panel` and `Open Layer In Sweep` now preserve the same queue state as the existing selected-panel workbench navigation
+- this closes one workflow inconsistency where some catalog-to-workbench paths preserved ranked candidate context while the dedicated sweep deep links silently dropped it.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current fully queue-aware sweep deep-link surface without reopening compare contracts
+  - prefer the next slice to add workbench-side multi-candidate inspection or queue-aware side-by-side compare before returning to downstream `SPEC-19` polish
+
+## 2026-03-21 SPEC-16 Workbench Top Recommendation Compare Strip Checkpoint
+
+- `SPEC-16` workbench sweep now exposes the top recommended candidates side-by-side instead of limiting analysts to queue navigation plus one focused candidate at a time.
+- this slice bundled two coordinated interaction upgrades:
+  - workbench now maps recommendation queue entries back to their sweep comparisons and renders a `Top Recommendation Compare Strip`
+  - the strip presents compact top-candidate comparison cards above the main sweep table while preserving the existing focused-candidate workflow
+- this closes one usability gap where queue continuity existed across surfaces, but analysts still had to serially inspect recommendations instead of scanning the strongest candidates together.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `9 passed`
+
+## 2026-03-21 SPEC-16 Workbench Recommendation Detail Blocks Checkpoint
+
+- `SPEC-16` workbench sweep now exposes explicit side-by-side detail blocks for the top recommended candidates instead of stopping at compact comparison cards.
+- this slice bundled three coordinated interaction upgrades:
+  - workbench now renders a dedicated `Recommendation Detail Blocks` section directly below the top recommendation compare strip
+  - each detail block reuses the existing compare-summary surface so grouped scalar, pressure, and legacy scalar detail all remain visible in-place
+  - each detail block also adds estimated-layer and fitted-layer summaries so analysts can compare top recommendations without bouncing back to the main sweep table first
+- this closes one drill-down gap where analysts could see the strongest candidate cards together, but still had to serially inspect deeper candidate detail through the focused row/table path.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `9 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+
+## 2026-03-21 SPEC-16 Workbench Detail Export Continuity Checkpoint
+
+- `SPEC-16` workbench sweep now preserves multi-candidate recommendation detail state in export and snapshot flows instead of keeping the side-by-side detail blocks as page-only UI.
+- this slice bundled three coordinated continuity upgrades:
+  - workbench now derives structured `focused_recommendation_details` from the same top recommended candidates used by the compare strip and detail blocks
+  - sweep export payloads now carry those multi-candidate detail summaries directly
+  - snapshot headers and snapshot body text now preserve `Top Recommendation Detail Candidates` plus estimated/fitted layer detail summaries for each exported top candidate
+- this closes one shareability gap where analysts could inspect top recommendations side-by-side in the browser, but exported JSON/SVG artifacts still collapsed back to focused-candidate-only context.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `9 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+
+## 2026-03-21 SPEC-16 Catalog Recommendation Detail Continuity Checkpoint
+
+- `SPEC-16` catalog workspace now preserves the same multi-candidate recommendation detail state already exposed by workbench sweep instead of stopping at recommendation queue links plus a single focused drilldown.
+- this slice bundled three coordinated continuity upgrades:
+  - catalog now derives structured `focused_workspace_recommendation_details` from the existing workspace recommendation queue and top ranked candidates
+  - focused workspace drilldown now renders `Recommendation Detail Blocks` for those top candidates
+  - workspace export and snapshot flows now preserve `Top Recommendation Detail Candidates` plus estimated/fitted layer summaries, matching the newer workbench continuity surface
+- this closes one cross-surface gap where workbench exports could preserve richer multi-candidate compare context, but catalog workspace exports still collapsed back to queue-only metadata.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+
+## 2026-03-21 SPEC-16 Recommendation Detail Shared Builders Checkpoint
+
+- `SPEC-16` recommendation detail continuity now uses shared static-builder helpers across catalog and workbench instead of maintaining two fully separate implementations of the same layer-summary and snapshot-line logic.
+- this slice bundled three structural hardening upgrades:
+  - added shared `buildRecommendationDetailLayerSummary(...)` helper generation for top-candidate estimated/fitted layer summaries
+  - added shared `buildRecommendationDetailSnapshotLines(...)` helper generation for exported snapshot text continuity
+  - rewired both catalog workspace and workbench sweep recommendation-detail flows to consume those shared helpers
+- this closes one maintenance gap where catalog/workbench richer compare state had become functionally aligned but still risked future semantic drift because their detail-summary builders were duplicated.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+
+## 2026-03-21 SPEC-16 Recommendation Detail Shared Renderers Checkpoint
+
+- `SPEC-16` recommendation detail continuity now also shares the repeated detail-entry markup structure across catalog workspace and workbench sweep instead of only sharing lower-level summary/snapshot helpers.
+- this slice bundled two structural hardening upgrades:
+  - added shared `renderRecommendationDetailEntryMarkup(...)` helper generation inside the recommendation detail snippet module
+  - rewired both catalog and workbench recommendation-detail rendering paths to consume the shared entry markup helper while preserving their existing outer layout/context
+- this closes one final drift gap in the current recommendation-detail surface where data and snapshot semantics were already aligned, but the entry-level markup structure was still duplicated.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+
+## 2026-03-21 SPEC-16 / SPEC-19 Closure Audit Checkpoint
+
+- the current recommendation-detail branch of `SPEC-16` now appears close to a practical stop-line:
+  - queue-aware catalog/workbench continuity is present
+  - top recommendations are inspectable side-by-side
+  - richer detail survives export/snapshot flows
+  - catalog/workbench now share recommendation-detail semantics plus renderer structure
+- closure-audit conclusion:
+  - this branch should no longer default to open-ended feature expansion
+  - the next step should be one explicit closure pass to decide whether any real compare-interaction blocker remains
+  - `SPEC-19` should continue as downstream polish only and should not block overall close-out on its own
+- recommended next execution order:
+  - first, run the closure pass on current `SPEC-16` recommendation-detail usability
+  - second, if that pass says “good enough”, freeze this branch and move attention back to the remaining true `SPEC-16` / `SPEC-13/14/15` gaps
+  - third, return to `SPEC-19` polish only after the main blocker picture is re-confirmed
+- `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- next best follow-on:
+  - keep pushing richer compare interaction above the current top-recommendation strip surface without reopening compare contracts
+  - prefer the next slice to add explicit side-by-side detail blocks or multi-candidate compare exports before returning to downstream `SPEC-19` polish
+
+## 2026-03-21 SPEC-16 Recommendation Detail Close-Enough Checklist Checkpoint
+
+- the closure pass is now formalized as a checklist-driven stop-line review instead of an open-ended judgment call.
+- checklist intent:
+  - verify the current stop-line surface still matches the branch goal
+  - answer the core analyst usability question explicitly
+  - enforce a one-final-slice rule if a real gap still exists
+  - freeze this branch once focused verification remains green and the checklist passes
+- execution artifact:
+  - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md`
+- checklist result:
+  - `close-enough`
+  - stop-line audit status:
+    - queue-aware catalog/workbench continuity: `pass`
+    - side-by-side top recommendation inspection: `pass`
+    - richer recommendation detail in page UI: `pass`
+    - recommendation detail export/snapshot continuity: `pass`
+    - shared recommendation-detail semantics across catalog/workbench: `pass`
+  - analyst usability status:
+    - next candidate to inspect is explicit: `pass`
+    - recommendation rationale is visible without raw bundle reopening: `pass`
+    - deeper detail is inspectable directly in catalog/workbench: `pass`
+    - JSON/SVG export preserves that context: `pass`
+  - fresh proof rerun:
+    - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+    - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- closure implication:
+  - freeze the recommendation-detail branch as a practical stop-line
+  - shift the next blocker review back to remaining broader `SPEC-16` / `SPEC-13/14/15` gaps
+  - keep `SPEC-19` as downstream polish only
+
+## 2026-03-21 M3 Broader Blocker Audit Checkpoint
+
+- the recommendation-detail branch is now treated as frozen, so the broader `M3` blocker review can focus on the remaining `SPEC-13/14/15/16` gaps instead of continuing same-family compare interaction by default.
+- current gap reclassification:
+  - `SPEC-13`
+    - deeper cycle fitting: supports blocker
+    - compare-grade aggregation above current summary surfaces: supports blocker
+    - clearer bandwidth / VMEM wording: downstream polish
+  - `SPEC-14`
+    - stronger top-level eval compare closure: true blocker
+    - finer layer-level prefill view: supports blocker
+  - `SPEC-15`
+    - stronger top-level eval compare closure: true blocker
+    - token latency decomposition and `kv_len` sweep aggregation: supports blocker
+  - `SPEC-16`
+    - deeper non-recommendation compare/workspace drill-down: supports blocker
+    - parallel execution / cache reuse and broader compare modes: supports blocker
+  - `SPEC-19`
+    - richer screenshot and workspace polish remain downstream only
+- dominant remaining blocker lane:
+  - prioritize `SPEC-14/15` eval-compare closure next
+  - let any follow-on `SPEC-16` work stay narrowly attached to consuming and exposing that stronger eval-compare surface
+- closure question for the next lane:
+  - can prefill/decode evaluation outputs support the top-level compare loop strongly enough that analysts no longer need to reopen raw evaluation artifacts for the main decision path?
+- execution artifact:
+  - `docs/plans/2026-03-21-m3-close-out-blocker-audit.md`
+
+## 2026-03-21 SPEC-14/15 Eval-Compare Closure Planning Checkpoint
+
+- the dominant remaining `M3` lane is now materialized as a focused execution plan instead of staying at blocker-audit level only.
+- chosen slice:
+  - strengthen `PhaseDCompareReport` with summary-grade verdicts and per-mode aggregates
+  - keep the slice centered on `SPEC-14/15` compare artifacts, not on new `SPEC-16` UI interaction
+- why this slice is first:
+  - current compare/report rows are already rich, but they still stop short of an explicit evaluation verdict
+  - adding that summary-grade closure at the report level is the smallest step most likely to answer the remaining analyst question without reopening raw artifacts
+- execution artifact:
+  - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
+
+## 2026-03-21 SPEC-14/15 Eval-Compare Verdict Checkpoint
+
+- `PhaseDCompareReport` now exposes summary-grade verdict surfaces directly on top of the existing compare rows:
+  - row-level `verdict_summary`
+  - top-level `prefill_summary`
+  - top-level `decode_summary`
+- the builder now derives those summaries from existing compare deltas instead of requiring new upstream report contracts.
+- fresh focused verification evidence:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `14 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- broader keep-green rerun status in this session:
+  - `python -m pytest tests/smoke -m local_smoke -q` -> timed out
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> timed out
+- interpretation:
+  - the focused eval-compare closure slice has landed on its direct regression surface
+  - do not yet treat the wider keep-green line as freshly revalidated in this session until the two broader smoke selections complete
+
 ## Current Next Slice
 
-- `SPEC-16`
-  - richer compare interaction above the current analysis-flow-ranked catalog/workbench workflow surface
-  - keep building on compare-focus plus layer-diff plus grouped-focus plus workspace-candidate plus workspace-detail-focus plus workspace-secondary-detail-focus plus workspace-detail-preset plus workspace-analysis-flow plus workbench-analysis-flow plus candidate-recommendation state without reopening Phase D compare contracts
+- `M3`
+  - freeze the current recommendation-detail branch as a practical stop-line
+  - execute `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` as the handoff artifact for broader blocker reclassification
+  - keep `SPEC-14/15` eval-compare closure as the dominant remaining blocker lane
+  - finish broad keep-green reconfirmation for the new verdict-summary slice, then decide whether one more eval-compare follow-on or a narrow `SPEC-16` consumer slice is next
+  - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
-  - any next `SPEC-19` slice should stay downstream of the current compare/export payloads and focus on higher-value compare interaction rather than reopening contracts
+  - keep `SPEC-19` as downstream polish, not as the reason this project remains open
 
 ## 2026-03-20 SPEC-19 Workspace Export Hardening Update
 

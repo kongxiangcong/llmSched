@@ -5,7 +5,9 @@ RISC-V + NPU architecture-evaluation compiler for Gemma3-like workloads.
 当前主线阶段：
 - `M1` 已完成
 - `M2` 已完成
-- 当前重点转到 `SPEC-13/14/15/16` 的 `M3` 收口，以及 `SPEC-19` 的产品化 hardening，而不是继续把 `Phase C` 当成未收口 foundation
+- 当前重点仍然是 `Phase D / M3`，也就是继续收口 `SPEC-13/14/15/16`
+- `SPEC-19` 继续做产品化 hardening，但应建立在当前稳定的 `SPEC-16` compare/workspace/workbench surface 之上
+- `Phase C` 当前维持 keep-green，不再作为默认主线 blocker
 
 核心 CLI 流水线：
 
@@ -41,14 +43,15 @@ python -m pytest -q
 
 它是全量回归面，适合主线稳定化或夜跑，不适合日常迭代。
 
-当前基线（2026-03-11）：
-- `python -m pytest tests/smoke -q --durations=30` -> `71 passed in 37m52s`
-- `python -m pytest -q --durations=30` -> `363 passed in 50m39s`
-- full gate 现在已经可以跑完，但仍然不适合默认开发循环
+当前全量基线（2026-03-19）：
+- `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+- `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+- `python -m pytest -q --durations=30` -> `436 passed`
 
-当前里程碑验证（2026-03-12）：
-- `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 68 deselected in 12m49s`
-- `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 68 deselected in 15m00s`
+最新 compare/visualization 代表性 focused 验证（2026-03-21）：
+- `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/contracts/test_visualization_bundle.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `39 passed`
+
+full regression 仍然不适合作为默认开发循环；日常迭代优先跑 focused unit / pipeline / smoke 组合。
 
 ### 1. Fast Local Default
 
@@ -131,8 +134,56 @@ python -m pytest tests/smoke -m milestone_matrix -q
 - 优先转向 `M3`：先做 `SPEC-13/14/15/16` 的评估闭环收口
 - `SPEC-13` 现在已有 stable 的 per-node / per-layer perf summary；`SPEC-14/15` 也已正式暴露 `node_hotspots` 与 `layer_breakdown`
 - `SPEC-16` 现在不只是 `metric/macro/layer deltas`，还已有结构化 `prefill_compare` / `decode_compare`，并新增 `run-phase-d-compare` 生成 standalone `phase_d_compare_report.json`
-- `M3` 当前更合理的下一步，是让 `SPEC-18/19` 直接消费 `PhaseDCompareReport`，而不是继续从 raw `SweepComparison` 手拆 top-level compare
-- 如果继续做 UI，优先 `SPEC-19` 的 deeper workspace drill-down / richer compare drill-down / richer screenshot/export workflow
+- `SPEC-16` 当前又新增了：
+  - shared `compare focus modes`
+  - shared `layer diff modes`
+  - broader grouped compare focus
+  - focused workspace candidate/detail/preset/analysis-flow state
+  - analysis-flow bridge into workbench sweep/export
+  - flow-ranked candidate inspection 与 recommendation metadata
+- `SPEC-16` 最新又新增了：
+  - focused workspace `Recommendation Queue`
+  - top/previous/next recommended candidate navigation
+  - queue-aware workspace JSON/SVG export metadata
+- `SPEC-16` 现在也已把 recommendation queue 贯通到 workbench：
+  - catalog -> workbench queue continuity
+  - workbench sweep `Recommendation Queue` summary/actions
+  - queue-aware sweep export metadata
+- `SPEC-16` 现在也已补齐 dedicated sweep deep links：
+  - `Open Sweep Panel` queue continuity
+  - `Open Layer In Sweep` queue continuity
+  - shared queue-aware workbench deep-link params
+- `SPEC-16` workbench sweep 现在也已有：
+  - `Top Recommendation Compare Strip`
+  - top candidates 的 compact side-by-side inspection
+- `SPEC-16` workbench sweep 现在也已补上更深一层的并排细节：
+  - `Recommendation Detail Blocks`
+  - top recommendations 的 explicit side-by-side candidate detail
+  - estimated/fitted layer summaries embedded into the compare workflow
+- `SPEC-16` workbench sweep 现在也已把这组并排细节接进导出链路：
+  - `focused_recommendation_details` export payload
+  - snapshot header `Top Recommendation Detail Candidates`
+  - side-by-side detail summaries preserved in sweep snapshot text
+- `SPEC-16` catalog workspace 现在也已和 workbench 对齐这组 richer compare state：
+  - focused workspace `Recommendation Detail Blocks`
+  - `focused_workspace_recommendation_details` export payload
+  - catalog workspace snapshot continuity for top-candidate detail summaries
+- `SPEC-16` 这组 recommendation detail continuity 现在也已有 shared builder 收敛：
+  - shared detail layer summary helper
+  - shared snapshot-line helper
+  - catalog/workbench recommendation detail flows now reuse the same static JS builder pattern
+- `SPEC-16` recommendation detail 的渲染结构现在也进一步收敛：
+  - shared detail-entry markup helper
+  - catalog/workbench detail blocks no longer maintain fully separate entry markup
+- `SPEC-16 / SPEC-19` 的最新 closure audit 判断是：
+  - 当前 recommendation-detail 这条 `SPEC-16` 子主线已经通过 closure pass，可按 practical stop-line 冻结
+  - 下一步不该再默认继续发散更多同类交互，而应把 blocker review 拉回更上层的剩余 `SPEC-16` / `SPEC-13/14/15`
+  - `SPEC-19` 继续作为 downstream polish，不应因为 convenience interaction 继续阻塞项目收尾
+- 当前推荐的执行方式已经进一步具体化：
+  - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md` 已完成本轮 closure 判定
+  - recommendation-detail 这条子主线现在应保持冻结，除非后续 blocker review 重新发现真实缺口
+- 当前更合理的下一步，不是回去重开 compare contract，也不是继续默认扩 recommendation-detail surface，而是把注意力转回剩余真实 blocker
+- `SPEC-19` 仍然继续 hardening，但要严格以下游消费这套稳定 compare/export payload 为前提
 - `SPEC-08 -> SPEC-13` 现已有一条真实 downstream reuse：`PerfSummaryReport` 直接带 `peak_bytes_by_backing_store`
 - `SPEC-08 -> SPEC-13` 现也已有一条真实 downstream reuse：`PerfSummaryReport` 直接带 per-region `peak_bytes_by_memory_class`
 - `SPEC-08 -> SPEC-12` 现也已有一条真实 downstream reuse：`DescriptorIR.address_fields` 直接带 `storage_binding_id/backing_store`
@@ -173,7 +224,23 @@ Read these in order before starting new development work:
 
 Current active execution plan:
 
-- `docs/plans/2026-03-14-phase-d-m3-closure-followup.md`
+- roadmap 的 `Current Next Slice`
+- `docs/plans/2026-03-21-m3-close-out-blocker-audit.md`
+- `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
+- 最新已落盘的 `SPEC-16` execution slices 位于：
+  - `docs/plans/2026-03-20-spec-16-*.md`
+  - `docs/plans/2026-03-21-spec-16-analysis-flow-candidate-inspection.md`
+  - `docs/plans/2026-03-21-spec-16-recommendation-queue.md`
+  - `docs/plans/2026-03-21-spec-16-workbench-recommendation-queue-continuity.md`
+  - `docs/plans/2026-03-21-spec-16-sweep-deeplink-queue-continuity.md`
+  - `docs/plans/2026-03-21-spec-16-workbench-top-recommendation-compare-strip.md`
+  - `docs/plans/2026-03-21-spec-16-workbench-recommendation-detail-blocks.md`
+  - `docs/plans/2026-03-21-spec-16-workbench-detail-export-continuity.md`
+  - `docs/plans/2026-03-21-spec-16-catalog-recommendation-detail-continuity.md`
+  - `docs/plans/2026-03-21-spec-16-recommendation-detail-shared-builders.md`
+  - `docs/plans/2026-03-21-spec-16-recommendation-detail-shared-renderers.md`
+  - `docs/plans/2026-03-21-spec-16-spec-19-closure-audit.md`
+  - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md`
 
 Canonical documentation roles:
 
@@ -193,26 +260,52 @@ Update rules after each work slice:
 - if a change alters a stable contract or handoff boundary, update the relevant `docs/development/phase-*-handoff.md`
 - if a change starts a new multi-step execution slice, add a new dated plan doc under `docs/plans/`
 
-## 2026-03-19 Audited Status
+## 2026-03-21 Audited Status
 
-Fresh verification evidence on 2026-03-19:
+Fresh verification evidence currently reflected in project status:
 
 - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
 - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
-- `python -m pytest -q --durations=30` -> `436 passed`
+- `python -m pytest -q --durations=30` -> `436 passed` on the last full-project audited checkpoint (`2026-03-19`)
+- `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/contracts/test_visualization_bundle.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `39 passed` (`2026-03-21`)
+- `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/smoke/test_cli_run_visualization_catalog.py -q` -> `17 passed` (`2026-03-21`)
+- `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed` (`2026-03-21`)
 
 Current working interpretation:
 
-- real Gemma3 frontend recovery is back on the mainline: `run-frontend-analysis` now passes on the restored ONNX export, and canonical `GraphIR -> NIG` lowering has `0` unsupported nodes
-- the old downstream real-model blockers are closed:
-  - `dynamic_shape_unresolved` is now `0` on the real-model frontend checkpoint
-  - SDPA auxiliary tensor binding no longer misclassifies rope-cache tensors into staged `weight`
-  - `run-phase-c-gate` and the canonical Phase C matrix are back on the accepted path
-- `SPEC-08/09/10/11/12` can return to keep-green status under the restored real-model checkpoint
-- main priority returns to `P0: close M3`
+- `Phase A/B/C` 主线已稳定，`run-phase-c-gate` 对应的 canonical matrix 继续维持 keep-green
+- `SPEC-13/14/15` 已具备稳定的评估与 compare foundation，当前真正的主 blocker 是继续把 `SPEC-16` compare/workspace/workbench workflow 做完整
+- `SPEC-16` 当前已经从基础 compare surface 推进到：
+  - compare focus modes
+  - layer diff modes
+  - broader compare grouping
+  - focused workspace candidate/detail/preset/analysis-flow
+  - analysis-flow workbench bridge
+  - analysis-flow-ranked candidate inspection
+  - recommendation-queue navigation and export continuity
+  - catalog-to-workbench recommendation queue continuity
+  - fully queue-aware sweep deep-link continuity
+  - top-recommendation side-by-side inspection in workbench sweep
+  - explicit recommendation detail blocks in workbench sweep
+  - multi-candidate detail export/snapshot continuity in workbench sweep
+  - aligned recommendation detail continuity in catalog workspace/export
+  - shared recommendation detail builder pattern across catalog/workbench
+  - shared recommendation detail renderer pattern across catalog/workbench
+- 当前更合理的下一步不再是默认继续扩 recommendation-detail surface，而是接受这条 recommendation-detail 子主线已经达到 stop-line，并把注意力转回剩余真实 blocker
+- 当前更具体的下一步是先执行 `docs/plans/2026-03-21-m3-close-out-blocker-audit.md`，把 `SPEC-13/14/15/16` 的剩余真实 blocker 重新分层，再决定最后一条主执行线
+- 这轮更高层 blocker audit 的第一版结论是：
+  - 当前最值得优先推进的主执行线不是再做 recommendation-detail，也不是先做 `SPEC-19` polish
+  - 推荐把下一条主执行线收敛到 `SPEC-14/15` eval-compare closure，并让后续 `SPEC-16` 只做最小必要消费面
+- 这条主执行线现在已经落成 focused plan：
+  - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
+  - 当前建议先增强 `PhaseDCompareReport` 的 summary-grade verdict / mode summary，而不是先扩 UI
+- 这条 focused slice 的当前执行结果是：
+  - `PhaseDCompareReport` 已补上 row-level `verdict_summary` 和 top-level `prefill_summary` / `decode_summary`
+  - focused compare regression 已 fresh 通过：`14 passed`
+  - visualization keep-green 已 fresh 通过：`28 passed`
+  - 但 `local_smoke` / `milestone_matrix` 本轮重跑超时，还不能声称更宽的 keep-green 已在这一轮被重新确认
+- 当前执行顺序应保持：
 
-Current execution order:
-
-1. Continue `SPEC-13 -> SPEC-14/15 -> SPEC-16` in roadmap order.
-2. Keep `SPEC-08/09/10/11/12` green with `run-phase-c-gate`, `local_smoke`, and `milestone_matrix`.
-3. Resume `SPEC-19` hardening on top of the restored mainline checkpoint.
+1. 先沿 `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` 推进 `SPEC-14/15` eval-compare closure 这条主执行线的收口设计。
+2. 继续用 `run-phase-c-gate`、`local_smoke`、`milestone_matrix` 保持 `SPEC-08/09/10/11/12` 绿色。
+3. 仅在上述 compare surface 稳定后，再继续 `SPEC-19` 的下游产品化 polish。

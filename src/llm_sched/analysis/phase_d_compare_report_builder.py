@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from llm_sched.contracts.phase_d_compare_report import (
     PhaseDCompareReport,
+    PhaseDCompareModeSummary,
+    PhaseDCompareVerdictSummary,
     PhaseDDecodeCompareRow,
     PhaseDPrefillCompareRow,
 )
@@ -82,6 +84,7 @@ def build_phase_d_compare_report(
                     candidate_schedule_kind=comparison.prefill_compare.candidate_schedule_kind,
                     profile_diff_fields=list(comparison.profile_diff_fields),
                     layer_delta_count=len(comparison.layer_deltas),
+                    verdict_summary=_build_prefill_verdict_summary(comparison),
                     node_delta_count=len(getattr(comparison, "node_deltas", [])),
                     fitted_layer_delta_count=len(getattr(comparison, "fitted_layer_deltas", [])),
                     node_deltas=list(getattr(comparison, "node_deltas", [])),
@@ -155,6 +158,7 @@ def build_phase_d_compare_report(
                     candidate_schedule_kind=comparison.decode_compare.candidate_schedule_kind,
                     profile_diff_fields=list(comparison.profile_diff_fields),
                     layer_delta_count=len(comparison.layer_deltas),
+                    verdict_summary=_build_decode_verdict_summary(comparison),
                     node_delta_count=len(getattr(comparison, "node_deltas", [])),
                     fitted_layer_delta_count=len(getattr(comparison, "fitted_layer_deltas", [])),
                     node_deltas=list(getattr(comparison, "node_deltas", [])),
@@ -227,10 +231,135 @@ def build_phase_d_compare_report(
         comparison_count=len(prefill_compares) + len(decode_compares),
         prefill_compare_count=len(prefill_compares),
         decode_compare_count=len(decode_compares),
+        prefill_summary=_build_mode_summary(prefill_compares),
+        decode_summary=_build_mode_summary(decode_compares),
         prefill_compares=prefill_compares,
         decode_compares=decode_compares,
         issues=list(sweep_report.issues),
     )
+
+
+def _build_mode_summary(compares) -> PhaseDCompareModeSummary:
+    verdicts = [row.verdict_summary.verdict for row in compares]
+    return PhaseDCompareModeSummary(
+        compare_count=len(compares),
+        candidate_better_count=verdicts.count("candidate-better"),
+        baseline_better_count=verdicts.count("baseline-better"),
+        mixed_count=verdicts.count("mixed"),
+        neutral_count=verdicts.count("neutral"),
+    )
+
+
+def _build_prefill_verdict_summary(comparison) -> PhaseDCompareVerdictSummary:
+    primary_metric = comparison.prefill_compare.cycles_per_token
+    dominant_layer_id = _dominant_layer_id(
+        list(getattr(comparison, "fitted_layer_deltas", [])) or list(comparison.layer_deltas)
+    )
+    dominant_node_id = _dominant_node_id(getattr(comparison, "node_deltas", []))
+    return PhaseDCompareVerdictSummary(
+        verdict=_classify_verdict(primary_metric),
+        preferred_target_profile_name=_preferred_target_profile_name(
+            comparison.baseline_target_profile_name,
+            comparison.candidate_target_profile_name,
+            primary_metric,
+        ),
+        primary_metric="cycles_per_token",
+        primary_metric_delta=primary_metric,
+        primary_phase=_dominant_prefill_phase(comparison.prefill_compare),
+        dominant_layer_id=dominant_layer_id,
+        dominant_node_id=dominant_node_id,
+    )
+
+
+def _build_decode_verdict_summary(comparison) -> PhaseDCompareVerdictSummary:
+    primary_metric = comparison.decode_compare.critical_path_cycles_per_token
+    dominant_layer_id = _dominant_layer_id(
+        list(getattr(comparison, "fitted_layer_deltas", [])) or list(comparison.layer_deltas)
+    )
+    dominant_node_id = _dominant_node_id(getattr(comparison, "node_deltas", []))
+    return PhaseDCompareVerdictSummary(
+        verdict=_classify_verdict(primary_metric),
+        preferred_target_profile_name=_preferred_target_profile_name(
+            comparison.baseline_target_profile_name,
+            comparison.candidate_target_profile_name,
+            primary_metric,
+        ),
+        primary_metric="critical_path_cycles_per_token",
+        primary_metric_delta=primary_metric,
+        primary_phase=_dominant_decode_phase(comparison.decode_compare),
+        dominant_layer_id=dominant_layer_id,
+        dominant_node_id=dominant_node_id,
+    )
+
+
+def _classify_verdict(metric: SweepScalarDelta) -> str:
+    if metric.delta_value < 0.0:
+        return "candidate-better"
+    if metric.delta_value > 0.0:
+        return "baseline-better"
+    return "neutral"
+
+
+def _preferred_target_profile_name(
+    baseline_target_profile_name: str,
+    candidate_target_profile_name: str,
+    metric: SweepScalarDelta,
+) -> str:
+    if metric.delta_value < 0.0:
+        return candidate_target_profile_name
+    if metric.delta_value > 0.0:
+        return baseline_target_profile_name
+    return ""
+
+
+def _dominant_prefill_phase(compare_summary) -> str:
+    phase_deltas = {
+        "projection": compare_summary.projection_cycle_share.delta_value,
+        "kv_io": compare_summary.kv_io_cycle_share.delta_value,
+        "attention": compare_summary.attention_cycle_share.delta_value,
+        "sync": compare_summary.sync_cycle_share.delta_value,
+        "other": compare_summary.other_cycle_share.delta_value,
+    }
+    return max(phase_deltas.items(), key=lambda item: abs(item[1]))[0]
+
+
+def _dominant_decode_phase(compare_summary) -> str:
+    if abs(compare_summary.kv_related_cycle_share.delta_value) > 0.0:
+        return "kv_io"
+    phase_deltas = {
+        "projection": compare_summary.projection_cycle_share.delta_value,
+        "kv_io": compare_summary.kv_io_cycle_share.delta_value,
+        "attention": compare_summary.attention_cycle_share.delta_value,
+        "sync": compare_summary.sync_cycle_share.delta_value,
+        "other": compare_summary.other_cycle_share.delta_value,
+    }
+    return max(phase_deltas.items(), key=lambda item: abs(item[1]))[0]
+
+
+def _dominant_layer_id(layer_deltas) -> int | None:
+    if not layer_deltas:
+        return None
+    dominant = max(
+        layer_deltas,
+        key=lambda row: abs(_field(row, "delta_fitted_work_cycles", _field(row, "delta_cycles", 0.0))),
+    )
+    return int(_field(dominant, "layer_id"))
+
+
+def _dominant_node_id(node_deltas) -> str | None:
+    if not node_deltas:
+        return None
+    dominant = max(
+        node_deltas,
+        key=lambda row: abs(_field(row, "delta_fitted_work_cycles", _field(row, "delta_cycles", 0.0))),
+    )
+    return str(_field(dominant, "node_id"))
+
+
+def _field(row, name: str, default=None):
+    if isinstance(row, dict):
+        return row.get(name, default)
+    return getattr(row, name, default)
 
 
 def _phase_balance_compare_row_fields(compare_summary) -> dict[str, object]:

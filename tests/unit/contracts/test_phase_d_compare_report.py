@@ -14,6 +14,20 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
             "comparison_count": 2,
             "prefill_compare_count": 1,
             "decode_compare_count": 1,
+            "prefill_summary": {
+                "compare_count": 1,
+                "candidate_better_count": 1,
+                "baseline_better_count": 0,
+                "mixed_count": 0,
+                "neutral_count": 0,
+            },
+            "decode_summary": {
+                "compare_count": 1,
+                "candidate_better_count": 1,
+                "baseline_better_count": 0,
+                "mixed_count": 0,
+                "neutral_count": 0,
+            },
             "prefill_compares": [
                 {
                     "scenario_name": "prefill_seq128",
@@ -23,6 +37,20 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                     "candidate_schedule_kind": "dual-core",
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "layer_delta_count": 2,
+                    "verdict_summary": {
+                        "verdict": "candidate-better",
+                        "preferred_target_profile_name": "riscv_npu_dual_core_v1",
+                        "primary_metric": "cycles_per_token",
+                        "primary_metric_delta": {
+                            "baseline_value": 32.0,
+                            "candidate_value": 24.0,
+                            "delta_value": -8.0,
+                            "delta_ratio": -0.25,
+                        },
+                        "primary_phase": "attention",
+                        "dominant_layer_id": 0,
+                        "dominant_node_id": "nig.node.linear.0",
+                    },
                     "estimated_cycles": {
                         "baseline_value": 4096.0,
                         "candidate_value": 3072.0,
@@ -274,6 +302,20 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                     "candidate_schedule_kind": "dual-core",
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "layer_delta_count": 2,
+                    "verdict_summary": {
+                        "verdict": "candidate-better",
+                        "preferred_target_profile_name": "riscv_npu_dual_core_v1",
+                        "primary_metric": "critical_path_cycles_per_token",
+                        "primary_metric_delta": {
+                            "baseline_value": 2880.0,
+                            "candidate_value": 2240.0,
+                            "delta_value": -640.0,
+                            "delta_ratio": -0.2222222222,
+                        },
+                        "primary_phase": "kv_io",
+                        "dominant_layer_id": 0,
+                        "dominant_node_id": "nig.node.kvload.0",
+                    },
                     "estimated_cycles": {
                         "baseline_value": 3200.0,
                         "candidate_value": 2800.0,
@@ -523,6 +565,16 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
 
     assert report.prefill_compare_count == 1
     assert report.decode_compare_count == 1
+    assert report.prefill_summary.compare_count == 1
+    assert report.prefill_summary.candidate_better_count == 1
+    assert report.decode_summary.compare_count == 1
+    assert report.decode_summary.mixed_count == 0
+    assert report.prefill_compares[0].verdict_summary.verdict == "candidate-better"
+    assert report.prefill_compares[0].verdict_summary.primary_metric == "cycles_per_token"
+    assert report.prefill_compares[0].verdict_summary.primary_phase == "attention"
+    assert report.prefill_compares[0].verdict_summary.dominant_layer_id == 0
+    assert report.decode_compares[0].verdict_summary.primary_metric == "critical_path_cycles_per_token"
+    assert report.decode_compares[0].verdict_summary.dominant_node_id == "nig.node.kvload.0"
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].fitted_work_cycles.delta_value == -1024.0

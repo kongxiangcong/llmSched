@@ -23,6 +23,28 @@ def _zero_scalar_delta() -> SweepScalarDelta:
     )
 
 
+class PhaseDCompareVerdictSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    verdict: Literal["candidate-better", "baseline-better", "mixed", "neutral"] = "neutral"
+    preferred_target_profile_name: str = ""
+    primary_metric: str = ""
+    primary_metric_delta: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    primary_phase: str = ""
+    dominant_layer_id: int | None = None
+    dominant_node_id: str | None = None
+
+
+class PhaseDCompareModeSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    compare_count: int = Field(ge=0, default=0)
+    candidate_better_count: int = Field(ge=0, default=0)
+    baseline_better_count: int = Field(ge=0, default=0)
+    mixed_count: int = Field(ge=0, default=0)
+    neutral_count: int = Field(ge=0, default=0)
+
+
 class PhaseDPrefillCompareRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -33,6 +55,7 @@ class PhaseDPrefillCompareRow(BaseModel):
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     profile_diff_fields: list[str] = Field(default_factory=list)
     layer_delta_count: int = Field(ge=0)
+    verdict_summary: PhaseDCompareVerdictSummary = Field(default_factory=PhaseDCompareVerdictSummary)
     node_delta_count: int = Field(ge=0, default=0)
     fitted_layer_delta_count: int = Field(ge=0, default=0)
     node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
@@ -231,6 +254,7 @@ class PhaseDDecodeCompareRow(BaseModel):
     candidate_schedule_kind: Literal["single-core", "dual-core"]
     profile_diff_fields: list[str] = Field(default_factory=list)
     layer_delta_count: int = Field(ge=0)
+    verdict_summary: PhaseDCompareVerdictSummary = Field(default_factory=PhaseDCompareVerdictSummary)
     node_delta_count: int = Field(ge=0, default=0)
     fitted_layer_delta_count: int = Field(ge=0, default=0)
     node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
@@ -429,6 +453,8 @@ class PhaseDCompareReport(BaseModel):
     comparison_count: int = Field(ge=0)
     prefill_compare_count: int = Field(ge=0)
     decode_compare_count: int = Field(ge=0)
+    prefill_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
+    decode_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
     prefill_compares: list[PhaseDPrefillCompareRow] = Field(default_factory=list)
     decode_compares: list[PhaseDDecodeCompareRow] = Field(default_factory=list)
     issues: list[SweepIssue] = Field(default_factory=list)

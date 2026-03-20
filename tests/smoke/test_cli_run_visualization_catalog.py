@@ -71,7 +71,14 @@ def test_run_visualization_catalog_writes_catalog_index(tmp_path: Path) -> None:
     assert "Open Selected Panel" in app_js
     assert "function resolveSweepComparison" in app_js
     assert "function renderSweepLayerDeltaRows" in app_js
-    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow() })' in app_js
+    assert "function buildWorkspaceRecommendationParams" in app_js
+    assert "recommendation_queue_position" in app_js
+    assert "recommendation_prev_candidate" in app_js
+    assert "recommendation_next_candidate" in app_js
+    assert "recommendation_top_candidates" in app_js
+    assert "recommendation_queue_candidates" in app_js
+    assert 'const workbenchCompareParams = buildWorkspaceRecommendationParams(resolveCurrentWorkspaceState(), candidateEntry);' in app_js
+    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", workbenchCompareParams)' in app_js
     assert "function orderedSweepLayerDeltas" in app_js
     assert "function buildSweepDrilldownLink" in app_js
     assert "function buildSweepLayerDrilldownLink" in app_js

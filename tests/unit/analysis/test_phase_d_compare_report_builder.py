@@ -17,7 +17,17 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.comparison_count == 2
     assert report.prefill_compare_count == 1
     assert report.decode_compare_count == 1
+    assert report.prefill_summary.compare_count == 1
+    assert report.prefill_summary.candidate_better_count == 1
+    assert report.decode_summary.compare_count == 1
+    assert report.decode_summary.candidate_better_count == 1
     assert report.prefill_compares[0].scenario_name == "prefill_seq128"
+    assert report.prefill_compares[0].verdict_summary.verdict == "candidate-better"
+    assert report.prefill_compares[0].verdict_summary.preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.prefill_compares[0].verdict_summary.primary_metric == "cycles_per_token"
+    assert report.prefill_compares[0].verdict_summary.primary_metric_delta.delta_value == -8.0
+    assert report.prefill_compares[0].verdict_summary.primary_phase == "attention"
+    assert report.prefill_compares[0].verdict_summary.dominant_layer_id == 0
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0
     assert report.prefill_compares[0].critical_path_cycles.delta_value == -1280.0
     assert report.prefill_compares[0].fitted_work_cycles.delta_value == -1024.0
@@ -32,6 +42,10 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0833333333)
     assert report.prefill_compares[0].layer_delta_count == 2
     assert report.decode_compares[0].scenario_name == "decode_token1_kv2048"
+    assert report.decode_compares[0].verdict_summary.verdict == "candidate-better"
+    assert report.decode_compares[0].verdict_summary.primary_metric == "critical_path_cycles_per_token"
+    assert report.decode_compares[0].verdict_summary.primary_phase == "kv_io"
+    assert report.decode_compares[0].verdict_summary.dominant_node_id == "nig.node.kvload.0"
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
     assert report.decode_compares[0].fitted_work_cycles.delta_value == -400.0
     assert report.decode_compares[0].projection_cycles.delta_value == -200.0
@@ -741,6 +755,30 @@ def _sweep_report() -> SweepDeltaReport:
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "metric_deltas": [],
                     "macro_deltas": [],
+                    "node_deltas": [
+                        {
+                            "node_id": "nig.node.linear.0",
+                            "baseline_cycles": 3072.0,
+                            "candidate_cycles": 2048.0,
+                            "delta_cycles": -1024.0,
+                            "baseline_fitted_work_cycles": 3584.0,
+                            "candidate_fitted_work_cycles": 2560.0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "baseline_cycle_share": 0.75,
+                            "candidate_cycle_share": 0.6666666667,
+                            "delta_cycle_share": -0.0833333333,
+                            "delta_cycles_ratio": -0.3333333333,
+                            "baseline_fitted_cycle_share": 0.7777777778,
+                            "candidate_fitted_cycle_share": 0.7142857143,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 131072.0,
+                            "candidate_bytes": 98304.0,
+                            "delta_bytes": -32768.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
                     "layer_deltas": [
                         {
                             "layer_id": 0,
@@ -1015,6 +1053,30 @@ def _sweep_report() -> SweepDeltaReport:
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "metric_deltas": [],
                     "macro_deltas": [],
+                    "node_deltas": [
+                        {
+                            "node_id": "nig.node.kvload.0",
+                            "baseline_cycles": 900.0,
+                            "candidate_cycles": 700.0,
+                            "delta_cycles": -200.0,
+                            "baseline_fitted_work_cycles": 960.0,
+                            "candidate_fitted_work_cycles": 760.0,
+                            "delta_fitted_work_cycles": -200.0,
+                            "baseline_cycle_share": 0.28125,
+                            "candidate_cycle_share": 0.25,
+                            "delta_cycle_share": -0.03125,
+                            "delta_cycles_ratio": -0.2222222222,
+                            "baseline_fitted_cycle_share": 0.2857142857,
+                            "candidate_fitted_cycle_share": 0.2567567568,
+                            "delta_fitted_cycle_share": -0.0289575289,
+                            "delta_fitted_work_cycles_ratio": -0.2083333333,
+                            "baseline_bytes": 96000.0,
+                            "candidate_bytes": 76000.0,
+                            "delta_bytes": -20000.0,
+                            "delta_bytes_ratio": -0.2083333333,
+                            "change_direction": "down",
+                        }
+                    ],
                     "layer_deltas": [
                         {
                             "layer_id": 0,

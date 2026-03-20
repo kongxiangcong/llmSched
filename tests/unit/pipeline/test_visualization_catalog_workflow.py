@@ -122,6 +122,7 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "function orderedSweepLayerDeltas" in app_js
     assert "function buildSweepDrilldownLink" in app_js
     assert "function buildSweepLayerDrilldownLink" in app_js
+    assert "function buildWorkspaceRecommendationParams" in app_js
     assert "function currentLayerDeltaFocus" in app_js
     assert "function currentCompareFocus" in app_js
     assert "function selectSweepLayerDeltas" in app_js
@@ -180,6 +181,11 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "Focused Workspace Analysis Flow" in app_js
     assert "Focused Workspace Analysis Flow Summary" in app_js
     assert "Focused Workspace Analysis Recommendation" in app_js
+    assert "Recommendation Queue" in app_js
+    assert "Top Recommended Candidates" in app_js
+    assert "Previous Recommended Candidate" in app_js
+    assert "Next Recommended Candidate" in app_js
+    assert "Open Top Recommendation" in app_js
     assert "focused_workspace_candidate" in app_js
     assert "focused_workspace_detail_focus" in app_js
     assert "focused_workspace_secondary_detail_focus" in app_js
@@ -187,6 +193,15 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "focused_workspace_analysis_flow" in app_js
     assert "focused_workspace_analysis_flow_summary" in app_js
     assert "focused_workspace_analysis_recommendation" in app_js
+    assert "focused_workspace_recommendation_queue" in app_js
+    assert "focused_workspace_recommendation_details" in app_js
+    assert "Recommendation Detail Blocks" in app_js
+    assert "Top Recommendation Detail Candidates" in app_js
+    assert "function buildWorkspaceRecommendationDetailEntries" in app_js
+    assert "function renderWorkspaceRecommendationDetailBlocks" in app_js
+    assert "function buildRecommendationDetailLayerSummary" in app_js
+    assert "function buildRecommendationDetailSnapshotLines" in app_js
+    assert "function renderRecommendationDetailEntryMarkup" in app_js
     assert "Focused Workspace Compare Drilldown" in app_js
     assert "Focus In Workspace" in app_js
     assert "Focus Compare Section" in app_js
@@ -203,14 +218,27 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "analysis_flow_recommendation" in app_js
     assert "recommendation_tier" in app_js
     assert "recommendation_reason" in app_js
+    assert "queue_position" in app_js
+    assert "previous_candidate_entry_id" in app_js
+    assert "next_candidate_entry_id" in app_js
+    assert "top_recommendation_entry_ids" in app_js
     assert "analysis_flow: currentWorkspaceAnalysisFlow()" in app_js
+    assert "function resolveWorkspaceRecommendationQueue" in app_js
+    assert "function renderWorkspaceRecommendationQueue" in app_js
     assert "Showing top 3 of" in app_js
     assert "|delta_cycles|" in app_js
     assert "|delta_bytes|" in app_js
     assert "Open Sweep Panel" in app_js
     assert "Open Layer In Sweep" in app_js
-    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow() })' in app_js
-    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow(), sweep_candidate: candidateEntry.target_profile_name, sweep_layer_focus: layerId })' in app_js
+    assert 'recommendation_queue_position' in app_js
+    assert 'recommendation_prev_candidate' in app_js
+    assert 'recommendation_next_candidate' in app_js
+    assert 'recommendation_top_candidates' in app_js
+    assert 'recommendation_queue_candidates' in app_js
+    assert 'const workbenchCompareParams = buildWorkspaceRecommendationParams(resolveCurrentWorkspaceState(), candidateEntry);' in app_js
+    assert 'const workbenchCompareParams = {' in app_js
+    assert '...buildWorkspaceRecommendationParams(resolveCurrentWorkspaceState(), candidateEntry),' in app_js
+    assert 'buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", workbenchCompareParams)' in app_js
     assert "metric_values" in app_js
     assert "sweep_comparisons" in app_js
     assert "compare_summary" in app_js

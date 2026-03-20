@@ -11,6 +11,9 @@ from llm_sched.contracts.visualization_workbench import (
     VisualizationWorkbenchAssetFile,
     VisualizationWorkbenchMetadata,
 )
+from llm_sched.visualization.recommendation_detail_snippets import (
+    build_recommendation_detail_helpers_js,
+)
 
 
 def build_visualization_workbench(
@@ -128,7 +131,8 @@ def _build_index_html(artifact: VisualizationWorkbenchArtifact) -> str:
 
 
 def _build_app_js(bundle_relative_path: str) -> str:
-    return """const BUNDLE_PATH = __BUNDLE_PATH__;
+    recommendation_detail_helpers = build_recommendation_detail_helpers_js()
+    return ("""const BUNDLE_PATH = __BUNDLE_PATH__;
 const UI_STATE = {
   graphQuery: "",
   timelineQuery: "",
@@ -142,6 +146,11 @@ const UI_STATE = {
   analysisFlow: "",
   sweepCandidate: "",
   sweepLayerFocus: "",
+  recommendationQueuePosition: "",
+  recommendationPrevCandidate: "",
+  recommendationNextCandidate: "",
+  recommendationTopCandidates: "",
+  recommendationQueueCandidates: "",
   activeDetailBlockId: null,
   catalogReturnUrl: "",
   requestedPanel: "summary",
@@ -161,6 +170,8 @@ function formatNumber(value) {
 function normalizeText(value) {
   return String(value || "").toLowerCase();
 }
+
+""" + recommendation_detail_helpers + """
 
 function buildPanelLink(panelId, extraParams = {}) {
   const params = new URLSearchParams();
@@ -200,6 +211,37 @@ function currentCompareFocusLabel() {
 
 function currentAnalysisFlow() {
   return UI_STATE.analysisFlow || "";
+}
+
+function currentRecommendationQueueState() {
+  const queueCandidates = String(UI_STATE.recommendationQueueCandidates || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const topCandidates = String(UI_STATE.recommendationTopCandidates || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const focusedCandidate = UI_STATE.sweepCandidate || "";
+  const focusedIndex = focusedCandidate
+    ? queueCandidates.findIndex((candidate) => candidate === focusedCandidate)
+    : -1;
+  const queuePosition = focusedIndex >= 0
+    ? focusedIndex + 1
+    : Number(UI_STATE.recommendationQueuePosition || 0) || null;
+  const previousCandidate = focusedIndex > 0
+    ? queueCandidates[focusedIndex - 1]
+    : (UI_STATE.recommendationPrevCandidate || "");
+  const nextCandidate = focusedIndex >= 0 && focusedIndex < queueCandidates.length - 1
+    ? queueCandidates[focusedIndex + 1]
+    : (UI_STATE.recommendationNextCandidate || "");
+  return {
+    queue_position: queuePosition,
+    previous_candidate: previousCandidate || "",
+    next_candidate: nextCandidate || "",
+    top_candidates: topCandidates,
+    queue_candidates: queueCandidates,
+  };
 }
 
 function resolveAnalysisFlowState() {
@@ -276,6 +318,11 @@ function serializeUiState() {
     analysis_flow: currentAnalysisFlow(),
     sweep_candidate: UI_STATE.sweepCandidate,
     sweep_layer_focus: UI_STATE.sweepLayerFocus,
+    recommendation_queue_position: UI_STATE.recommendationQueuePosition,
+    recommendation_prev_candidate: UI_STATE.recommendationPrevCandidate,
+    recommendation_next_candidate: UI_STATE.recommendationNextCandidate,
+    recommendation_top_candidates: UI_STATE.recommendationTopCandidates,
+    recommendation_queue_candidates: UI_STATE.recommendationQueueCandidates,
     detail_block: UI_STATE.activeDetailBlockId,
     catalog_return: UI_STATE.catalogReturnUrl,
   };
@@ -311,6 +358,11 @@ function hydrateStateFromUrl() {
     : (resolvedAnalysisFlow ? resolvedAnalysisFlow.layer_delta_focus : "top-cycle");
   UI_STATE.sweepCandidate = params.get("sweep_candidate") || "";
   UI_STATE.sweepLayerFocus = params.get("sweep_layer_focus") || "";
+  UI_STATE.recommendationQueuePosition = params.get("recommendation_queue_position") || "";
+  UI_STATE.recommendationPrevCandidate = params.get("recommendation_prev_candidate") || "";
+  UI_STATE.recommendationNextCandidate = params.get("recommendation_next_candidate") || "";
+  UI_STATE.recommendationTopCandidates = params.get("recommendation_top_candidates") || "";
+  UI_STATE.recommendationQueueCandidates = params.get("recommendation_queue_candidates") || "";
   UI_STATE.activeDetailBlockId = params.get("detail_block");
   UI_STATE.catalogReturnUrl = params.get("catalog_return") || "";
 }
@@ -1078,6 +1130,193 @@ function buildSweepAnalysisFlowSummary(sweepData) {
   `;
 }
 
+function buildRecommendationQueuePanelLink(candidateTargetProfileName, queueState, queuePosition) {
+  return buildPanelLink("sweep", {
+    sweep_candidate: candidateTargetProfileName,
+    recommendation_queue_position: queuePosition,
+    recommendation_prev_candidate: queueState.previous_candidate,
+    recommendation_next_candidate: queueState.next_candidate,
+    recommendation_top_candidates: queueState.top_candidates.join(","),
+    recommendation_queue_candidates: queueState.queue_candidates.join(","),
+  });
+}
+
+function buildSweepRecommendationQueueSummary(sweepData) {
+  const queueState = sweepData.focused_recommendation_queue;
+  if (!queueState || !(queueState.queue_candidates || []).length) {
+    return "";
+  }
+  const topCandidate = queueState.top_candidates[0] || "";
+  const previousLink = queueState.previous_candidate
+    ? `<a class="inline-link" href="${buildRecommendationQueuePanelLink(queueState.previous_candidate, queueState, Math.max(Number(queueState.queue_position || 1) - 1, 1))}">Previous Recommended Candidate</a>`
+    : "";
+  const nextLink = queueState.next_candidate
+    ? `<a class="inline-link" href="${buildRecommendationQueuePanelLink(queueState.next_candidate, queueState, Number(queueState.queue_position || 0) + 1)}">Next Recommended Candidate</a>`
+    : "";
+  const topLink = topCandidate
+    ? `<a class="inline-link" href="${buildRecommendationQueuePanelLink(topCandidate, queueState, 1)}">Open Top Recommendation</a>`
+    : "";
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">Recommendation Queue</p>
+      </div>
+      <ul class="metric-detail-list">
+        <li>Queue Position: ${queueState.queue_position || "n/a"}</li>
+        <li>Top Recommended Candidates: ${(queueState.top_candidates || []).join(", ") || "none"}</li>
+      </ul>
+      <div class="detail-link-row">
+        ${topLink}
+        ${previousLink}
+        ${nextLink}
+      </div>
+    </section>
+  `;
+}
+
+function renderTopRecommendationComparisonCard(comparison, isFocused = false) {
+  if (!comparison) {
+    return "";
+  }
+  const compareSummary = comparison.compare_summary || null;
+  const highlightedScalars = compareSummary && (compareSummary.highlighted_scalar_deltas || []).length
+    ? compareSummary.highlighted_scalar_deltas
+    : compareSummary
+      ? (compareSummary.scalar_deltas || []).slice(0, 2)
+      : [];
+  const scalarRows = highlightedScalars.map((scalarDelta) => (
+    `${scalarDelta.metric_name}: ${formatNumber(scalarDelta.delta_value)}`
+  )).join(" | ");
+  const topLayer = (comparison.layer_deltas || [])[0] || null;
+  const topFittedLayer = (comparison.fitted_layer_deltas || [])[0] || null;
+  return `
+    <article class="card recommendation-strip-card${isFocused ? " is-focused" : ""}">
+      <h3>${comparison.candidate_target_profile_name}</h3>
+      <p class="muted">${comparison.scenario_name} | ${comparison.mode}</p>
+      <p>${scalarRows || "No highlighted metric shifts."}</p>
+      <p class="muted">${topLayer ? `Top Layer ${topLayer.layer_id}: delta_cycles ${formatNumber(topLayer.delta_cycles)}` : "No estimated layer deltas."}</p>
+      <p class="muted">${topFittedLayer ? `Top Fitted Layer ${topFittedLayer.layer_id}: delta_fitted_work_cycles ${formatNumber(topFittedLayer.delta_fitted_work_cycles)}` : "No fitted layer deltas."}</p>
+    </article>
+  `;
+}
+
+function topRecommendationComparisons(sweepData, limit = 3) {
+  const queueState = sweepData.focused_recommendation_queue;
+  if (!queueState || !(queueState.top_candidates || []).length) {
+    return [];
+  }
+  return (queueState.top_candidates || [])
+    .map((candidateTargetProfileName) => (
+      (sweepData.comparisons || []).find((comparison) => (
+        comparison.candidate_target_profile_name === candidateTargetProfileName
+      )) || null
+    ))
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function buildRecommendationDetailEntries(sweepData, limit = 2) {
+  return topRecommendationComparisons(sweepData, limit).map((comparison) => {
+    const topLayer = (comparison.layer_deltas || [])[0] || null;
+    const topFittedLayer = (comparison.fitted_layer_deltas || [])[0] || null;
+    const layerSummary = buildRecommendationDetailLayerSummary(topLayer, topFittedLayer, formatNumber);
+    return {
+      candidate_target_profile_name: comparison.candidate_target_profile_name,
+      scenario_name: comparison.scenario_name,
+      mode: comparison.mode,
+      is_focused: comparison.candidate_target_profile_name === sweepData.focused_sweep_candidate,
+      estimated_layer_summary: layerSummary.estimated_layer_summary,
+      fitted_layer_summary: layerSummary.fitted_layer_summary,
+    };
+  });
+}
+
+function buildTopRecommendationComparisonCards(sweepData) {
+  const topComparisons = topRecommendationComparisons(sweepData);
+  if (!topComparisons.length) {
+    return "";
+  }
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">Top Recommendation Compare Strip</p>
+      </div>
+      <p class="muted">Top Recommended Candidate Comparisons</p>
+      <div class="recommendation-strip">
+        ${topComparisons.map((comparison) => (
+          renderTopRecommendationComparisonCard(
+            comparison,
+            comparison.candidate_target_profile_name === sweepData.focused_sweep_candidate,
+          )
+        )).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderRecommendationDetailBlock(comparison, isFocused = false) {
+  if (!comparison) {
+    return "";
+  }
+  const topLayer = (comparison.layer_deltas || [])[0] || null;
+  const topFittedLayer = (comparison.fitted_layer_deltas || [])[0] || null;
+  const detailEntry = {
+    candidate_target_profile_name: comparison.candidate_target_profile_name,
+    queue_position: null,
+    recommendation_tier: isFocused ? "focused" : "ranked",
+    recommendation_reason: `${comparison.scenario_name} | ${comparison.mode}`,
+    target_profile_name: comparison.candidate_target_profile_name,
+    is_focused: isFocused,
+    ...buildRecommendationDetailLayerSummary(topLayer, topFittedLayer, formatNumber),
+  };
+  return `
+    <article class="card recommendation-detail-card${isFocused ? " is-focused" : ""}">
+      <div class="compare-group-heading">
+        <h3>${comparison.candidate_target_profile_name}</h3>
+        ${isFocused ? '<span class="tag">Focused Candidate</span>' : ""}
+      </div>
+      <p class="muted">${comparison.scenario_name} | ${comparison.mode}</p>
+      <p class="muted">Side-by-Side Candidate Detail</p>
+      ${renderSweepCompareSummary(comparison.compare_summary, comparison.metric_deltas)}
+      <ul class="metric-detail-list compact-grid-detail">
+        ${renderRecommendationDetailEntryMarkup(detailEntry, {
+          title: comparison.candidate_target_profile_name,
+          heading_tag: "span",
+          meta: `${comparison.scenario_name} | ${comparison.mode}`,
+          lead_label: "Focused Layer Summary",
+          trail_label: "Focused Fitted Layer Summary",
+        })}
+      </ul>
+    </article>
+  `;
+}
+
+function buildTopRecommendationDetailBlocks(sweepData) {
+  const detailEntries = buildRecommendationDetailEntries(sweepData, 2);
+  if (!detailEntries.length) {
+    return "";
+  }
+  const comparisonByCandidate = new Map(
+    (sweepData.comparisons || []).map((comparison) => [comparison.candidate_target_profile_name, comparison])
+  );
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">Recommendation Detail Blocks</p>
+      </div>
+      <p class="muted">Side-by-Side Candidate Detail</p>
+      <div class="recommendation-detail-grid">
+        ${detailEntries.map((detailEntry) => (
+          renderRecommendationDetailBlock(
+            comparisonByCandidate.get(detailEntry.candidate_target_profile_name),
+            detailEntry.is_focused,
+          )
+        )).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function buildSweepSnapshotMetadata(sweepData) {
   const headerRows = [
     sweepData.baseline_target_profile_name
@@ -1097,6 +1336,15 @@ function buildSweepSnapshotMetadata(sweepData) {
       : "",
     sweepData.focused_sweep_layer
       ? `Focused Sweep Layer: ${sweepData.focused_sweep_layer}`
+      : "",
+    sweepData.focused_recommendation_queue && sweepData.focused_recommendation_queue.queue_position
+      ? `Recommendation Queue: ${sweepData.focused_recommendation_queue.queue_position} of ${(sweepData.focused_recommendation_queue.queue_candidates || []).length}`
+      : "",
+    sweepData.focused_recommendation_queue && (sweepData.focused_recommendation_queue.top_candidates || []).length
+      ? `Top Recommended Candidates: ${sweepData.focused_recommendation_queue.top_candidates.join(", ")}`
+      : "",
+    (sweepData.focused_recommendation_details || []).length
+      ? `Top Recommendation Detail Candidates: ${sweepData.focused_recommendation_details.map((detail) => detail.candidate_target_profile_name).join(", ")}`
       : "",
     sweepData.focused_layer_delta_summary
       ? `Focused Layer Summary: ${sweepData.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(sweepData.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(sweepData.focused_layer_delta_summary.delta_bytes)}`
@@ -1121,6 +1369,7 @@ function buildSweepSnapshotMetadata(sweepData) {
 
 function buildSweepExportData(bundle) {
   const analysisFlowState = resolveAnalysisFlowState();
+  const recommendationQueueState = currentRecommendationQueueState();
   const focusedAnalysisFlowSummary = analysisFlowState
     ? {
         flow_id: analysisFlowState.flow_id,
@@ -1139,11 +1388,13 @@ function buildSweepExportData(bundle) {
     focused_layer_delta_mode: currentLayerDeltaFocus(),
     focused_sweep_candidate: UI_STATE.sweepCandidate || null,
     focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
+    focused_recommendation_queue: recommendationQueueState,
     focused_comparison_count: 0,
     focused_layer_delta_count: 0,
     focused_layer_delta_summary: null,
     focused_fitted_layer_delta_count: 0,
     focused_fitted_layer_delta_summary: null,
+    focused_recommendation_details: [],
     comparisons: [],
   };
   if (!bundle.sweep_view) {
@@ -1203,6 +1454,7 @@ function buildSweepExportData(bundle) {
     focused_layer_delta_mode: currentLayerDeltaFocus(),
     focused_sweep_candidate: UI_STATE.sweepCandidate || null,
     focused_sweep_layer: UI_STATE.sweepLayerFocus || null,
+    focused_recommendation_queue: recommendationQueueState,
     focused_comparison_count: comparisons.length,
     focused_layer_delta_count: comparisons.reduce(
       (total, comparison) => total + ((comparison.layer_deltas || []).length),
@@ -1214,8 +1466,10 @@ function buildSweepExportData(bundle) {
       0,
     ),
     focused_fitted_layer_delta_summary: focusedFittedLayerDeltaSummary,
+    focused_recommendation_details: [],
     comparisons,
   };
+  sweepData.focused_recommendation_details = buildRecommendationDetailEntries(sweepData, 2);
   return {
     ...sweepData,
     snapshot_metadata: buildSweepSnapshotMetadata(sweepData),
@@ -1277,6 +1531,9 @@ function renderSweep(bundle) {
     <article class="card wide-card">
       <h2>Sweep Comparison</h2>
       ${buildSweepAnalysisFlowSummary(sweepData)}
+      ${buildSweepRecommendationQueueSummary(sweepData)}
+      ${buildTopRecommendationComparisonCards(sweepData)}
+      ${buildTopRecommendationDetailBlocks(sweepData)}
       ${focusSummary}
       <table class="data-table">
         <thead><tr><th>Candidate</th><th>Scenario</th><th>Mode</th><th>Metric Deltas</th><th>Layer Deltas</th></tr></thead>
@@ -1463,6 +1720,7 @@ function buildPanelSnapshotLines(bundle, panelId) {
           `Focused Fitted Layer Summary: ${payload.data.focused_fitted_layer_delta_summary.candidate_target_profile_name} / Layer ${payload.data.focused_fitted_layer_delta_summary.layer_id} / delta_fitted_work_cycles ${formatNumber(payload.data.focused_fitted_layer_delta_summary.delta_fitted_work_cycles)} / delta_bytes ${formatNumber(payload.data.focused_fitted_layer_delta_summary.delta_bytes)}`
         );
       }
+      lines.push(...buildRecommendationDetailSnapshotLines(payload.data.focused_recommendation_details || []));
       (payload.data.comparisons || []).slice(0, 3).forEach((comparison) => {
         lines.push(`${comparison.candidate_target_profile_name}: ${(comparison.layer_deltas || []).length} layer deltas`);
         (comparison.layer_deltas || []).slice(0, 2).forEach((layerDelta) => {
@@ -1803,7 +2061,7 @@ async function main() {
 main().catch((error) => {
   document.querySelector(".panel-stack").innerHTML = `<article class="card error-card"><h2>Workbench Error</h2><p>${error.message}</p></article>`;
 });
-""".replace("__BUNDLE_PATH__", json.dumps(bundle_relative_path))
+""").replace("__BUNDLE_PATH__", json.dumps(bundle_relative_path))
 
 
 def _build_styles_css() -> str:
@@ -1960,6 +2218,33 @@ def _build_styles_css() -> str:
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
+}
+
+.recommendation-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.recommendation-strip-card {
+  min-height: 180px;
+}
+
+.recommendation-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.recommendation-detail-card {
+  min-height: 320px;
+}
+
+.compact-grid {
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .card,

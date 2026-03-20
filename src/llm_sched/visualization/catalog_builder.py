@@ -14,6 +14,9 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogMetadata,
     VisualizationCatalogPhaseCGateSummary,
 )
+from llm_sched.visualization.recommendation_detail_snippets import (
+    build_recommendation_detail_helpers_js,
+)
 
 
 def build_visualization_catalog(
@@ -211,7 +214,8 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
 
 
 def _build_app_js(entries: list[VisualizationCatalogEntry]) -> str:
-    return """const CATALOG_ENTRIES = __CATALOG_ENTRIES__;
+    recommendation_detail_helpers = build_recommendation_detail_helpers_js()
+    return ("""const CATALOG_ENTRIES = __CATALOG_ENTRIES__;
 
 function normalizeText(value) {
   return String(value || "").toLowerCase();
@@ -629,13 +633,34 @@ function workbenchPanelLabel(panel) {
   return labels[panel] || "Summary";
 }
 
-function buildComparePanelLinks(entry) {
-  const panel = currentWorkbenchPanel();
-  const workbenchCompareParams = {
+function buildWorkspaceRecommendationParams(workspaceState, entry) {
+  const queue = workspaceState && workspaceState.baselineEntry
+    ? resolveWorkspaceRecommendationQueue(
+      workspaceState.baselineEntry,
+      workspaceState.candidates,
+      workspaceState.candidates.find((candidate) => candidate.entry_id === entry.entry_id)
+        || workspaceState.focusedWorkspaceCandidate,
+    )
+    : null;
+  return {
     compare_focus: currentCompareFocus(),
     layer_delta_focus: currentLayerDeltaFocus(),
     analysis_flow: currentWorkspaceAnalysisFlow(),
+    sweep_candidate: queue && queue.focused_candidate_entry_id === entry.entry_id
+      ? entry.target_profile_name
+      : "",
+    recommendation_queue_position: queue ? queue.queue_position : "",
+    recommendation_prev_candidate: queue ? queue.previous_candidate_target_profile_name : "",
+    recommendation_next_candidate: queue ? queue.next_candidate_target_profile_name : "",
+    recommendation_top_candidates: queue ? queue.top_recommendation_target_profile_names.join(",") : "",
+    recommendation_queue_candidates: queue ? queue.recommendation_queue_candidates.join(",") : "",
   };
+}
+
+function buildComparePanelLinks(entry) {
+  const panel = currentWorkbenchPanel();
+  const workspaceState = resolveCurrentWorkspaceState();
+  const workbenchCompareParams = buildWorkspaceRecommendationParams(workspaceState, entry);
   const links = [
     `<a class="panel-link" href="${buildWorkbenchHref(entry.workbench_entry_path, panel, workbenchCompareParams)}">Open Selected Panel (${workbenchPanelLabel(panel)})</a>`,
   ];
@@ -669,6 +694,8 @@ function formatMetricDelta(value) {
   }
   return `${numeric > 0 ? "+" : "-"}${formatMetricValue(Math.abs(numeric))}`;
 }
+
+""" + recommendation_detail_helpers + """
 
 function orderedMetricEntries(entry) {
   return Object.entries(entry.metric_values || {}).sort(([left], [right]) => {
@@ -1186,6 +1213,109 @@ function orderWorkspaceCandidatesForCurrentFlow(baselineEntry, candidates) {
   });
 }
 
+function resolveWorkspaceRecommendationQueue(baselineEntry, candidates, focusedCandidateEntry) {
+  if (!baselineEntry || !currentWorkspaceAnalysisFlow()) {
+    return null;
+  }
+  const rankedRecommendations = (candidates || []).map((entry, index) => {
+    const rowState = resolveWorkspaceCompareRowState(baselineEntry, entry);
+    const recommendation = rowState && rowState.analysisFlowRecommendation;
+    return {
+      entry,
+      rowState,
+      recommendation,
+      queue_position: recommendation ? index + 1 : null,
+    };
+  }).filter((item) => item.recommendation);
+  if (!rankedRecommendations.length) {
+    return {
+      queue_position: null,
+      total_candidates: (candidates || []).length,
+      recommended_candidate_count: 0,
+      focused_candidate_entry_id: focusedCandidateEntry ? focusedCandidateEntry.entry_id : null,
+      previous_candidate_entry_id: null,
+      next_candidate_entry_id: null,
+      top_recommendation_entry_ids: [],
+      top_recommendations: [],
+    };
+  }
+  const focusedIndex = rankedRecommendations.findIndex((item) => (
+    focusedCandidateEntry && item.entry.entry_id === focusedCandidateEntry.entry_id
+  ));
+  const resolvedIndex = focusedIndex >= 0 ? focusedIndex : 0;
+  const previousEntry = resolvedIndex > 0 ? rankedRecommendations[resolvedIndex - 1].entry : null;
+  const nextEntry = resolvedIndex < rankedRecommendations.length - 1
+    ? rankedRecommendations[resolvedIndex + 1].entry
+    : null;
+  return {
+    queue_position: rankedRecommendations[resolvedIndex].queue_position,
+    total_candidates: (candidates || []).length,
+    recommended_candidate_count: rankedRecommendations.length,
+    focused_candidate_entry_id: focusedCandidateEntry
+      ? focusedCandidateEntry.entry_id
+      : rankedRecommendations[resolvedIndex].entry.entry_id,
+    previous_candidate_entry_id: previousEntry ? previousEntry.entry_id : null,
+    next_candidate_entry_id: nextEntry ? nextEntry.entry_id : null,
+    previous_candidate_target_profile_name: previousEntry ? previousEntry.target_profile_name : null,
+    next_candidate_target_profile_name: nextEntry ? nextEntry.target_profile_name : null,
+    recommendation_queue_candidates: rankedRecommendations.map((item) => item.entry.target_profile_name),
+    top_recommendation_entry_ids: rankedRecommendations.slice(0, 3).map((item) => item.entry.entry_id),
+    top_recommendation_target_profile_names: rankedRecommendations
+      .slice(0, 3)
+      .map((item) => item.entry.target_profile_name),
+    top_recommendations: rankedRecommendations.slice(0, 3).map((item) => ({
+      entry_id: item.entry.entry_id,
+      run_id: item.entry.run_id,
+      target_profile_name: item.entry.target_profile_name,
+      queue_position: item.queue_position,
+      recommendation_tier: recommendationTierForRank(item.queue_position - 1, item.recommendation),
+      recommendation_reason: item.recommendation.reason,
+      recommendation_score: item.recommendation.score,
+      is_focused: Boolean(
+        focusedCandidateEntry && focusedCandidateEntry.entry_id === item.entry.entry_id,
+      ),
+    })),
+  };
+}
+
+function buildWorkspaceRecommendationDetailEntries(baselineEntry, candidates, focusedCandidateEntry) {
+  if (!baselineEntry || !focusedCandidateEntry || !currentWorkspaceAnalysisFlow()) {
+    return [];
+  }
+  const recommendationQueue = resolveWorkspaceRecommendationQueue(
+    baselineEntry,
+    candidates,
+    focusedCandidateEntry,
+  );
+  if (!recommendationQueue || !(recommendationQueue.top_recommendation_entry_ids || []).length) {
+    return [];
+  }
+  return recommendationQueue.top_recommendation_entry_ids.map((entryId, index) => {
+    const candidateEntry = (candidates || []).find((entry) => entry.entry_id === entryId);
+    if (!candidateEntry) {
+      return null;
+    }
+    const rowState = resolveWorkspaceCompareRowState(baselineEntry, candidateEntry);
+    const recommendation = rowState && rowState.analysisFlowRecommendation;
+    const sweepComparison = rowState && rowState.sweepComparison;
+    const topLayer = orderedSweepLayerDeltas((sweepComparison && sweepComparison.layer_deltas) || [])[0] || null;
+    const topFittedLayer = orderedSweepLayerDeltas((sweepComparison && sweepComparison.fitted_layer_deltas) || [])[0] || null;
+    const layerSummary = buildRecommendationDetailLayerSummary(topLayer, topFittedLayer, formatMetricDelta);
+    return {
+      entry_id: candidateEntry.entry_id,
+      run_id: candidateEntry.run_id,
+      target_profile_name: candidateEntry.target_profile_name,
+      queue_position: index + 1,
+      recommendation_tier: recommendation ? recommendationTierForRank(index, recommendation) : "",
+      recommendation_reason: recommendation ? recommendation.reason : "",
+      recommendation_score: recommendation ? recommendation.score : null,
+      is_focused: candidateEntry.entry_id === focusedCandidateEntry.entry_id,
+      estimated_layer_summary: layerSummary.estimated_layer_summary,
+      fitted_layer_summary: layerSummary.fitted_layer_summary,
+    };
+  }).filter(Boolean);
+}
+
 function orderWorkspaceDrilldownSections(sections) {
   const preset = resolveWorkspaceDetailPreset();
   const activeSectionId = preset ? preset.primary : currentWorkspaceDetailFocus();
@@ -1466,7 +1596,8 @@ function buildSweepDrilldownLink(baselineEntry, candidateEntry) {
   if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
     return "";
   }
-  return `<div class="compare-link-row"><a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow() })}">Open Sweep Panel (${match.sourceEntry.run_id})</a></div>`;
+  const workbenchCompareParams = buildWorkspaceRecommendationParams(resolveCurrentWorkspaceState(), candidateEntry);
+  return `<div class="compare-link-row"><a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", workbenchCompareParams)}">Open Sweep Panel (${match.sourceEntry.run_id})</a></div>`;
 }
 
 function buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerId) {
@@ -1474,7 +1605,12 @@ function buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerId) {
   if (!match || !match.sourceEntry || !match.sourceEntry.workbench_entry_path) {
     return "";
   }
-  return `<a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", { compare_focus: currentCompareFocus(), layer_delta_focus: currentLayerDeltaFocus(), analysis_flow: currentWorkspaceAnalysisFlow(), sweep_candidate: candidateEntry.target_profile_name, sweep_layer_focus: layerId })}">Open Layer In Sweep</a>`;
+  const workbenchCompareParams = {
+    ...buildWorkspaceRecommendationParams(resolveCurrentWorkspaceState(), candidateEntry),
+    sweep_candidate: candidateEntry.target_profile_name,
+    sweep_layer_focus: layerId,
+  };
+  return `<a class="panel-link" href="${buildWorkbenchHref(match.sourceEntry.workbench_entry_path, "sweep", workbenchCompareParams)}">Open Layer In Sweep</a>`;
 }
 
 function renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison) {
@@ -1762,12 +1898,22 @@ function buildWorkspaceExportData() {
   const workspaceState = resolveCurrentWorkspaceState();
   const baselineEntry = workspaceState.baselineEntry;
   const focusedWorkspaceCandidate = workspaceState.focusedWorkspaceCandidate;
+  const recommendationQueue = resolveWorkspaceRecommendationQueue(
+    baselineEntry,
+    workspaceState.candidates,
+    focusedWorkspaceCandidate,
+  );
   const focusedWorkspaceRowState = baselineEntry && focusedWorkspaceCandidate
     ? resolveWorkspaceCompareRowState(baselineEntry, focusedWorkspaceCandidate)
     : null;
   const focusedWorkspaceRecommendationRank = focusedWorkspaceCandidate
     ? workspaceState.candidates.findIndex((entry) => entry.entry_id === focusedWorkspaceCandidate.entry_id)
     : -1;
+  const recommendationDetails = buildWorkspaceRecommendationDetailEntries(
+    baselineEntry,
+    workspaceState.candidates,
+    focusedWorkspaceCandidate,
+  );
   const snapshotHeaderRows = [
     {
       label: "Focused Compare Scope",
@@ -1824,6 +1970,22 @@ function buildWorkspaceExportData() {
       value: `${focusedWorkspaceCandidate.run_id} (${focusedWorkspaceCandidate.target_profile_name})`,
     });
   }
+  if (recommendationQueue && recommendationQueue.recommended_candidate_count) {
+    snapshotHeaderRows.push({
+      label: "Recommendation Queue",
+      value: `${recommendationQueue.queue_position || "n/a"} of ${recommendationQueue.recommended_candidate_count}`,
+    });
+    snapshotHeaderRows.push({
+      label: "Top Recommended Candidates",
+      value: recommendationQueue.top_recommendation_entry_ids.join(", "),
+    });
+  }
+  if (recommendationDetails.length) {
+    snapshotHeaderRows.push({
+      label: "Top Recommendation Detail Candidates",
+      value: recommendationDetails.map((detail) => detail.run_id).join(", "),
+    });
+  }
   if (workspaceState.focusedSweepCandidate) {
     snapshotHeaderRows.push({
       label: "Focused Sweep Candidate",
@@ -1861,6 +2023,17 @@ function buildWorkspaceExportData() {
         recommendation_score: focusedWorkspaceRowState.analysisFlowRecommendation.score,
       }
       : null,
+    focused_workspace_recommendation_queue: recommendationQueue
+      ? {
+        queue_position: recommendationQueue.queue_position,
+        total_candidates: recommendationQueue.total_candidates,
+        recommended_candidate_count: recommendationQueue.recommended_candidate_count,
+        previous_candidate_entry_id: recommendationQueue.previous_candidate_entry_id,
+        next_candidate_entry_id: recommendationQueue.next_candidate_entry_id,
+        top_recommendation_entry_ids: recommendationQueue.top_recommendation_entry_ids,
+      }
+      : null,
+    focused_workspace_recommendation_details: recommendationDetails,
     baseline_entry_id: baselineEntry ? baselineEntry.entry_id : null,
     baseline_run_id: baselineEntry ? baselineEntry.run_id : null,
     focused_workspace_candidate: focusedWorkspaceCandidate ? {
@@ -1901,8 +2074,13 @@ function buildWorkspaceExportData() {
           ? {
             recommendation_tier: recommendationTierForRank(index, rowState.analysisFlowRecommendation),
             recommendation_rank: index + 1,
+            queue_position: index + 1,
             recommendation_reason: rowState.analysisFlowRecommendation.reason,
             recommendation_score: rowState.analysisFlowRecommendation.score,
+            previous_candidate_entry_id: index > 0 ? workspaceState.candidates[index - 1].entry_id : null,
+            next_candidate_entry_id: index < workspaceState.candidates.length - 1
+              ? workspaceState.candidates[index + 1].entry_id
+              : null,
           }
           : null,
       };
@@ -1915,11 +2093,15 @@ function buildWorkspaceSnapshotSvg() {
   const headerRows = payload.snapshot_metadata && Array.isArray(payload.snapshot_metadata.header_rows)
     ? payload.snapshot_metadata.header_rows
     : [];
+  const recommendationLines = buildRecommendationDetailSnapshotLines(
+    payload.focused_workspace_recommendation_details || []
+  );
   const candidateLines = payload.candidate_rows.length
     ? payload.candidate_rows.slice(0, 6).map((row) => `${row.run_id} | ${row.primary_metric_name} | ${formatMetricValue(row.primary_metric_value)}`)
     : ["No workspace candidates available."];
   const bodyLines = headerRows
     .map((row) => `${row.label}: ${row.value}`)
+    .concat(recommendationLines)
     .concat(candidateLines);
   const lineHeight = 20;
   const height = 160 + (bodyLines.length * lineHeight);
@@ -2007,7 +2189,63 @@ function buildWorkspaceFocusLink(entry, focusedCandidateEntry) {
   `;
 }
 
-function renderFocusedWorkspaceDrilldown(baselineEntry, focusedCandidateEntry, recommendationRank = -1) {
+function renderWorkspaceRecommendationQueue(queue) {
+  if (!queue) {
+    return '<p class="muted">Recommendation Queue is available when an analysis flow is active.</p>';
+  }
+  if (!queue.recommended_candidate_count) {
+    return '<p class="muted">Recommendation Queue has no ranked candidates for the current workspace.</p>';
+  }
+  const previousLink = queue.previous_candidate_entry_id
+    ? `<a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: queue.previous_candidate_entry_id })}">Previous Recommended Candidate</a>`
+    : "";
+  const nextLink = queue.next_candidate_entry_id
+    ? `<a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: queue.next_candidate_entry_id })}">Next Recommended Candidate</a>`
+    : "";
+  const topEntryId = queue.top_recommendation_entry_ids[0] || "";
+  const topLink = topEntryId
+    ? `<a class="panel-link" href="${buildCurrentCatalogWorkspaceUrl({ workspace_candidate: topEntryId })}">Open Top Recommendation</a>`
+    : "";
+  return `
+    <ul class="metric-detail-list">
+      <li><span>Queue Position</span><div class="metric-detail-values"><strong>${queue.queue_position || "n/a"}</strong><em>of ${queue.recommended_candidate_count}</em></div></li>
+      <li><span>Top Recommended Candidates</span><div class="metric-detail-values"><strong>${queue.top_recommendation_entry_ids.join(", ") || "none"}</strong><em>${queue.total_candidates} visible candidates</em></div></li>
+    </ul>
+    <div class="compare-link-row">
+      ${topLink}
+      ${previousLink}
+      ${nextLink}
+    </div>
+    <ul class="metric-detail-list">
+      ${queue.top_recommendations.map((item) => `
+        <li>
+          <span>${item.queue_position}. ${item.run_id}${item.is_focused ? " (Focused)" : ""}</span>
+          <div class="metric-detail-values">
+            <strong>${item.recommendation_tier}</strong>
+            <em>${item.recommendation_reason}</em>
+          </div>
+        </li>
+      `).join("")}
+    </ul>
+  `;
+}
+
+function renderWorkspaceRecommendationDetailBlocks(detailEntries) {
+  if (!(detailEntries || []).length) {
+    return '<p class="muted">Recommendation Detail Blocks are available when ranked recommendations include compare detail.</p>';
+  }
+  return `
+    <ul class="metric-detail-list">
+      ${detailEntries.map((detail) => renderRecommendationDetailEntryMarkup(detail, {
+        meta: detail.recommendation_reason || detail.target_profile_name,
+        lead_label: "Estimated Layer",
+        trail_label: "Fitted Layer",
+      })).join("")}
+    </ul>
+  `;
+}
+
+function renderFocusedWorkspaceDrilldown(baselineEntry, focusedCandidateEntry, candidates, recommendationRank = -1) {
   if (!baselineEntry || !focusedCandidateEntry) {
     return `
       <article class="compare-card">
@@ -2018,6 +2256,16 @@ function renderFocusedWorkspaceDrilldown(baselineEntry, focusedCandidateEntry, r
   }
   const rowState = resolveWorkspaceCompareRowState(baselineEntry, focusedCandidateEntry);
   const sweepComparison = rowState.sweepComparison;
+  const recommendationQueue = resolveWorkspaceRecommendationQueue(
+    baselineEntry,
+    candidates,
+    focusedCandidateEntry,
+  );
+  const recommendationDetails = buildWorkspaceRecommendationDetailEntries(
+    baselineEntry,
+    candidates,
+    focusedCandidateEntry,
+  );
   const drilldownContent = buildWorkspaceCompareDrilldownContent(
     baselineEntry,
     focusedCandidateEntry,
@@ -2041,6 +2289,19 @@ function renderFocusedWorkspaceDrilldown(baselineEntry, focusedCandidateEntry, r
           <p class="muted">Analysis Flow Candidate Recommendation</p>
         </div>
         ${buildWorkspaceAnalysisFlowRecommendationSummary(rowState, recommendationRank)}
+      </section>
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">Recommendation Queue</p>
+        </div>
+        ${renderWorkspaceRecommendationQueue(recommendationQueue)}
+      </section>
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">Recommendation Detail Blocks</p>
+        </div>
+        <p class="muted">Top Recommendation Detail Candidates</p>
+        ${renderWorkspaceRecommendationDetailBlocks(recommendationDetails)}
       </section>
       ${buildComparePanelLinks(focusedCandidateEntry)}
       ${drilldownContent}
@@ -2131,6 +2392,7 @@ function renderCompareWorkspace(entries) {
       ${renderFocusedWorkspaceDrilldown(
         baselineEntry,
         workspaceState.focusedWorkspaceCandidate,
+        workspaceState.candidates,
         workspaceState.focusedWorkspaceCandidate
           ? workspaceState.candidates.findIndex((entry) => entry.entry_id === workspaceState.focusedWorkspaceCandidate.entry_id)
           : -1,
@@ -2238,7 +2500,7 @@ function bindCatalogFilters() {
 }
 
 bindCatalogFilters();
-""".replace("__CATALOG_ENTRIES__", json.dumps([entry.model_dump(mode="json") for entry in entries]))
+""").replace("__CATALOG_ENTRIES__", json.dumps([entry.model_dump(mode="json") for entry in entries]))
 
 
 def _build_styles_css() -> str:
