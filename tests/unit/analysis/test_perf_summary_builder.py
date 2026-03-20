@@ -236,6 +236,19 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
         "pong": {"ACTIVATION": 12288},
         "weight": {"WEIGHT": 16384},
     }
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure == 32768.0 / 48.0
+    assert report.bandwidth_pressure_summary.peak_pressure_subject_id == "sched.block.0"
+    assert report.bandwidth_pressure_summary.dominant_write_address_space == "VMEM"
+    assert report.bandwidth_pressure_summary.dominant_read_backing_store == "ddr-backed-staged"
+    assert report.bandwidth_pressure_summary.dominant_write_backing_store == "vmem-local"
+    assert report.bandwidth_pressure_summary.dominant_read_memory_class == "WEIGHT"
+    assert report.bandwidth_pressure_summary.dominant_write_memory_class == "ACTIVATION"
+    assert report.vmem_pressure_summary.hottest_region == "ping"
+    assert report.vmem_pressure_summary.hottest_region_peak_bytes == 20480
+    assert report.vmem_pressure_summary.hottest_region_capacity_bytes == 30720
+    assert report.vmem_pressure_summary.hottest_region_utilization == 0.6667
+    assert report.vmem_pressure_summary.hottest_region_dominant_memory_class == "ACTIVATION"
+    assert report.vmem_pressure_summary.hottest_region_dominant_backing_store == "vmem-local"
     assert report.vmem_region_capacity_bytes == {"ping": 30720, "pong": 30720, "weight": 32768}
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {

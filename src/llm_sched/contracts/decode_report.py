@@ -2,7 +2,11 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from llm_sched.contracts.perf_report import PerfPhaseSummary
+from llm_sched.contracts.perf_report import (
+    PerfBandwidthPressureSummary,
+    PerfPhaseSummary,
+    PerfVMEMPressureSummary,
+)
 
 
 class DecodeLatencySummary(BaseModel):
@@ -109,6 +113,10 @@ class DecodeEvaluationReport(BaseModel):
     token_latency: DecodeLatencySummary
     kv_summary: DecodeKVSummary
     memory_hotspot: DecodeMemoryHotspotSummary
+    bandwidth_pressure_summary: PerfBandwidthPressureSummary = Field(
+        default_factory=PerfBandwidthPressureSummary
+    )
+    vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
     isa_summary: DecodeISASummary
     macro_hotspots: list[DecodeMacroHotspot] = Field(default_factory=list)
     node_hotspots: list[DecodeNodeHotspot] = Field(default_factory=list)

@@ -86,6 +86,16 @@ def build_phase_d_compare_report(
                     fitted_layer_delta_count=len(getattr(comparison, "fitted_layer_deltas", [])),
                     node_deltas=list(getattr(comparison, "node_deltas", [])),
                     fitted_layer_deltas=list(getattr(comparison, "fitted_layer_deltas", [])),
+                    bandwidth_pressure_compare=getattr(
+                        comparison,
+                        "bandwidth_pressure_compare",
+                        None,
+                    ),
+                    vmem_pressure_compare=getattr(
+                        comparison,
+                        "vmem_pressure_compare",
+                        None,
+                    ),
                     estimated_cycles=comparison.prefill_compare.estimated_cycles,
                     critical_path_cycles=comparison.prefill_compare.critical_path_cycles,
                     fitted_work_cycles=comparison.prefill_compare.fitted_work_cycles,
@@ -149,6 +159,16 @@ def build_phase_d_compare_report(
                     fitted_layer_delta_count=len(getattr(comparison, "fitted_layer_deltas", [])),
                     node_deltas=list(getattr(comparison, "node_deltas", [])),
                     fitted_layer_deltas=list(getattr(comparison, "fitted_layer_deltas", [])),
+                    bandwidth_pressure_compare=getattr(
+                        comparison,
+                        "bandwidth_pressure_compare",
+                        None,
+                    ),
+                    vmem_pressure_compare=getattr(
+                        comparison,
+                        "vmem_pressure_compare",
+                        None,
+                    ),
                     estimated_cycles=comparison.decode_compare.estimated_cycles,
                     critical_path_cycles=comparison.decode_compare.critical_path_cycles,
                     fitted_work_cycles=comparison.decode_compare.fitted_work_cycles,

@@ -70,6 +70,8 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert summary_report.vmem_region_peak_bytes_by_memory_class
     assert summary_report.vmem_region_capacity_bytes
     assert summary_report.vmem_region_peak_utilization
+    assert summary_report.bandwidth_pressure_summary.peak_bandwidth_pressure >= 0.0
+    assert summary_report.vmem_pressure_summary.hottest_region is not None
     if schedule_kind == "dual-core":
         assert summary_report.vmem_region_peak_bytes_by_memory_class["ping"]["ACTIVATION"] > 0
     else:

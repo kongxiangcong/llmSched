@@ -249,6 +249,78 @@ def test_run_phase_d_compare_preserves_fitted_hotspot_and_layer_compare_rows(tmp
     )
 
 
+def test_run_phase_d_compare_writes_pressure_summary_compares(tmp_path: Path) -> None:
+    from llm_sched.contracts.phase_d_compare_report import PhaseDCompareReport
+    from llm_sched.pipeline import run_phase_d_compare
+
+    sweep_root = tmp_path / "phase-d-compare-pressure"
+    (sweep_root / "reports").mkdir(parents=True, exist_ok=True)
+    payload = _sweep_report_payload()
+    payload["comparisons"][0]["bandwidth_pressure_compare"] = {
+        "peak_bandwidth_pressure": {
+            "baseline_value": 640.0,
+            "candidate_value": 512.0,
+            "delta_value": -128.0,
+            "delta_ratio": -0.2,
+        },
+        "peak_pressure_subject_id": {
+            "baseline_value": "nig.node.sdpa.0",
+            "candidate_value": "nig.node.linear.0",
+            "changed": True,
+        },
+        "dominant_read_backing_store": {
+            "baseline_value": "ddr-persistent",
+            "candidate_value": "ddr-backed-staged",
+            "changed": True,
+        },
+    }
+    payload["comparisons"][0]["vmem_pressure_compare"] = {
+        "hottest_region": {
+            "baseline_value": "ping",
+            "candidate_value": "pong",
+            "changed": True,
+        },
+        "hottest_region_peak_bytes": {
+            "baseline_value": 786432,
+            "candidate_value": 524288,
+            "delta_value": -262144,
+            "delta_ratio": -0.3333333333,
+        },
+        "hottest_region_capacity_bytes": {
+            "baseline_value": 1048576,
+            "candidate_value": 1048576,
+            "delta_value": 0,
+            "delta_ratio": 0.0,
+        },
+        "hottest_region_utilization": {
+            "baseline_value": 0.75,
+            "candidate_value": 0.5,
+            "delta_value": -0.25,
+            "delta_ratio": -0.3333333333,
+        },
+        "hottest_region_dominant_memory_class": {
+            "baseline_value": "ACTIVATION",
+            "candidate_value": "KV_CACHE",
+            "changed": True,
+        },
+    }
+    (sweep_root / "reports" / "sweep_delta_report.json").write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
+
+    result = run_phase_d_compare(sweep_root)
+
+    assert result.status == "completed"
+    report = PhaseDCompareReport.model_validate_json(result.report_path.read_text(encoding="utf-8"))
+    row = report.prefill_compares[0]
+    assert row.bandwidth_pressure_compare is not None
+    assert row.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value == pytest.approx(-128.0)
+    assert row.vmem_pressure_compare is not None
+    assert row.vmem_pressure_compare.hottest_region.changed is True
+    assert row.vmem_pressure_compare.hottest_region_utilization.delta_value == pytest.approx(-0.25)
+
+
 def test_run_phase_d_compare_rejects_missing_sweep_report(tmp_path: Path) -> None:
     from llm_sched.pipeline import run_phase_d_compare
 

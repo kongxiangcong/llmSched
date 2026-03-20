@@ -236,6 +236,23 @@ def test_visualization_bundle_accepts_all_views() -> None:
                                 "change_direction": "down",
                             }
                         ],
+                        "fitted_layer_deltas": [
+                            {
+                                "layer_id": 0,
+                                "baseline_fitted_work_cycles": 1792.0,
+                                "candidate_fitted_work_cycles": 1280.0,
+                                "delta_fitted_work_cycles": -512.0,
+                                "baseline_fitted_cycle_share": 0.7,
+                                "candidate_fitted_cycle_share": 0.625,
+                                "delta_fitted_cycle_share": -0.075,
+                                "delta_fitted_work_cycles_ratio": -0.2857142857,
+                                "baseline_bytes": 65536.0,
+                                "candidate_bytes": 49152.0,
+                                "delta_bytes": -16384.0,
+                                "delta_bytes_ratio": -0.25,
+                                "change_direction": "down",
+                            }
+                        ],
                     }
                 ],
             },
@@ -281,6 +298,11 @@ def test_visualization_bundle_accepts_all_views() -> None:
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].change_direction == "down"
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_bytes == -16384.0
+    assert bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].baseline_fitted_cycle_share == 0.7
+    assert (
+        bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio
+        == pytest.approx(-0.2857142857)
+    )
 
 
 def test_visualization_bundle_allows_missing_optional_sweep_view() -> None:

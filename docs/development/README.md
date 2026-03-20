@@ -187,6 +187,73 @@
   - `Phase D/E = in_progress`
 - 当前主线已重新回到 `M3` 收口与 `SPEC-19` hardening。
 
+## 2026-03-20 SPEC-13 Pressure Summary Checkpoint
+
+- `PerfSummaryReport` 新增了 summary-grade `bandwidth_pressure_summary` 与 `vmem_pressure_summary`。
+- 这两个字段直接复用现有 `AnalysisIR` bandwidth metrics、address-space/backing-store/memory-class breakdown 和 `MemoryPlanArtifact.region_summaries`，不重新定义 estimator 数学。
+- 当前 focused verification：
+  - `python -m pytest tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `12 passed`
+- 这让后续 `SPEC-14/15/16/19` 可以直接消费一个更稳定、更可读的 pressure summary surface，而不必各自重组原始 breakdown maps。
+
+## 2026-03-20 SPEC-14/15 Pressure Summary Adoption Checkpoint
+
+- `PrefillEvaluationReport` 和 `DecodeEvaluationReport` 现在都直接暴露：
+  - `bandwidth_pressure_summary`
+  - `vmem_pressure_summary`
+- 这一步没有重算 pressure，也没有发明 report-local 的新格式，而是直接复用 `SPEC-13` 的 summary-grade contract。
+- 当前 focused verification：
+  - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- 这让下一步 `SPEC-16` 做 compare adoption 时可以直接消费 prefill/decode report 里的稳定 pressure summary，而不必回头再从 `PerfSummaryReport` 单独拼装。
+
+## 2026-03-20 SPEC-16 Pressure Compare Adoption Checkpoint
+
+- `SweepRunRecord` 现在保留 summary-grade `bandwidth_pressure_summary` 与 `vmem_pressure_summary`，不再只保留数值 metrics。
+- `SweepComparison` 新增：
+  - `bandwidth_pressure_compare`
+  - `vmem_pressure_compare`
+- `PhaseDCompareReport` 的 prefill/decode compare rows 现在也透传这两个 compare summary，后续 `SPEC-19` 可以直接消费更语义化的 compare surface。
+- 这一步仍然是窄切片：
+  - 没有重开 estimator 数学
+  - 没有改 visualization workbench
+  - 只把现有 pressure summary 提升成 compare-grade contract
+- 当前 focused verification：
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py -q` -> `18 passed`
+  - `python -m pytest tests/unit/pipeline/test_sweep_analysis_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `4 passed`
+
+## 2026-03-20 SPEC-16 Visualization Pressure Compare Adoption Checkpoint
+
+- `VisualizationBundle.compare_summary` 与 catalog manifest compare summary 现在都会直接透传：
+  - `bandwidth_pressure_compare`
+  - `vmem_pressure_compare`
+- `SPEC-19` workbench 与 catalog compare surface 现在都会直接渲染：
+  - `Peak Bandwidth Pressure`
+  - `VMEM Pressure Shifts`
+- 这一步保持窄切片：
+  - 不重开 compare contract 设计
+  - 不新增 service/API
+  - 只把既有 `SPEC-16` pressure compare surface 接到 visualization payload 与 renderer
+- 当前 focused verification：
+  - `python -m pytest tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `22 passed`
+  - `python -m pytest tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `8 passed`
+
+## 2026-03-20 SPEC-16 Grouped Metric Delta Checkpoint
+
+- `SweepComparison` 现在新增：
+  - `metric_delta_groups`
+  - `baseline_schedule_kind`
+  - `candidate_schedule_kind`
+- 这让 raw `SweepDeltaReport` 也能直接暴露 grouped multi-metric compare，而不再只剩一张平铺 `metric_deltas` 列表。
+- `run-visualization-packaging` 现在即使没有 `PhaseDCompareReport`，也能从 raw sweep compare 合成稳定的 compare summary，继续复用 workbench/catalog 现有 grouped compare 渲染路径。
+- 这一步依然保持窄切片：
+  - 不重开 estimator 数学
+  - 不新增新的 compare group taxonomy
+  - 只把现有 metric delta surface 提升成 grouped compare-grade contract，并补上 raw packaging adoption
+- 当前 focused verification：
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_visualization_bundle_builder.py -q` -> `15 passed`
+  - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_phase_d_compare_workflow.py -q` -> `6 passed`
+  - `python -m pytest tests/smoke/test_cli_run_phase_d_compare.py -q` -> `2 passed`
+  - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py -q` -> `2 passed`
+
 ## 当前 canonical / lowering surface
 
 ### Canonical Graph IR
@@ -423,7 +490,7 @@
   - static workbench only
   - no app server
   - workspace discovery currently scans packaged child runs and `runs/*`
-  - no deep multi-metric compare workflow
+  - no deep multi-metric compare workflow beyond the current scalar-plus-layer-plus-pressure compare surface
 
 ## 2026-03-07 SPEC-16 Checkpoint
 
@@ -439,9 +506,9 @@
   - surface failed reruns and missing baselines as explicit report issues
 - Current foundation boundaries:
   - serial execution only
-  - no layer-level or block-level diffing
+  - no block-level diffing
   - no cached reuse of prior run-roots
-  - no visualization-facing data packaging yet
+  - richer multi-metric compare modes remain later work beyond the current visualization-facing summary packaging
 
 ## 2026-03-07 SPEC-08 Checkpoint
 
@@ -692,3 +759,84 @@
   - `hottest_region_capacity_bytes`
   - `hottest_region_utilization`
 - this batch keeps `SPEC-14/15` top-level and summary-grade: it does not reopen raw descriptor semantics or create a deeper cycle model.
+
+## 2026-03-20 SPEC-16 Fitted Layer Diff Visualization Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-16-fitted-layer-diff-visualization.md`
+- `VisualizationBundle.sweep_view.comparisons[*]` and `VisualizationCatalogEntry.sweep_comparisons[*]` now carry:
+  - `layer_deltas`
+  - `fitted_layer_deltas`
+- `run-visualization-packaging` now threads existing `PhaseDCompareReport.fitted_layer_deltas` directly into visualization-facing payloads instead of dropping them at the bundle boundary.
+- `run-visualization-catalog` now preserves fitted layer rows into catalog artifacts, so downstream compare/workspace surfaces can consume one stable fitted-layer contract.
+- `SPEC-19` static JS now exposes richer layer diff modes for catalog compare:
+  - `Top By Cycles`
+  - `Candidate Regressions`
+  - `Top By Bytes`
+  - `Top By Fitted Work`
+  - `Fitted Work Regressions`
+- workbench sweep export/rendering now shows fitted layer deltas beside estimated layer deltas, and snapshot/export metadata now includes:
+  - `Focused Fitted Layer Deltas`
+  - `Focused Fitted Layer Summary`
+- focused verification:
+  - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/contracts/test_visualization_catalog.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `22 passed`
+  - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
+  - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+- what this closes:
+  - one visualization adoption gap where `SPEC-16` already emitted `fitted_layer_deltas` but `SPEC-18/19` still rendered only estimated `layer_deltas`
+  - one compare-mode gap where catalog layer diff focus could not rank or filter by fitted work-cycle regressions
+  - one export gap where workbench sweep snapshot metadata summarized only estimated layer deltas
+- what still remains for `M3`:
+  - richer compare modes beyond the current estimated-plus-fitted layer surface
+  - deeper cycle fitting remains in `SPEC-13`, not in visualization packaging
+  - `SPEC-19` deeper workspace drill-down and richer screenshot/export hardening remain later slices
+
+## 2026-03-20 SPEC-19 Workspace Drilldown Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-19-workspace-drilldown.md`
+- catalog workspace compare now exposes one expandable `Workspace Compare Drilldown` block inside the `Sweep Layer Deltas` summary stack.
+- the drilldown reuses existing compare helpers and now expands:
+  - `Grouped Metric Deltas`
+  - `Pressure Compare`
+  - `Estimated Layer Deltas`
+  - `Fitted Layer Deltas`
+- this slice stays strictly inside the static catalog builder:
+  - no new contracts
+  - no workflow schema changes
+  - no workbench-side interaction changes
+- focused verification:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `30 passed`
+- what this closes:
+  - one workspace usability gap where compare rows only showed compressed summary stacks and forced the user to jump out to workbench for any richer matched compare context
+  - one adoption gap where grouped scalar, pressure compare, estimated layer, and fitted layer detail all existed in the payload but were not co-located in the catalog workspace
+- what still remains:
+  - richer screenshot/export hardening for the new workspace drilldown state
+  - deeper side-by-side compare interaction if we later want row selection or pinned detail panels
+
+## 2026-03-20 SPEC-19 Workspace Export Hardening Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-19-workspace-export-hardening.md`
+- catalog workspace compare now exposes workspace-local actions for:
+  - `Copy Workspace Link`
+  - `Export Workspace JSON`
+  - `Export Workspace SVG`
+- this slice stays inside the static catalog builder and reuses existing catalog URL state instead of introducing a new service or contract.
+- exported workspace metadata now carries the currently focused compare context:
+  - `Focused Compare Scope`
+  - `Focused Layer Delta Mode`
+  - `Focused Baseline`
+  - `Focused Candidate Count`
+  - `Focused Sweep Candidate`
+  - `Focused Sweep Layer`
+- the new JSON/SVG path is intentionally summary-grade:
+  - it snapshots the current workspace state and candidate set
+  - it does not introduce row pinning, richer side-panel state, or a new interactive export format
+- focused verification:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `30 passed`
+- what this closes:
+  - one workspace-export gap where the new drilldown state was visible but could not be copied or snapshotted from the catalog itself
+  - one workflow gap where workspace context lived only in the browser URL and not in a human-readable JSON/SVG export
+- what still remains:
+  - richer compare modes beyond the current grouped scalar plus estimated/fitted layer plus pressure summary surface
+  - deeper side-by-side workspace interaction if we later want pinned detail panels or row selection

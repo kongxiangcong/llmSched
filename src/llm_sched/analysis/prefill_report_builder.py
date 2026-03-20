@@ -139,6 +139,8 @@ def build_prefill_evaluation_report(
             kv_formula_count=len(memory_plan.kv_formulas),
         ),
         memory_hotspot=_build_memory_hotspot(perf_summary, memory_plan),
+        bandwidth_pressure_summary=perf_summary.bandwidth_pressure_summary.model_copy(deep=True),
+        vmem_pressure_summary=perf_summary.vmem_pressure_summary.model_copy(deep=True),
         isa_summary=PrefillISASummary(
             unmapped_block_count=coverage_report.unmapped_block_count,
             gap_counts=dict(coverage_report.gap_counts),

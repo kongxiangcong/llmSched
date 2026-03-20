@@ -68,6 +68,8 @@ def test_phase_d_decode_foundation_matrix(
     assert report["kv_summary"]["kv_related_fitted_work_cycle_share"] >= 0.0
     assert "memory_hotspot" in report
     assert report["memory_hotspot"]["hottest_region_utilization"] >= 0.0
+    assert report["bandwidth_pressure_summary"]["peak_bandwidth_pressure"] >= 0.0
+    assert report["vmem_pressure_summary"]["hottest_region"] is not None
     assert report["macro_hotspots"]
     assert report["node_hotspots"]
     assert report["node_hotspots"][0]["fitted_work_cycles"] >= report["node_hotspots"][0]["estimated_cycles"]

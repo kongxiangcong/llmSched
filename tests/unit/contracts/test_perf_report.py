@@ -20,8 +20,30 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 "ping": {"ACTIVATION": 24576},
                 "pong": {"ACTIVATION": 8192, "METADATA": 4096},
             },
+            "vmem_region_peak_bytes_by_backing_store": {
+                "ping": {"vmem-local": 16384, "ddr-backed-staged": 8192},
+                "pong": {"vmem-local": 12288},
+            },
             "vmem_region_capacity_bytes": {"ping": 30720, "pong": 30720},
             "vmem_region_peak_utilization": {"ping": 0.8, "pong": 0.4},
+            "bandwidth_pressure_summary": {
+                "peak_bandwidth_pressure": 512.0,
+                "peak_pressure_subject_id": "sched.block.0",
+                "dominant_read_address_space": "DDR",
+                "dominant_write_address_space": "VMEM",
+                "dominant_read_backing_store": "ddr-backed-staged",
+                "dominant_write_backing_store": "vmem-local",
+                "dominant_read_memory_class": "WEIGHT",
+                "dominant_write_memory_class": "ACTIVATION",
+            },
+            "vmem_pressure_summary": {
+                "hottest_region": "ping",
+                "hottest_region_peak_bytes": 24576,
+                "hottest_region_capacity_bytes": 30720,
+                "hottest_region_utilization": 0.8,
+                "hottest_region_dominant_memory_class": "ACTIVATION",
+                "hottest_region_dominant_backing_store": "vmem-local",
+            },
             "totals": {
                 "estimated_cycles": 1024.0,
                 "fitted_work_cycles": 1180.0,
@@ -197,8 +219,14 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.data_movement_write_bytes_by_address_space["VMEM"] == 24576.0
     assert report.vmem_region_peak_bytes["ping"] == 24576
     assert report.vmem_region_peak_bytes_by_memory_class["pong"]["METADATA"] == 4096
+    assert report.vmem_region_peak_bytes_by_backing_store["ping"]["ddr-backed-staged"] == 8192
     assert report.vmem_region_capacity_bytes["pong"] == 30720
     assert report.vmem_region_peak_utilization["ping"] == 0.8
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure == 512.0
+    assert report.bandwidth_pressure_summary.peak_pressure_subject_id == "sched.block.0"
+    assert report.bandwidth_pressure_summary.dominant_read_backing_store == "ddr-backed-staged"
+    assert report.vmem_pressure_summary.hottest_region == "ping"
+    assert report.vmem_pressure_summary.hottest_region_dominant_memory_class == "ACTIVATION"
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0

@@ -192,6 +192,18 @@ def test_run_visualization_packaging_writes_bundle_and_updates_manifest(
         "attention_byte_share",
         "attention_bytes_per_cycle",
     ]
+    assert bundle.sweep_view.comparisons[0].compare_summary.bandwidth_pressure_compare is not None
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.bandwidth_pressure_compare.peak_pressure_subject_id.changed
+        is True
+    )
+    assert bundle.sweep_view.comparisons[0].compare_summary.vmem_pressure_compare is not None
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.vmem_pressure_compare.hottest_region.changed
+        is True
+    )
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -128.0
     assert bundle.vmem_view.regions[0].peak_bytes_by_memory_class
     assert "vmem-local" in bundle.vmem_view.regions[0].peak_bytes_by_backing_store
@@ -590,6 +602,54 @@ def _phase_d_compare_report():
                         "candidate_value": 0.5,
                         "delta_value": -0.5,
                         "delta_ratio": -0.5,
+                    },
+                    "bandwidth_pressure_compare": {
+                        "peak_bandwidth_pressure": {
+                            "baseline_value": 512.0,
+                            "candidate_value": 448.0,
+                            "delta_value": -64.0,
+                            "delta_ratio": -0.125,
+                        },
+                        "peak_pressure_subject_id": {
+                            "baseline_value": "nig.node.kvload.0",
+                            "candidate_value": "nig.node.sdpa_decode.0",
+                            "changed": True,
+                        },
+                        "dominant_read_backing_store": {
+                            "baseline_value": "ddr-persistent",
+                            "candidate_value": "ddr-backed-staged",
+                            "changed": True,
+                        },
+                    },
+                    "vmem_pressure_compare": {
+                        "hottest_region": {
+                            "baseline_value": "ping",
+                            "candidate_value": "pong",
+                            "changed": True,
+                        },
+                        "hottest_region_peak_bytes": {
+                            "baseline_value": 524288.0,
+                            "candidate_value": 458752.0,
+                            "delta_value": -65536.0,
+                            "delta_ratio": -0.125,
+                        },
+                        "hottest_region_capacity_bytes": {
+                            "baseline_value": 1048576.0,
+                            "candidate_value": 1048576.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "hottest_region_utilization": {
+                            "baseline_value": 0.5,
+                            "candidate_value": 0.4375,
+                            "delta_value": -0.0625,
+                            "delta_ratio": -0.125,
+                        },
+                        "hottest_region_dominant_memory_class": {
+                            "baseline_value": "KV_CACHE",
+                            "candidate_value": "ACTIVATION",
+                            "changed": True,
+                        },
                     },
                 }
             ],

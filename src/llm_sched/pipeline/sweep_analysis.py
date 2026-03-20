@@ -309,6 +309,8 @@ def _execute_run_root(
                 status="failed",
                 report_path=None,
                 metrics={},
+                bandwidth_pressure_summary={},
+                vmem_pressure_summary={},
                 macro_hotspots=[],
                 failure_message=message,
             )
@@ -428,6 +430,8 @@ def _execute_run_root(
                 **_phase_occupied_slot_metrics(report.throughput.phase_attribution),
                 **_phase_balance_metrics(report.throughput.phase_attribution),
             },
+            bandwidth_pressure_summary=report.bandwidth_pressure_summary.model_copy(deep=True),
+            vmem_pressure_summary=report.vmem_pressure_summary.model_copy(deep=True),
             macro_hotspots=[
                 SweepMacroPoint(
                     macro_op=hotspot.macro_op,
@@ -573,6 +577,8 @@ def _execute_run_root(
             **_phase_occupied_slot_metrics(report.token_latency.phase_attribution),
             **_phase_balance_metrics(report.token_latency.phase_attribution),
         },
+        bandwidth_pressure_summary=report.bandwidth_pressure_summary.model_copy(deep=True),
+        vmem_pressure_summary=report.vmem_pressure_summary.model_copy(deep=True),
         macro_hotspots=[
             SweepMacroPoint(
                 macro_op=hotspot.macro_op,

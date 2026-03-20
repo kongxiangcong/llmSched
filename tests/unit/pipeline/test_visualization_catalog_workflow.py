@@ -51,6 +51,20 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert artifact.entries[0].sweep_comparisons[0].compare_summary.scalar_deltas[0].metric_name == (
         "estimated_cycles"
     )
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.bandwidth_pressure_compare is not None
+    assert (
+        artifact.entries[0]
+        .sweep_comparisons[0]
+        .compare_summary.bandwidth_pressure_compare.peak_pressure_subject_id.changed
+        is True
+    )
+    assert artifact.entries[0].sweep_comparisons[0].compare_summary.vmem_pressure_compare is not None
+    assert (
+        artifact.entries[0]
+        .sweep_comparisons[0]
+        .compare_summary.vmem_pressure_compare.hottest_region.changed
+        is True
+    )
     assert [
         scalar.metric_name
         for scalar in artifact.entries[0].sweep_comparisons[0].compare_summary.highlighted_scalar_deltas
@@ -96,6 +110,24 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "layer_delta_focus" in app_js
     assert "regressions-only" in app_js
     assert "top-by-bytes" in app_js
+    assert "Workspace Compare Drilldown" in app_js
+    assert "Grouped Metric Deltas" in app_js
+    assert "Estimated Layer Deltas" in app_js
+    assert "Fitted Layer Deltas" in app_js
+    assert "function buildWorkspaceCompareDrilldownContent" in app_js
+    assert "function renderWorkspaceCompareDrilldownSection" in app_js
+    assert "function buildCurrentCatalogWorkspaceUrl" in app_js
+    assert "function copyCurrentWorkspaceLink" in app_js
+    assert "function buildWorkspaceExportData" in app_js
+    assert "function buildWorkspaceSnapshotSvg" in app_js
+    assert "function downloadCurrentWorkspaceJson" in app_js
+    assert "function downloadCurrentWorkspaceSvg" in app_js
+    assert "function bindCatalogWorkspaceActions" in app_js
+    assert "Exported workspace JSON." in app_js
+    assert "Exported workspace SVG." in app_js
+    assert "Workspace view link copied." in app_js
+    assert "Focused Layer Delta Mode" in app_js
+    assert "Focused Compare Scope" in app_js
     assert "Showing top 3 of" in app_js
     assert "|delta_cycles|" in app_js
     assert "|delta_bytes|" in app_js
@@ -107,6 +139,11 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     assert "profile_diff_fields" in app_js
     assert "baseline_schedule_kind" in app_js
     assert "highlighted_scalar_deltas" in app_js
+    assert "bandwidth_pressure_compare" in app_js
+    assert "vmem_pressure_compare" in app_js
+    assert "function renderPressureCompareSummary" in app_js
+    assert "Peak Bandwidth Pressure" in app_js
+    assert "VMEM Pressure Shifts" in app_js
     assert "Highlighted Metric Shifts" in app_js
     assert "function currentWorkbenchPanel" in app_js
     assert "function buildComparePanelLinks" in app_js
@@ -118,6 +155,10 @@ def test_run_visualization_catalog_writes_static_index_from_run_roots(tmp_path: 
     index_html = (catalog_root / "catalog" / "index.html").read_text(encoding="utf-8")
     assert "catalog-workbench-panel-filter" in index_html
     assert "catalog-layer-delta-focus-filter" in index_html
+    assert "copy-workspace-link-button" in index_html
+    assert "download-workspace-json-button" in index_html
+    assert "download-workspace-svg-button" in index_html
+    assert "catalog-workspace-action-status" in index_html
 
 
 def test_run_visualization_catalog_rejects_missing_workbench_manifest(tmp_path: Path) -> None:
@@ -742,6 +783,34 @@ def _bundle_payload(
                                     ],
                                 },
                             ],
+                            "bandwidth_pressure_compare": {
+                                "peak_bandwidth_pressure": {
+                                    "metric_name": "peak_bandwidth_pressure",
+                                    "baseline_value": 640.0,
+                                    "candidate_value": 512.0,
+                                    "delta_value": -128.0,
+                                    "delta_ratio": -0.2,
+                                },
+                                "peak_pressure_subject_id": {
+                                    "baseline_value": "nig.node.sdpa.0",
+                                    "candidate_value": "nig.node.linear.0",
+                                    "changed": True,
+                                },
+                            },
+                            "vmem_pressure_compare": {
+                                "hottest_region": {
+                                    "baseline_value": "ping",
+                                    "candidate_value": "pong",
+                                    "changed": True,
+                                },
+                                "hottest_region_utilization": {
+                                    "metric_name": "hottest_region_utilization",
+                                    "baseline_value": 0.75,
+                                    "candidate_value": 0.625,
+                                    "delta_value": -0.125,
+                                    "delta_ratio": -0.1666666667,
+                                },
+                            },
                         },
                         "layer_deltas": [
                             {

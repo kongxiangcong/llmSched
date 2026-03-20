@@ -109,6 +109,11 @@ def test_build_decode_evaluation_report_aggregates_latency_and_kv_cost() -> None
         "ACTIVATION": 28672,
         "KV_CACHE": 12288,
     }
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure == pytest.approx(512.0)
+    assert report.bandwidth_pressure_summary.peak_pressure_subject_id == "nig.node.kvload.0"
+    assert report.bandwidth_pressure_summary.dominant_read_backing_store == "ddr-persistent"
+    assert report.vmem_pressure_summary.hottest_region == "ping"
+    assert report.vmem_pressure_summary.hottest_region_dominant_backing_store == "vmem-local"
     assert report.isa_summary.unmapped_block_count == 1
     assert [hotspot.macro_op for hotspot in report.macro_hotspots][:3] == [
         "WDQ_GEMM",
@@ -207,6 +212,24 @@ def _perf_summary_report() -> PerfSummaryReport:
             "run_id": "run-decode-001",
             "graph_id": "gemma3-decode",
             "schedule_kind": "dual-core",
+            "bandwidth_pressure_summary": {
+                "peak_bandwidth_pressure": 512.0,
+                "peak_pressure_subject_id": "nig.node.kvload.0",
+                "dominant_read_address_space": "DDR",
+                "dominant_write_address_space": "DDR",
+                "dominant_read_backing_store": "ddr-persistent",
+                "dominant_write_backing_store": "ddr-persistent",
+                "dominant_read_memory_class": "KV_CACHE",
+                "dominant_write_memory_class": "KV_CACHE",
+            },
+            "vmem_pressure_summary": {
+                "hottest_region": "ping",
+                "hottest_region_peak_bytes": 40960,
+                "hottest_region_capacity_bytes": 65536,
+                "hottest_region_utilization": 0.625,
+                "hottest_region_dominant_memory_class": "ACTIVATION",
+                "hottest_region_dominant_backing_store": "vmem-local",
+            },
             "totals": {
                 "estimated_cycles": 3120.0,
                 "fitted_work_cycles": 3360.0,

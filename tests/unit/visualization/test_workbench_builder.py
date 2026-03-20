@@ -82,11 +82,18 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "packed_field_name_counts" in files["workbench/assets/app.js"]
     assert "Layer Deltas" in files["workbench/assets/app.js"]
     assert "layer_deltas" in files["workbench/assets/app.js"]
+    assert "fitted_layer_deltas" in files["workbench/assets/app.js"]
     assert "delta_cycles" in files["workbench/assets/app.js"]
+    assert "delta_fitted_work_cycles" in files["workbench/assets/app.js"]
     assert "compare_summary" in files["workbench/assets/app.js"]
     assert "baseline_schedule_kind" in files["workbench/assets/app.js"]
     assert "profile_diff_fields" in files["workbench/assets/app.js"]
     assert "highlighted_scalar_deltas" in files["workbench/assets/app.js"]
+    assert "bandwidth_pressure_compare" in files["workbench/assets/app.js"]
+    assert "vmem_pressure_compare" in files["workbench/assets/app.js"]
+    assert "function renderPressureCompareSummary" in files["workbench/assets/app.js"]
+    assert "Peak Bandwidth Pressure" in files["workbench/assets/app.js"]
+    assert "VMEM Pressure Shifts" in files["workbench/assets/app.js"]
     assert "Highlighted Metric Shifts" in files["workbench/assets/app.js"]
     assert "scalar_delta_groups" in files["workbench/assets/app.js"]
     assert "function scalarDeltaIsPositive" in files["workbench/assets/app.js"]
@@ -134,6 +141,8 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "Focused Comparisons" in files["workbench/assets/app.js"]
     assert "Focused Layer Deltas" in files["workbench/assets/app.js"]
     assert "Focused Layer Summary" in files["workbench/assets/app.js"]
+    assert "Focused Fitted Layer Deltas" in files["workbench/assets/app.js"]
+    assert "Focused Fitted Layer Summary" in files["workbench/assets/app.js"]
     assert "Focused Sweep Layer" in files["workbench/assets/app.js"]
     assert "focused-sweep-row" in files["workbench/assets/app.js"]
 
@@ -396,6 +405,34 @@ def _bundle(*, include_sweep: bool) -> object:
                                     ],
                                 },
                             ],
+                            "bandwidth_pressure_compare": {
+                                "peak_bandwidth_pressure": {
+                                    "metric_name": "peak_bandwidth_pressure",
+                                    "baseline_value": 640.0,
+                                    "candidate_value": 512.0,
+                                    "delta_value": -128.0,
+                                    "delta_ratio": -0.2,
+                                },
+                                "peak_pressure_subject_id": {
+                                    "baseline_value": "nig.node.sdpa.0",
+                                    "candidate_value": "nig.node.linear.0",
+                                    "changed": True,
+                                },
+                            },
+                            "vmem_pressure_compare": {
+                                "hottest_region": {
+                                    "baseline_value": "ping",
+                                    "candidate_value": "pong",
+                                    "changed": True,
+                                },
+                                "hottest_region_utilization": {
+                                    "metric_name": "hottest_region_utilization",
+                                    "baseline_value": 0.75,
+                                    "candidate_value": 0.625,
+                                    "delta_value": -0.125,
+                                    "delta_ratio": -0.1666666667,
+                                },
+                            },
                         },
                         "layer_deltas": [
                             {
@@ -406,6 +443,23 @@ def _bundle(*, include_sweep: bool) -> object:
                                     "baseline_bytes": 65536.0,
                                     "candidate_bytes": 49152.0,
                                     "delta_bytes": -16384.0,
+                                }
+                            ],
+                            "fitted_layer_deltas": [
+                                {
+                                    "layer_id": 0,
+                                    "baseline_fitted_work_cycles": 1792.0,
+                                    "candidate_fitted_work_cycles": 1280.0,
+                                    "delta_fitted_work_cycles": -512.0,
+                                    "baseline_fitted_cycle_share": 0.7,
+                                    "candidate_fitted_cycle_share": 0.625,
+                                    "delta_fitted_cycle_share": -0.075,
+                                    "delta_fitted_work_cycles_ratio": -0.2857142857,
+                                    "baseline_bytes": 65536.0,
+                                    "candidate_bytes": 49152.0,
+                                    "delta_bytes": -16384.0,
+                                    "delta_bytes_ratio": -0.25,
+                                    "change_direction": "down",
                                 }
                             ],
                         }

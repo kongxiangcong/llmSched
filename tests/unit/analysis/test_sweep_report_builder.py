@@ -107,6 +107,25 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         delta for delta in prefill_comparison.metric_deltas if delta.metric_name == "estimated_cycles"
     )
     assert estimated_cycles_delta.delta_value == -1024.0
+    assert [group.group_id for group in prefill_comparison.metric_delta_groups] == [
+        "headline",
+        "throughput_latency",
+        "phase_shape",
+        "memory_pressure",
+        "schedule_shape",
+    ]
+    grouped_metric_names = {
+        group.group_id: [metric.metric_name for metric in group.metric_deltas]
+        for group in prefill_comparison.metric_delta_groups
+    }
+    assert grouped_metric_names["headline"][:3] == [
+        "estimated_cycles",
+        "critical_path_cycles",
+        "tokens_per_critical_path_cycle",
+    ]
+    assert "projection_cycle_share" in grouped_metric_names["phase_shape"]
+    assert "projection_read_bytes_ddr" in grouped_metric_names["memory_pressure"]
+    assert "projection_schedule_compression_cycles" in grouped_metric_names["schedule_shape"]
     wdq_delta = next(delta for delta in prefill_comparison.macro_deltas if delta.macro_op == "WDQ_GEMM")
     assert wdq_delta.delta_cycles == -1024.0
     assert [delta.layer_id for delta in prefill_comparison.layer_deltas] == [0, 1]
@@ -358,6 +377,88 @@ def test_build_sweep_delta_report_emits_metric_and_macro_deltas() -> None:
         comparison for comparison in report.comparisons if comparison.scenario_name == "decode_token1_kv2048"
     )
     assert decode_comparison.prefill_compare is None
+    assert [group.group_id for group in decode_comparison.metric_delta_groups] == [
+        "headline",
+        "throughput_latency",
+        "phase_shape",
+        "memory_pressure",
+        "schedule_shape",
+    ]
+    decode_grouped_metric_names = {
+        group.group_id: [metric.metric_name for metric in group.metric_deltas]
+        for group in decode_comparison.metric_delta_groups
+    }
+    assert "cycles_per_token" in decode_grouped_metric_names["headline"]
+    assert "kv_related_bytes" in decode_grouped_metric_names["memory_pressure"]
+
+
+def test_build_sweep_delta_report_emits_pressure_summary_compares() -> None:
+    from llm_sched.analysis import build_sweep_delta_report
+    from llm_sched.contracts.perf_report import PerfBandwidthPressureSummary, PerfVMEMPressureSummary
+
+    report = build_sweep_delta_report(
+        "phase-d-pressure-compare",
+        "riscv_npu_single_core_v1",
+        [
+            _completed_prefill_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                4096.0,
+                3072.0,
+            ).model_copy(
+                update={
+                    "bandwidth_pressure_summary": PerfBandwidthPressureSummary(
+                        peak_bandwidth_pressure=640.0,
+                        peak_pressure_subject_id="nig.node.sdpa.0",
+                        dominant_read_backing_store="ddr-persistent",
+                        dominant_write_memory_class="ACTIVATION",
+                    ),
+                    "vmem_pressure_summary": PerfVMEMPressureSummary(
+                        hottest_region="ping",
+                        hottest_region_peak_bytes=786432,
+                        hottest_region_capacity_bytes=1048576,
+                        hottest_region_utilization=0.75,
+                        hottest_region_dominant_memory_class="ACTIVATION",
+                    ),
+                }
+            ),
+            _completed_prefill_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                3072.0,
+                2048.0,
+            ).model_copy(
+                update={
+                    "bandwidth_pressure_summary": PerfBandwidthPressureSummary(
+                        peak_bandwidth_pressure=512.0,
+                        peak_pressure_subject_id="nig.node.linear.0",
+                        dominant_read_backing_store="ddr-backed-staged",
+                        dominant_write_memory_class="ACTIVATION",
+                    ),
+                    "vmem_pressure_summary": PerfVMEMPressureSummary(
+                        hottest_region="pong",
+                        hottest_region_peak_bytes=524288,
+                        hottest_region_capacity_bytes=1048576,
+                        hottest_region_utilization=0.5,
+                        hottest_region_dominant_memory_class="KV_CACHE",
+                    ),
+                }
+            ),
+        ],
+        {
+            "riscv_npu_dual_core_v1": ["core_mode", "num_cores"],
+        },
+    )
+
+    comparison = report.comparisons[0]
+    assert comparison.bandwidth_pressure_compare is not None
+    assert comparison.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value == -128.0
+    assert comparison.bandwidth_pressure_compare.peak_pressure_subject_id.changed is True
+    assert comparison.bandwidth_pressure_compare.dominant_write_memory_class.changed is False
+    assert comparison.vmem_pressure_compare is not None
+    assert comparison.vmem_pressure_compare.hottest_region.changed is True
+    assert comparison.vmem_pressure_compare.hottest_region_peak_bytes.delta_value == -262144
+    assert comparison.vmem_pressure_compare.hottest_region_dominant_memory_class.changed is True
 
 
 def test_build_sweep_delta_report_emits_fitted_node_and_layer_compare_rows() -> None:

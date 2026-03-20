@@ -62,6 +62,8 @@ def test_run_prefill_evaluation_writes_report_and_updates_manifest(
     assert report.memory_hotspot.hottest_region_utilization >= 0.0
     assert report.memory_hotspot.hottest_region_peak_bytes_by_backing_store == {}
     assert report.memory_hotspot.hottest_region_peak_bytes_by_memory_class == {"ACTIVATION": 49152}
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure >= 0.0
+    assert report.vmem_pressure_summary.hottest_region is not None
     assert report.node_hotspots
     assert report.node_hotspots[0].estimated_cycles > 0.0
     assert report.node_hotspots[0].fitted_work_cycles >= report.node_hotspots[0].estimated_cycles

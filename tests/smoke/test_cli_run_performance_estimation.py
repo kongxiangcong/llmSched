@@ -50,6 +50,8 @@ def test_run_performance_estimation_writes_artifacts_for_single_core(
     assert perf_report["totals"]["critical_path_cycles"] > 0.0
     assert perf_report["totals"]["critical_path_cycles"] == perf_report["schedule_makespan_slots"]
     assert perf_report["phase_attribution"]["projection"]["fitted_work_cycles"] >= 0.0
+    assert perf_report["bandwidth_pressure_summary"]["peak_bandwidth_pressure"] >= 0.0
+    assert perf_report["vmem_pressure_summary"]["hottest_region"] is not None
     assert perf_report["phase_attribution"]["projection"]["cycles_per_token"] >= 0.0
     assert perf_report["phase_attribution"]["other"]["bytes_per_token"] >= 0.0
     assert perf_report["phase_attribution"]["projection"]["compute_cycles"] >= 0.0

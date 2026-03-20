@@ -5,10 +5,12 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from llm_sched.contracts.sweep_report import (
+    SweepBandwidthPressureCompareSummary,
     SweepFittedLayerDelta,
     SweepIssue,
     SweepNodeDelta,
     SweepScalarDelta,
+    SweepVMEMPressureCompareSummary,
 )
 
 
@@ -35,6 +37,8 @@ class PhaseDPrefillCompareRow(BaseModel):
     fitted_layer_delta_count: int = Field(ge=0, default=0)
     node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
     fitted_layer_deltas: list[SweepFittedLayerDelta] = Field(default_factory=list)
+    bandwidth_pressure_compare: SweepBandwidthPressureCompareSummary | None = None
+    vmem_pressure_compare: SweepVMEMPressureCompareSummary | None = None
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
@@ -231,6 +235,8 @@ class PhaseDDecodeCompareRow(BaseModel):
     fitted_layer_delta_count: int = Field(ge=0, default=0)
     node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
     fitted_layer_deltas: list[SweepFittedLayerDelta] = Field(default_factory=list)
+    bandwidth_pressure_compare: SweepBandwidthPressureCompareSummary | None = None
+    vmem_pressure_compare: SweepVMEMPressureCompareSummary | None = None
     estimated_cycles: SweepScalarDelta
     critical_path_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
     fitted_work_cycles: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
