@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from llm_sched.config.scenario_profile import LayerScope, ReportingConfig, ScenarioProfile
 from llm_sched.config.target_profile import (
     CoreLinkConfig,
@@ -228,11 +230,39 @@ def test_build_visualization_bundle_for_prefill_with_sweep() -> None:
     assert "projection_read_bytes_weight" in grouped_scalars["memory_pressure"]
     assert "projection_schedule_compression_cycles" in grouped_scalars["schedule_shape"]
     assert "projection_occupied_slot_balance_ratio" in grouped_scalars["schedule_shape"]
+    assert bundle.sweep_view.comparisons[0].compare_summary.bandwidth_pressure_compare is not None
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value
+        == -128.0
+    )
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.bandwidth_pressure_compare.peak_pressure_subject_id.changed
+        is True
+    )
+    assert bundle.sweep_view.comparisons[0].compare_summary.vmem_pressure_compare is not None
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.vmem_pressure_compare.hottest_region.changed
+        is True
+    )
+    assert (
+        bundle.sweep_view.comparisons[0]
+        .compare_summary.vmem_pressure_compare.hottest_region_utilization.delta_value
+        == -0.125
+    )
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].layer_id == 0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles == -512.0
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].baseline_cycle_share == 0.5
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].delta_cycles_ratio == -0.25
     assert bundle.sweep_view.comparisons[0].layer_deltas[0].change_direction == "down"
+    assert bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].layer_id == 0
+    assert bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].delta_fitted_work_cycles == -512.0
+    assert (
+        bundle.sweep_view.comparisons[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio
+        == pytest.approx(-0.2857142857)
+    )
 
 
 def test_build_visualization_bundle_for_decode_without_sweep() -> None:
@@ -263,6 +293,44 @@ def test_build_visualization_bundle_for_decode_without_sweep() -> None:
     assert bundle.coverage_view.packed_layout_template_counts["core_link_transfer_v1"] == 1
     assert bundle.sweep_view is None
     assert bundle.view_index.available_views == ["graph", "timeline", "kv", "vmem", "coverage"]
+
+
+def test_build_visualization_bundle_builds_compare_summary_from_raw_sweep_report() -> None:
+    from llm_sched.analysis import build_visualization_bundle
+
+    bundle = build_visualization_bundle(
+        run_root=Path("tmp/run-prefill-001"),
+        manifest=_manifest("run-prefill-001", "prefill_seq128"),
+        target_profile=_single_core_target(),
+        scenario_profile=_prefill_scenario(),
+        canonical_graph_ir=_graph_ir(),
+        schedule_ir=_single_core_schedule(),
+        memory_plan=_memory_plan("single-core"),
+        coverage_report=_coverage_report("single-core"),
+        packed_descriptor_bundle=_packed_bundle("single-core"),
+        prefill_report=_prefill_report(),
+        decode_report=None,
+        phase_d_compare_report=None,
+        sweep_report=_sweep_report(),
+        sweep_root=Path("tmp/sweep-phase-d"),
+    )
+
+    assert bundle.sweep_view is not None
+    assert bundle.sweep_view.comparisons[0].compare_summary is not None
+    assert bundle.sweep_view.comparisons[0].compare_summary.baseline_schedule_kind == "single-core"
+    assert bundle.sweep_view.comparisons[0].compare_summary.candidate_schedule_kind == "dual-core"
+    assert [group.group_id for group in bundle.sweep_view.comparisons[0].compare_summary.scalar_delta_groups] == [
+        "headline",
+        "throughput_latency",
+    ]
+    grouped_metric_names = {
+        group.group_id: [scalar.metric_name for scalar in group.scalar_deltas]
+        for group in bundle.sweep_view.comparisons[0].compare_summary.scalar_delta_groups
+    }
+    assert grouped_metric_names["headline"] == ["estimated_cycles"]
+    assert grouped_metric_names["throughput_latency"] == ["estimated_cycles"]
+    assert bundle.sweep_view.comparisons[0].compare_summary.bandwidth_pressure_compare is None
+    assert bundle.sweep_view.comparisons[0].metric_deltas["estimated_cycles"] == -1024.0
 
 
 def test_build_visualization_bundle_propagates_vmem_region_backing_store_breakdown() -> None:
@@ -790,6 +858,8 @@ def _sweep_report() -> SweepDeltaReport:
                     "mode": "prefill",
                     "baseline_target_profile_name": "riscv_npu_single_core_v1",
                     "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "baseline_schedule_kind": "single-core",
+                    "candidate_schedule_kind": "dual-core",
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "metric_deltas": [
                         {
@@ -845,6 +915,24 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                     "candidate_schedule_kind": "dual-core",
                     "profile_diff_fields": ["core_mode", "num_cores"],
                     "layer_delta_count": 1,
+                    "fitted_layer_delta_count": 1,
+                    "fitted_layer_deltas": [
+                        {
+                            "layer_id": 0,
+                            "baseline_fitted_work_cycles": 1792.0,
+                            "candidate_fitted_work_cycles": 1280.0,
+                            "delta_fitted_work_cycles": -512.0,
+                            "baseline_fitted_cycle_share": 0.7,
+                            "candidate_fitted_cycle_share": 0.625,
+                            "delta_fitted_cycle_share": -0.075,
+                            "delta_fitted_work_cycles_ratio": -0.2857142857,
+                            "baseline_bytes": 65536.0,
+                            "candidate_bytes": 49152.0,
+                            "delta_bytes": -16384.0,
+                            "delta_bytes_ratio": -0.25,
+                            "change_direction": "down",
+                        }
+                    ],
                     "estimated_cycles": {
                         "baseline_value": 4096.0,
                         "candidate_value": 3072.0,
@@ -1156,6 +1244,59 @@ def _phase_d_compare_report() -> PhaseDCompareReport:
                         "candidate_value": 0.625,
                         "delta_value": -0.125,
                         "delta_ratio": -0.1666666667,
+                    },
+                    "bandwidth_pressure_compare": {
+                        "peak_bandwidth_pressure": {
+                            "baseline_value": 640.0,
+                            "candidate_value": 512.0,
+                            "delta_value": -128.0,
+                            "delta_ratio": -0.2,
+                        },
+                        "peak_pressure_subject_id": {
+                            "baseline_value": "nig.node.sdpa.0",
+                            "candidate_value": "nig.node.linear.0",
+                            "changed": True,
+                        },
+                        "dominant_read_backing_store": {
+                            "baseline_value": "ddr-persistent",
+                            "candidate_value": "ddr-backed-staged",
+                            "changed": True,
+                        },
+                        "dominant_write_memory_class": {
+                            "baseline_value": "ACTIVATION",
+                            "candidate_value": "ACTIVATION",
+                            "changed": False,
+                        },
+                    },
+                    "vmem_pressure_compare": {
+                        "hottest_region": {
+                            "baseline_value": "ping",
+                            "candidate_value": "pong",
+                            "changed": True,
+                        },
+                        "hottest_region_peak_bytes": {
+                            "baseline_value": 786432.0,
+                            "candidate_value": 655360.0,
+                            "delta_value": -131072.0,
+                            "delta_ratio": -0.1666666667,
+                        },
+                        "hottest_region_capacity_bytes": {
+                            "baseline_value": 1048576.0,
+                            "candidate_value": 1048576.0,
+                            "delta_value": 0.0,
+                            "delta_ratio": 0.0,
+                        },
+                        "hottest_region_utilization": {
+                            "baseline_value": 0.75,
+                            "candidate_value": 0.625,
+                            "delta_value": -0.125,
+                            "delta_ratio": -0.1666666667,
+                        },
+                        "hottest_region_dominant_memory_class": {
+                            "baseline_value": "ACTIVATION",
+                            "candidate_value": "KV_CACHE",
+                            "changed": True,
+                        },
                     },
                 }
             ],

@@ -101,7 +101,56 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                             "candidate_value": 3072.0,
                             "delta_value": -1024.0,
                             "delta_ratio": -0.25,
+                        },
+                        {
+                            "metric_name": "tokens_per_cycle",
+                            "baseline_value": 0.03125,
+                            "candidate_value": 0.0416666667,
+                            "delta_value": 0.0104166667,
+                            "delta_ratio": 0.3333333344,
                         }
+                    ],
+                    "metric_delta_groups": [
+                        {
+                            "group_id": "headline",
+                            "title": "Headline",
+                            "metric_deltas": [
+                                {
+                                    "metric_name": "estimated_cycles",
+                                    "baseline_value": 4096.0,
+                                    "candidate_value": 3072.0,
+                                    "delta_value": -1024.0,
+                                    "delta_ratio": -0.25,
+                                },
+                                {
+                                    "metric_name": "tokens_per_cycle",
+                                    "baseline_value": 0.03125,
+                                    "candidate_value": 0.0416666667,
+                                    "delta_value": 0.0104166667,
+                                    "delta_ratio": 0.3333333344,
+                                },
+                            ],
+                        },
+                        {
+                            "group_id": "throughput_latency",
+                            "title": "Throughput / Latency",
+                            "metric_deltas": [
+                                {
+                                    "metric_name": "estimated_cycles",
+                                    "baseline_value": 4096.0,
+                                    "candidate_value": 3072.0,
+                                    "delta_value": -1024.0,
+                                    "delta_ratio": -0.25,
+                                },
+                                {
+                                    "metric_name": "tokens_per_cycle",
+                                    "baseline_value": 0.03125,
+                                    "candidate_value": 0.0416666667,
+                                    "delta_value": 0.0104166667,
+                                    "delta_ratio": 0.3333333344,
+                                },
+                            ],
+                        },
                     ],
                     "macro_deltas": [
                         {
@@ -250,6 +299,13 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
 
     assert report.completed_run_count == 4
     assert report.comparisons[0].metric_deltas[0].delta_ratio == -0.25
+    assert [group.group_id for group in report.comparisons[0].metric_delta_groups] == [
+        "headline",
+        "throughput_latency",
+    ]
+    assert [
+        metric.metric_name for metric in report.comparisons[0].metric_delta_groups[0].metric_deltas
+    ] == ["estimated_cycles", "tokens_per_cycle"]
     assert report.run_records[0].node_hotspots[0].node_id == "nig.node.linear.0"
     assert report.run_records[0].node_hotspots[0].fitted_work_cycles == pytest.approx(3584.0)
     assert report.run_records[0].node_hotspots[0].fitted_cycle_share == pytest.approx(0.7777777778)
@@ -548,3 +604,94 @@ def test_sweep_delta_report_accepts_legacy_compare_summary_without_critical_path
     assert compare.fitted_cycles_per_token.delta_value == 0.0
     assert compare.projection_fitted_work_cycles.delta_value == 0.0
     assert compare.attention_fitted_work_cycles.delta_value == 0.0
+
+
+def test_sweep_delta_report_accepts_pressure_summary_compares() -> None:
+    report = SweepDeltaReport.model_validate(
+        {
+            "sweep_name": "phase-d-pressure-compare",
+            "baseline_target_profile_name": "riscv_npu_single_core_v1",
+            "completed_run_count": 2,
+            "failed_run_count": 0,
+            "run_records": [],
+            "comparisons": [
+                {
+                    "scenario_name": "prefill_seq128",
+                    "mode": "prefill",
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "metric_deltas": [],
+                    "macro_deltas": [],
+                    "layer_deltas": [],
+                    "bandwidth_pressure_compare": {
+                        "peak_bandwidth_pressure": {
+                            "baseline_value": 640.0,
+                            "candidate_value": 512.0,
+                            "delta_value": -128.0,
+                            "delta_ratio": -0.2,
+                        },
+                        "peak_pressure_subject_id": {
+                            "baseline_value": "nig.node.sdpa.0",
+                            "candidate_value": "nig.node.linear.0",
+                            "changed": True,
+                        },
+                        "dominant_read_backing_store": {
+                            "baseline_value": "ddr-persistent",
+                            "candidate_value": "ddr-backed-staged",
+                            "changed": True,
+                        },
+                        "dominant_write_memory_class": {
+                            "baseline_value": "ACTIVATION",
+                            "candidate_value": "ACTIVATION",
+                            "changed": False,
+                        },
+                    },
+                    "vmem_pressure_compare": {
+                        "hottest_region": {
+                            "baseline_value": "ping",
+                            "candidate_value": "pong",
+                            "changed": True,
+                        },
+                        "hottest_region_peak_bytes": {
+                            "baseline_value": 786432,
+                            "candidate_value": 524288,
+                            "delta_value": -262144,
+                            "delta_ratio": -0.3333333333,
+                        },
+                        "hottest_region_capacity_bytes": {
+                            "baseline_value": 1048576,
+                            "candidate_value": 1048576,
+                            "delta_value": 0,
+                            "delta_ratio": 0.0,
+                        },
+                        "hottest_region_utilization": {
+                            "baseline_value": 0.75,
+                            "candidate_value": 0.5,
+                            "delta_value": -0.25,
+                            "delta_ratio": -0.3333333333,
+                        },
+                        "hottest_region_dominant_memory_class": {
+                            "baseline_value": "ACTIVATION",
+                            "candidate_value": "KV_CACHE",
+                            "changed": True,
+                        },
+                    },
+                    "prefill_compare": None,
+                    "decode_compare": None,
+                }
+            ],
+            "issues": [],
+        }
+    )
+
+    comparison = report.comparisons[0]
+    assert comparison.bandwidth_pressure_compare is not None
+    assert comparison.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value == -128.0
+    assert comparison.bandwidth_pressure_compare.peak_pressure_subject_id.changed is True
+    assert comparison.bandwidth_pressure_compare.dominant_write_memory_class.changed is False
+    assert comparison.vmem_pressure_compare is not None
+    assert comparison.vmem_pressure_compare.hottest_region.changed is True
+    assert comparison.vmem_pressure_compare.hottest_region_utilization.delta_value == pytest.approx(
+        -0.25
+    )

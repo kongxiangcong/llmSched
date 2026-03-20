@@ -4,6 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from llm_sched.compare_grouping import CompareGroupId
+from llm_sched.contracts.perf_report import PerfBandwidthPressureSummary, PerfVMEMPressureSummary
+
 
 def _zero_scalar_delta() -> "SweepScalarDelta":
     return SweepScalarDelta(
@@ -77,6 +80,10 @@ class SweepRunRecord(BaseModel):
     status: Literal["completed", "failed"]
     report_path: str | None = None
     metrics: dict[str, float] = Field(default_factory=dict)
+    bandwidth_pressure_summary: PerfBandwidthPressureSummary = Field(
+        default_factory=PerfBandwidthPressureSummary
+    )
+    vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
     macro_hotspots: list[SweepMacroPoint] = Field(default_factory=list)
     node_hotspots: list[SweepNodePoint] = Field(default_factory=list)
     layer_breakdown: list[SweepLayerPoint] = Field(default_factory=list)
@@ -93,6 +100,14 @@ class SweepMetricDelta(BaseModel):
     delta_ratio: float
 
 
+class SweepMetricDeltaGroup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: CompareGroupId
+    title: str
+    metric_deltas: list[SweepMetricDelta] = Field(default_factory=list)
+
+
 class SweepScalarDelta(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -100,6 +115,14 @@ class SweepScalarDelta(BaseModel):
     candidate_value: float
     delta_value: float
     delta_ratio: float
+
+
+class SweepLabelDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_value: str | None = None
+    candidate_value: str | None = None
+    changed: bool = False
 
 
 class SweepMacroDelta(BaseModel):
@@ -170,6 +193,30 @@ class SweepFittedLayerDelta(BaseModel):
     delta_bytes: float = 0.0
     delta_bytes_ratio: float = 0.0
     change_direction: Literal["up", "down", "flat"] = "flat"
+
+
+class SweepBandwidthPressureCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    peak_bandwidth_pressure: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    peak_pressure_subject_id: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_read_address_space: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_write_address_space: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_read_backing_store: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_write_backing_store: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_read_memory_class: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    dominant_write_memory_class: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+
+
+class SweepVMEMPressureCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    hottest_region: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    hottest_region_peak_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    hottest_region_capacity_bytes: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    hottest_region_utilization: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    hottest_region_dominant_memory_class: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
+    hottest_region_dominant_backing_store: SweepLabelDelta = Field(default_factory=SweepLabelDelta)
 
 
 class SweepPrefillCompareSummary(BaseModel):
@@ -552,12 +599,17 @@ class SweepComparison(BaseModel):
     mode: Literal["prefill", "decode"]
     baseline_target_profile_name: str
     candidate_target_profile_name: str
+    baseline_schedule_kind: Literal["single-core", "dual-core"] | None = None
+    candidate_schedule_kind: Literal["single-core", "dual-core"] | None = None
     profile_diff_fields: list[str] = Field(default_factory=list)
     metric_deltas: list[SweepMetricDelta] = Field(default_factory=list)
+    metric_delta_groups: list[SweepMetricDeltaGroup] = Field(default_factory=list)
     macro_deltas: list[SweepMacroDelta] = Field(default_factory=list)
     layer_deltas: list[SweepLayerDelta] = Field(default_factory=list)
     node_deltas: list[SweepNodeDelta] = Field(default_factory=list)
     fitted_layer_deltas: list[SweepFittedLayerDelta] = Field(default_factory=list)
+    bandwidth_pressure_compare: SweepBandwidthPressureCompareSummary | None = None
+    vmem_pressure_compare: SweepVMEMPressureCompareSummary | None = None
     prefill_compare: SweepPrefillCompareSummary | None = None
     decode_compare: SweepDecodeCompareSummary | None = None
 

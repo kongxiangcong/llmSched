@@ -17,7 +17,7 @@
 | --- | --- | --- | --- |
 | Phase A | SPEC-01, SPEC-02, SPEC-05, SPEC-06 | `done` | 契约、工件、架构模型、IR 栈都已经稳定落地。 |
 | Phase B | SPEC-03, SPEC-04, SPEC-07 | `done` | import/decomposition/bound-NIG/report/smoke gate 已收口。 |
-| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `done` | canonical `run-phase-c-gate` 已可稳定通过，且 `tests/smoke -m local_smoke` / `tests/smoke -m milestone_matrix` 均为绿；`SPEC-08` 到 `SPEC-12` 已按当前 accepted scope 收口。 |
+| Phase C | SPEC-08, SPEC-09, SPEC-10, SPEC-11, SPEC-12 | `done` | real-model checkpoint 已重新打通；`run-phase-c-gate`、`local_smoke`、`milestone_matrix` 与 full `pytest` 均已恢复绿色。 |
 | Phase D | SPEC-13, SPEC-14, SPEC-15, SPEC-16 | `in_progress` | `SPEC-13` 已有 descriptor-driven estimator/workflow/CLI/smoke foundation，`SPEC-14` 已有 prefill top-level foundation，`SPEC-15` 已有 decode top-level foundation，`SPEC-16` 已有 sweep/delta workflow、CLI 和 smoke foundation。 |
 | Phase E | SPEC-17, SPEC-18, SPEC-19 | `in_progress` | `SPEC-17` 已有大量 regression tests，`SPEC-18` 已有 visualization bundle workflow、CLI 和 smoke foundation，且 `vmem_view.regions` 已带 per-region backing-store/memory-class attribution；`SPEC-19` 已有 static workbench、cross-run catalog workflow、CLI、smoke foundation，以及 sweep/workspace discovery、catalog grouping、panel deep-link、workbench cross-links、saved-view/export controls、SVG snapshot export、catalog compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation、catalog/workbench round-trip return navigation，以及 memory panel 的 per-region backing-store/memory-class visibility。 |
 
@@ -25,7 +25,8 @@
 
 - Phase A 已完成。
 - Phase B 已完成。
-- 当前关键路径已转到 Phase D / `M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
+- Phase C 已重新完成，当前以 `run-phase-c-gate` 与 smoke/full regression 维持 keep-green。
+- 当前关键路径重新回到 `Phase D / M3`。
 
 ## 3. Spec 状态矩阵
 
@@ -43,13 +44,13 @@
 | SPEC-10 | 单核映射与调度器 | C | `done` | 已有扩展后的 `ScheduleIR`、interval reservations、duration policy、phased reservations，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 scheduler surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
 | SPEC-11 | 双核映射与调度器 | C | `done` | 已有 dual-core `ScheduleIR` foundation、transfer/sync overlap、shared-resource contention，以及 `RMSNORM/GEGLU/ELEM_ADD` helper-store 审计结果。 | acceptance list 已冻结，当前 dual-core surface 已由 canonical gate 与 milestone smoke 证明可稳定供 `SPEC-12/13` 消费。 |
 | SPEC-12 | 描述符生成与 ISA 覆盖映射 | C | `done` | 已有稳定 `DescriptorIR` / packed stream artifact、summary-grade packed consumer proof、workbench packed-summary visibility，以及 structured `address_fields` 对 `storage_binding_id/backing_store` 的直接复用。 | packed summary consumer proof + workbench summary visibility 已纳入当前 canonical gate；per-record drilldown 和更重 ABI hardening 不再阻塞 `M2`。 |
-| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
-| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
-| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前 `SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
-| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；当前 `SPEC-16` 也已并行比较 summary-grade fitted toplines，并通过 standalone `PhaseDCompareReport` 透传这些 prefill/decode fitted compare rows；最新 slice 也已从保留的 `node_hotspots` / `layer_breakdown` 构建 fitted `node_deltas` 与 `fitted_layer_deltas`，并在 sweep compare 与 standalone compare report 中公开；同时也已有 `run-phase-d-compare` workflow/CLI 和 standalone `PhaseDCompareReport` artifact。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式；visualization-specific fitted compare payload 仍属于后续 scope。 |
+| SPEC-13 | 性能估算与瓶颈分析器 | D | `in_progress` | 已有 pseudo/fallback `AnalysisIR` estimator，以及 descriptor-driven `AnalysisIR` / `PerfSummaryReport`、run-root workflow、CLI 和四象限 smoke foundation；`PerfSummaryReport` 现已带 schedule occupancy、bandwidth/VMEM breakdown、per-region backing-store attribution、per-region memory-class attribution，以及稳定的 per-node / per-layer cycle-byte summaries、summary-grade `phase_attribution`、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure、summary-grade `bandwidth_pressure_summary` / `vmem_pressure_summary`，以及 overlap-aware `critical_path_cycles` top-line summary。 | 仍缺更深 cycle fitting，以及高于当前 critical-path / token-phase / node-layer summary surface 的 compare-grade 聚合。 |
+| SPEC-14 | Prefill 评估流水线 | D | `in_progress` | 已有 `PrefillEvaluationReport` contract、prefill report builder、run-root workflow、CLI 和 `single-core/dual-core x prefill` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前也已直接复用 `SPEC-13.bandwidth_pressure_summary` / `SPEC-13.vmem_pressure_summary`；`SPEC-16` sweep compare 已正式消费 prefill top-level metrics 形成结构化 `prefill_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细的 layer-level prefill 视图，以及更强的 top-level eval compare 闭环。 |
+| SPEC-15 | Decode 评估流水线 | D | `in_progress` | 已有 `DecodeEvaluationReport` contract、decode report builder、run-root workflow、CLI 和 `single-core/dual-core x decode` smoke foundation；`memory_hotspot` 已直接带 hottest-region backing-store attribution 和 memory-class attribution，且现已新增 `node_hotspots` 与 `layer_breakdown`；当前也已直接复用 `SPEC-13.bandwidth_pressure_summary` / `SPEC-13.vmem_pressure_summary`；`SPEC-16` sweep compare 已正式消费 decode top-level metrics 形成结构化 `decode_compare`，并已有独立 `PhaseDCompareReport` artifact 将其抬升到 standalone compare surface。 | 仍缺更细 token latency 拆解、`kv_len` sweep aggregation，以及更强的 top-level eval compare 闭环。 |
+| SPEC-16 | 假设扫描与差异对比引擎 | D | `in_progress` | 已有 `SweepSpec` / `SweepDeltaReport` contract、serial rerun workflow、CLI 和 Gemma3 sweep smoke foundation；当前 comparison surface 已包含 metric、macro、layer deltas，以及 mode-aware 的 `prefill_compare` / `decode_compare` top-level summaries，并进一步保留 phase-cycle、phase-share、phase-byte、phase-byte-share、phase-bytes-per-cycle、phase-cycle-components、phase-address-space-pressure、phase-backing-store-pressure、phase-memory-class-pressure、phase-schedule-compression、phase-occupied-slots 与 selected phase-balance rows；当前 `SPEC-16` 也已并行比较 summary-grade fitted toplines，并通过 standalone `PhaseDCompareReport` 透传这些 prefill/decode fitted compare rows；最新 slice 也已从保留的 `node_hotspots` / `layer_breakdown` 构建 fitted `node_deltas` 与 `fitted_layer_deltas`，并在 sweep compare 与 standalone compare report 中公开；当前又进一步把 `SPEC-13/14/15` 的 `bandwidth_pressure_summary` / `vmem_pressure_summary` 提升成 compare-grade `bandwidth_pressure_compare` / `vmem_pressure_compare`，并在 standalone compare report 中透传，且 `SPEC-18/19` 已正式消费这两个 pressure compare summaries；raw `SweepComparison` 现在也已保留 grouped `metric_delta_groups` 与 schedule-kind context，downstream visualization packaging 无需依赖 `PhaseDCompareReport` 也能合成 multi-metric compare summary。 | 仍缺更丰富的 layer-level diff、并行执行、缓存复用和更丰富的比较模式。 |
 | SPEC-17 | 验证与回归框架 | E | `in_progress` | 当前已覆盖 profile、IR、frontend、pipeline 的大量 regression tests。 | 需扩展到 planner/descriptor/perf/report schema。 |
 | SPEC-18 | 可视化数据服务 | E | `in_progress` | 已有 `VisualizationBundle` contract、run-root packaging workflow、CLI 和 Gemma3 visualization smoke foundation，且 `vmem_view.regions` 已直接带 per-region backing-store attribution 和 per-region memory-class attribution；`sweep_view.comparisons` 现在也已直接带结构化 `layer_deltas`。 | 仍缺 live query service、多运行 catalog、深层 drill-down 数据和更正式的 API/service 层。 |
-| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 metric-plus-layer summary compare 的更强 compare modes。 |
+| SPEC-19 | 可视化分析工作台 | E | `in_progress` | 已有 `VisualizationWorkbenchArtifact`、static workbench builder、`run-visualization-workbench` workflow/CLI、支持显式 `run_root` 与 `sweep_root/workspace_root` 发现的 cross-run catalog foundation，以及 graph/timeline 搜索过滤、timeline block drill-down、catalog search、scenario grouping/navigation、panel deep-link routing、workbench 内部的 descriptor/block/tensor cross-links、memory panel 的 per-region backing-store visibility 和 per-region memory-class visibility，以及 saved-view link copy / active-panel JSON export / active-panel SVG export / catalog compare tray / baseline-pinned compare workspace / baseline-candidate role swap / same-scenario versus all-visible compare scope / shared summary-metric compare / selected-panel deep-link navigation / catalog-workbench round-trip return navigation；在 `workspace_root` 模式下，catalog 顶部也已可直接显示 `Phase C Gate` 摘要，sweep panel 已能直接显示 layer-level compare rows，catalog compare/workspace 现在也能直接显示 matched sweep `layer_deltas`，并带稳定 top-N 排序、explicit sweep drill-down、URL-persisted `layer delta focus` 过滤、layer-level deep-link into focused sweep state，以及 focus-aware sweep panel export metadata、focused layer detail summary、focus-aware export filenames、snapshot titles 和 structured snapshot metadata header blocks；最新 slice 也已把 `bandwidth_pressure_compare` / `vmem_pressure_compare` 接到 workbench 与 catalog compare surface。 | 仍缺 richer screenshot workflow、更深的 workspace drill-down，以及超出当前 scalar-plus-layer-plus-pressure summary compare 的更强 compare modes。 |
 
 ## 4. 当前主路径
 
@@ -58,8 +59,9 @@
 1. `Phase A = done`
 2. `Phase B = done`
 3. `Phase C = done`
-   - canonical `run-phase-c-gate` 已稳定为 `ready_for_acceptance`
-   - `SPEC-08/09/10/11/12` 已按当前 accepted scope 收口，不再作为默认 blocker
+   - real-model frontend 已恢复，unsupported lowering nodes = `0`
+   - canonical `run-phase-c-gate` 已回到 `ready_for_acceptance`
+   - `local_smoke` / `milestone_matrix` / full `pytest` 当前均为绿色
 4. `Phase D = in_progress`
    - 当前真正的主门槛改为 `M3`
    - 重点是把 `SPEC-13/14/15/16` 从 stable foundation 推到更完整的评估闭环
@@ -72,8 +74,8 @@
 1. 先继续收口 `M3`
    - `SPEC-13 -> SPEC-14/15 -> SPEC-16`
 2. `SPEC-18/19` 继续做产品化 hardening，但不再开新的底层 contract
-3. 保持 `run-phase-c-gate` 绿色，但没有 concrete failing workspace / smoke regression 时不主动重开 `SPEC-08/09/10/11/12`
-4. 避免误把 “Phase C 已完成” 当成 “M3 / M4 也已完成”
+3. 以 `run-phase-c-gate`、`local_smoke` 和 `milestone_matrix` 持续维持 `SPEC-08/09/10/11/12` 的 keep-green
+4. 避免因为主线恢复而跳过 `M3` 的 deeper estimator / eval / compare 收口
 
 ### 正式进入下一阶段的门槛
 
@@ -83,7 +85,7 @@
 | 进入 Phase D | `SPEC-08` 到 `SPEC-12` 全部 `done`，且单核/双核计划和 descriptor/ISA coverage 可稳定输出 |
 | 进入 Phase E | `SPEC-13` 到 `SPEC-16` 全部 `done`，且 prefill/decode 全流程评估结果稳定 |
 
-当前已经正式越过 `Phase C / M2` 门槛，项目主门槛改为 `Phase D / M3` 收口，并辅以 `SPEC-19` 的产品化 hardening。
+当前项目并不是重新跌回 Phase B；而是 real-model frontend 已恢复，但 `Phase C / M2` checkpoint 因 prefill planner overflow 重新变成 `in_progress`。在这个 checkpoint 重新变绿之前，`M3` 仍应被视为“有上游 keep-green 前置”的主门槛。
 
 ## 5. 依赖图
 
@@ -163,8 +165,8 @@ graph TD
 | 里程碑 | 对应完成条件 | 状态 | 当前判断 |
 | --- | --- | --- | --- |
 | M1 能看懂模型 | SPEC-01,02,03,04,05,06,07 | `done` | Phase B 已完成，语义层契约可稳定供 Phase C 复用。 |
-| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-12 fresh canonical `run-phase-c-gate` = `ready_for_acceptance`；`tests/smoke -m local_smoke -q` 与 `tests/smoke -m milestone_matrix -q` 也均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
-| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得 formal top-level compare consumer 与 fitted hotspot/layer compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-backing-store-pressure/phase-memory-class-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows、fitted `node_deltas` / `fitted_layer_deltas`，以及 standalone `PhaseDCompareReport` artifact。同时 `SPEC-18/19` 已能消费这些结果，但 Phase D 仍缺更深的 estimator、更强的 top-level report compare surface，以及 visualization-specific fitted compare adoption。 |
+| M2 能映射到硬件 | SPEC-08,09,10,11,12 | `done` | 2026-03-19 real-model checkpoint 已重新确认：`run-phase-c-gate` 回到 `ready_for_acceptance`，`tests/smoke -m local_smoke -q`、`tests/smoke -m milestone_matrix -q` 和 full `pytest` 均为绿，当前 accepted scope 下的 `SPEC-08/09/10/11/12` 已可稳定输出。 |
+| M3 能做架构评估 | SPEC-13,14,15,16 | `in_progress` | `SPEC-13` 已有正式 perf foundation，并新增 stable 的 per-node / per-layer perf summary、token-normalized phase attribution、phase occupied slots、phase-aware address-space pressure、phase-aware backing-store pressure、phase-aware memory-class pressure，以及 summary-grade `bandwidth_pressure_summary` / `vmem_pressure_summary`；`SPEC-14` 和 `SPEC-15` 已有 top-level foundation，且现已暴露 `node_hotspots` 与 `layer_breakdown`，并通过 `SPEC-16` 获得 formal top-level compare consumer、pressure-summary compare consumer 与 fitted hotspot/layer compare consumer；`SPEC-16` 已有 sweep/delta foundation、mode-aware compare summaries、phase-cycle/phase-share/phase-byte/phase-byte-share/phase-density/phase-cycle-components/phase-address-space-pressure/phase-backing-store-pressure/phase-memory-class-pressure/phase-schedule-compression/phase-occupied-slots/selected-phase-balance richer compare rows、pressure-grade `bandwidth_pressure_compare` / `vmem_pressure_compare`、grouped `metric_delta_groups`、fitted `node_deltas` / `fitted_layer_deltas`，以及 standalone `PhaseDCompareReport` artifact，同时 raw visualization packaging 也已能消费 grouped metric compare。Phase D 仍缺更深的 estimator、更强的 layer-level diff mode，以及更丰富的 compare modes。 |
 | M4 能被团队日常使用 | SPEC-17,18,19 | `in_progress` | `SPEC-18` 已有 visualization bundle foundation，`SPEC-19` 也已有带搜索/过滤/drill-down、cross-links、saved-view/export、SVG snapshot 的 static workbench，以及带 grouping/navigation、panel deep-link、compare tray、baseline-pinned compare workspace、baseline/candidate role swap、compare scope toggle、shared summary-metric compare、selected-panel deep-link navigation 和 catalog/workbench round-trip return navigation 的发现式 catalog，但团队日常使用闭环仍缺更深的 workspace drill-down、超出当前 summary-grade compare 的更强 compare 能力和 richer screenshot 能力。 |
 
 ## 7. 当前 To Do List
@@ -179,19 +181,26 @@ graph TD
   - single-core / dual-core compare view
 - `SPEC-16`
   - richer diff mode
-  - multi-metric compare，而不只是 baseline summary
+  - richer layer-level diff mode，而不只是 grouped summary metric compare
+  - broader compare modes beyond current grouped scalar-plus-layer-plus-pressure surface
 
-### P1：继续 harden `SPEC-19`
+### P2：继续 harden `SPEC-19`
 
 - richer compare drill-down beyond current shared summary-metric deltas
 - deeper workspace drill-down beyond current selected-panel deep links
 - richer screenshot/export workflow
 
-### P2：保持 `Phase C / M2` 绿色
+### P1：保持 `Phase C / M2` 绿色
 
 - 持续以 `run-phase-c-gate` 和 milestone smoke 维护 canonical `single-core/dual-core x prefill/decode` matrix
 - 只有在出现 concrete failing workspace、smoke regression 或 downstream consumer failure 时，才重开 `SPEC-08/09/10/11/12`
 - 不再默认重开宏观 coverage、per-record drilldown 或无证据的 generic exploration
+
+### P2：继续 harden `SPEC-19`
+
+- richer compare drill-down beyond current shared summary-metric deltas
+- deeper workspace drill-down beyond current selected-panel deep links
+- richer screenshot/export workflow
 
 ## 8. 风险前置结论
 
@@ -2386,6 +2395,41 @@ graph TD
   - richer compare-grade exposure of fitted cycles remains later `SPEC-16` work
   - any future compare or workbench expansion should continue consuming the existing report and compare contracts instead of reopening this batch's summary-grade surfaces
 
+## 2026-03-20 SPEC-13 Pressure Summary Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-13-pressure-summary.md`
+- `SPEC-13` now exposes summary-grade `bandwidth_pressure_summary` and `vmem_pressure_summary` alongside the existing raw breakdown maps.
+- this slice stays intentionally narrow:
+  - no new estimator math
+  - no `SPEC-14/15` report-builder adoption yet
+  - no `SPEC-16` compare-contract changes yet
+- new closure evidence:
+  - focused verification is green: `python -m pytest tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `12 passed`
+- what this closes:
+  - one readability gap where downstream consumers had to reconstruct peak bandwidth and hottest-VMEM-region signals from multiple raw maps
+  - one contract gap where `SPEC-14/15/19` had no compact summary-grade pressure surface to reuse directly
+- what still remains for `M3`:
+  - `SPEC-14/15` still need to adopt the richer `SPEC-13` pressure surface where it improves report readability
+  - `SPEC-16` still needs richer compare-grade exposure for pressure summaries
+  - deeper cycle fitting remains future `SPEC-13` work, separate from this summary slice
+
+## 2026-03-20 SPEC-14/15 Pressure Summary Adoption Checkpoint
+
+- plan doc: `../plans/2026-03-20-spec-14-15-pressure-summary-adoption.md`
+- `PrefillEvaluationReport` and `DecodeEvaluationReport` now expose `bandwidth_pressure_summary` and `vmem_pressure_summary` directly.
+- this slice stays strictly downstream of `SPEC-13`:
+  - no new estimator math
+  - no report-local reconstruction of pressure signals
+  - no `SPEC-16` compare contract changes yet
+- new closure evidence:
+  - focused verification is green: `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- what this closes:
+  - one adoption gap where `SPEC-13` already had reusable summary-grade pressure signals but `SPEC-14/15` still only exposed raw hotspot/memory maps
+  - one downstream readability gap where prefill/decode consumers could not access the same peak-pressure surface as the perf summary
+- what still remains for `M3`:
+  - `SPEC-16` still needs compare-grade pressure-summary exposure
+  - `SPEC-14/15` still need richer top-level compare and deeper scenario-specific analysis beyond this adoption slice
+
 ## 2026-03-14 Progress Review Checkpoint
 
 - audit scope:
@@ -2789,3 +2833,47 @@ graph TD
   - prefill/decode top-level adoption of the new fitted cycle surface remains later `SPEC-14/15` work
   - richer compare-grade exposure of fitted cycles remains later `SPEC-16` work
   - any future compare or workbench expansion should continue consuming the existing report and compare contracts instead of reopening this batch's summary-grade surfaces
+## 2026-03-20 SPEC-16 Fitted Layer Diff Visualization Update
+
+- `SPEC-16 -> SPEC-18/19` visualization adoption has advanced one slice:
+  - visualization bundle compare payloads now preserve `fitted_layer_deltas`
+  - visualization catalog artifacts now preserve `fitted_layer_deltas`
+  - catalog compare/workspace now supports fitted-focused layer diff modes:
+    - `top-by-fitted-work`
+    - `fitted-regressions-only`
+  - workbench sweep rendering/export now includes fitted layer delta rows and focused fitted-layer snapshot summaries
+- this moves the remaining `SPEC-16` gap from “fitted layer compare missing downstream” to:
+  - richer compare modes beyond the current grouped scalar plus estimated/fitted layer plus pressure surface
+  - deeper compare/workspace drill-down
+  - any later block-level or execution-parallel diff work
+- focused verification for this slice:
+  - `python -m pytest tests/unit/contracts/test_visualization_bundle.py tests/unit/contracts/test_visualization_catalog.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py -q` -> `22 passed`
+  - `python -m pytest tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `13 passed`
+  - `python -m pytest tests/smoke/test_cli_run_visualization_packaging.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `10 passed`
+
+## Current Next Slice
+
+- `SPEC-16`
+  - stronger compare modes beyond the current estimated/fitted layer and grouped-scalar summaries
+  - next best slice is richer layer-level diff or broader compare grouping on top of the now-stable visualization payload
+- `SPEC-19`
+  - workspace drill-down and workspace-local link/JSON/SVG export are now in place
+  - any next `SPEC-19` slice should stay downstream of the current compare/export payloads and focus on higher-value compare interaction rather than reopening contracts
+
+## 2026-03-20 SPEC-19 Workspace Export Hardening Update
+
+- `SPEC-19` catalog workspace now has workspace-local `Copy Workspace Link`, `Export Workspace JSON`, and `Export Workspace SVG` controls.
+- those exports now preserve focused workspace context in summary-grade metadata:
+  - `Focused Compare Scope`
+  - `Focused Layer Delta Mode`
+  - `Focused Baseline`
+  - `Focused Candidate Count`
+  - `Focused Sweep Candidate`
+  - `Focused Sweep Layer`
+- this closes one concrete `SPEC-19` workflow gap where the new workspace drilldown could be inspected locally but not copied or snapshotted from the catalog itself.
+- focused verification for this slice:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py -q` -> `11 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/analysis/test_visualization_bundle_builder.py tests/unit/pipeline/test_visualization_packaging_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `30 passed`
+- next best follow-on:
+  - keep `SPEC-16` as the mainline blocker and push richer compare modes there first
+  - only then return to `SPEC-19` for higher-value interaction polish above the now-stable export path

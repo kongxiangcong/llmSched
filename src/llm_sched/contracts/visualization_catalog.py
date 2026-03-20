@@ -99,6 +99,24 @@ class VisualizationCatalogSweepLayerDelta(BaseModel):
     change_direction: Literal["up", "down", "flat"] = "flat"
 
 
+class VisualizationCatalogSweepFittedLayerDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    baseline_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
+    candidate_fitted_work_cycles: float = Field(ge=0.0, default=0.0)
+    delta_fitted_work_cycles: float = 0.0
+    baseline_fitted_cycle_share: float = Field(ge=0.0, default=0.0)
+    candidate_fitted_cycle_share: float = Field(ge=0.0, default=0.0)
+    delta_fitted_cycle_share: float = 0.0
+    delta_fitted_work_cycles_ratio: float = 0.0
+    baseline_bytes: float = Field(ge=0.0, default=0.0)
+    candidate_bytes: float = Field(ge=0.0, default=0.0)
+    delta_bytes: float = 0.0
+    delta_bytes_ratio: float = 0.0
+    change_direction: Literal["up", "down", "flat"] = "flat"
+
+
 class VisualizationCatalogSweepCompareScalarDelta(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -107,6 +125,58 @@ class VisualizationCatalogSweepCompareScalarDelta(BaseModel):
     candidate_value: float
     delta_value: float
     delta_ratio: float
+
+
+class VisualizationCatalogSweepCompareLabelDelta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_value: str | None = None
+    candidate_value: str | None = None
+    changed: bool = False
+
+
+class VisualizationCatalogSweepBandwidthPressureCompare(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    peak_bandwidth_pressure: VisualizationCatalogSweepCompareScalarDelta
+    peak_pressure_subject_id: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_read_address_space: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_write_address_space: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_read_backing_store: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_write_backing_store: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_read_memory_class: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    dominant_write_memory_class: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+
+
+class VisualizationCatalogSweepVMEMPressureCompare(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    hottest_region: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    hottest_region_peak_bytes: VisualizationCatalogSweepCompareScalarDelta | None = None
+    hottest_region_capacity_bytes: VisualizationCatalogSweepCompareScalarDelta | None = None
+    hottest_region_utilization: VisualizationCatalogSweepCompareScalarDelta | None = None
+    hottest_region_dominant_memory_class: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
+    hottest_region_dominant_backing_store: VisualizationCatalogSweepCompareLabelDelta = Field(
+        default_factory=VisualizationCatalogSweepCompareLabelDelta
+    )
 
 
 class VisualizationCatalogSweepCompareScalarDeltaGroup(BaseModel):
@@ -130,6 +200,8 @@ class VisualizationCatalogSweepCompareSummary(BaseModel):
     scalar_delta_groups: list[VisualizationCatalogSweepCompareScalarDeltaGroup] = Field(
         default_factory=list
     )
+    bandwidth_pressure_compare: VisualizationCatalogSweepBandwidthPressureCompare | None = None
+    vmem_pressure_compare: VisualizationCatalogSweepVMEMPressureCompare | None = None
 
 
 class VisualizationCatalogSweepComparison(BaseModel):
@@ -141,6 +213,7 @@ class VisualizationCatalogSweepComparison(BaseModel):
     metric_deltas: dict[str, float] = Field(default_factory=dict)
     compare_summary: VisualizationCatalogSweepCompareSummary | None = None
     layer_deltas: list[VisualizationCatalogSweepLayerDelta] = Field(default_factory=list)
+    fitted_layer_deltas: list[VisualizationCatalogSweepFittedLayerDelta] = Field(default_factory=list)
 
 
 class VisualizationCatalogArtifact(BaseModel):

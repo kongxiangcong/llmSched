@@ -4,19 +4,27 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from llm_sched.compare_grouping import (
+    build_grouped_metric_rows,
+    headline_metric_names_for_mode,
+)
 from llm_sched.contracts.sweep_report import (
+    SweepBandwidthPressureCompareSummary,
     SweepComparison,
     SweepDecodeCompareSummary,
     SweepDeltaReport,
     SweepFittedLayerDelta,
     SweepIssue,
+    SweepLabelDelta,
     SweepLayerDelta,
     SweepMacroDelta,
     SweepMetricDelta,
+    SweepMetricDeltaGroup,
     SweepNodeDelta,
     SweepPrefillCompareSummary,
     SweepRunRecord,
     SweepScalarDelta,
+    SweepVMEMPressureCompareSummary,
 )
 
 _PHASE_COMPARE_NAMES = ("projection", "kv_io", "attention", "sync", "other")
@@ -112,18 +120,30 @@ def build_sweep_delta_report(
                 continue
             if candidate_run.target_profile_name == baseline_target_profile_name:
                 continue
+            metric_deltas = _build_metric_deltas(baseline_run, candidate_run)
             comparisons.append(
                 SweepComparison(
                     scenario_name=scenario_name,
                     mode=mode,
                     baseline_target_profile_name=baseline_target_profile_name,
                     candidate_target_profile_name=candidate_run.target_profile_name,
+                    baseline_schedule_kind=baseline_run.schedule_kind,
+                    candidate_schedule_kind=candidate_run.schedule_kind,
                     profile_diff_fields=profile_diff_lookup.get(candidate_run.target_profile_name, []),
-                    metric_deltas=_build_metric_deltas(baseline_run, candidate_run),
+                    metric_deltas=metric_deltas,
+                    metric_delta_groups=_build_metric_delta_groups(metric_deltas, compare_mode=mode),
                     macro_deltas=_build_macro_deltas(baseline_run, candidate_run),
                     layer_deltas=_build_layer_deltas(baseline_run, candidate_run),
                     node_deltas=_build_node_deltas(baseline_run, candidate_run),
                     fitted_layer_deltas=_build_fitted_layer_deltas(baseline_run, candidate_run),
+                    bandwidth_pressure_compare=_build_bandwidth_pressure_compare_summary(
+                        baseline_run,
+                        candidate_run,
+                    ),
+                    vmem_pressure_compare=_build_vmem_pressure_compare_summary(
+                        baseline_run,
+                        candidate_run,
+                    ),
                     prefill_compare=(
                         _build_prefill_compare_summary(baseline_run, candidate_run)
                         if mode == "prefill"
@@ -169,6 +189,25 @@ def _build_metric_deltas(
             )
         )
     return deltas
+
+
+def _build_metric_delta_groups(
+    metric_deltas: list[SweepMetricDelta],
+    *,
+    compare_mode: str,
+) -> list[SweepMetricDeltaGroup]:
+    return [
+        SweepMetricDeltaGroup(
+            group_id=group_id,
+            title=title,
+            metric_deltas=group_metric_deltas,
+        )
+        for group_id, title, group_metric_deltas in build_grouped_metric_rows(
+            metric_deltas,
+            compare_mode=compare_mode,
+            headline_metric_names=headline_metric_names_for_mode(compare_mode),
+        )
+    ]
 
 
 def _build_macro_deltas(
@@ -393,6 +432,17 @@ def _build_scalar_delta(
     )
 
 
+def _build_label_delta(
+    baseline_value: str | None,
+    candidate_value: str | None,
+) -> SweepLabelDelta:
+    return SweepLabelDelta(
+        baseline_value=baseline_value,
+        candidate_value=candidate_value,
+        changed=baseline_value != candidate_value,
+    )
+
+
 def _delta_ratio(
     baseline_value: float,
     delta_value: float,
@@ -410,6 +460,82 @@ def _change_direction(delta_value: float) -> str:
 
 def _metric_value(run: SweepRunRecord, metric_name: str) -> float:
     return float(run.metrics.get(metric_name, 0.0))
+
+
+def _build_bandwidth_pressure_compare_summary(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> SweepBandwidthPressureCompareSummary:
+    baseline_summary = baseline_run.bandwidth_pressure_summary
+    candidate_summary = candidate_run.bandwidth_pressure_summary
+    return SweepBandwidthPressureCompareSummary(
+        peak_bandwidth_pressure=_build_scalar_delta(
+            baseline_summary.peak_bandwidth_pressure,
+            candidate_summary.peak_bandwidth_pressure,
+        ),
+        peak_pressure_subject_id=_build_label_delta(
+            baseline_summary.peak_pressure_subject_id,
+            candidate_summary.peak_pressure_subject_id,
+        ),
+        dominant_read_address_space=_build_label_delta(
+            baseline_summary.dominant_read_address_space,
+            candidate_summary.dominant_read_address_space,
+        ),
+        dominant_write_address_space=_build_label_delta(
+            baseline_summary.dominant_write_address_space,
+            candidate_summary.dominant_write_address_space,
+        ),
+        dominant_read_backing_store=_build_label_delta(
+            baseline_summary.dominant_read_backing_store,
+            candidate_summary.dominant_read_backing_store,
+        ),
+        dominant_write_backing_store=_build_label_delta(
+            baseline_summary.dominant_write_backing_store,
+            candidate_summary.dominant_write_backing_store,
+        ),
+        dominant_read_memory_class=_build_label_delta(
+            baseline_summary.dominant_read_memory_class,
+            candidate_summary.dominant_read_memory_class,
+        ),
+        dominant_write_memory_class=_build_label_delta(
+            baseline_summary.dominant_write_memory_class,
+            candidate_summary.dominant_write_memory_class,
+        ),
+    )
+
+
+def _build_vmem_pressure_compare_summary(
+    baseline_run: SweepRunRecord,
+    candidate_run: SweepRunRecord,
+) -> SweepVMEMPressureCompareSummary:
+    baseline_summary = baseline_run.vmem_pressure_summary
+    candidate_summary = candidate_run.vmem_pressure_summary
+    return SweepVMEMPressureCompareSummary(
+        hottest_region=_build_label_delta(
+            baseline_summary.hottest_region,
+            candidate_summary.hottest_region,
+        ),
+        hottest_region_peak_bytes=_build_scalar_delta(
+            float(baseline_summary.hottest_region_peak_bytes),
+            float(candidate_summary.hottest_region_peak_bytes),
+        ),
+        hottest_region_capacity_bytes=_build_scalar_delta(
+            float(baseline_summary.hottest_region_capacity_bytes),
+            float(candidate_summary.hottest_region_capacity_bytes),
+        ),
+        hottest_region_utilization=_build_scalar_delta(
+            baseline_summary.hottest_region_utilization,
+            candidate_summary.hottest_region_utilization,
+        ),
+        hottest_region_dominant_memory_class=_build_label_delta(
+            baseline_summary.hottest_region_dominant_memory_class,
+            candidate_summary.hottest_region_dominant_memory_class,
+        ),
+        hottest_region_dominant_backing_store=_build_label_delta(
+            baseline_summary.hottest_region_dominant_backing_store,
+            candidate_summary.hottest_region_dominant_backing_store,
+        ),
+    )
 
 
 def _build_phase_balance_scalar_deltas(

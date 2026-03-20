@@ -2,7 +2,11 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from llm_sched.contracts.perf_report import PerfPhaseSummary
+from llm_sched.contracts.perf_report import (
+    PerfBandwidthPressureSummary,
+    PerfPhaseSummary,
+    PerfVMEMPressureSummary,
+)
 
 
 class PrefillThroughputSummary(BaseModel):
@@ -110,6 +114,10 @@ class PrefillEvaluationReport(BaseModel):
     throughput: PrefillThroughputSummary
     memory_summary: PrefillMemorySummary
     memory_hotspot: PrefillMemoryHotspotSummary
+    bandwidth_pressure_summary: PerfBandwidthPressureSummary = Field(
+        default_factory=PerfBandwidthPressureSummary
+    )
+    vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
     isa_summary: PrefillISASummary
     macro_hotspots: list[PrefillMacroHotspot] = Field(default_factory=list)
     node_hotspots: list[PrefillNodeHotspot] = Field(default_factory=list)

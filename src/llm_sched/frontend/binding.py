@@ -157,7 +157,9 @@ def resolve_input_memory_classes(
         return _classify_rmsnorm_inputs(inputs)
     if kind == "RMSNORM_GEMM":
         return _classify_rmsnorm_gemm_inputs(inputs)
-    if kind in {"GeGLU", "GEGLU", "ResidualAdd", "ELEM_ADD", "SDPA", "SDPA_DECODE", "AttentionMaskPrep", "LAYOUT_FALLBACK"}:
+    if kind in {"SDPA", "SDPA_DECODE"}:
+        return _classify_sdpa_inputs(inputs)
+    if kind in {"GeGLU", "GEGLU", "ResidualAdd", "ELEM_ADD", "AttentionMaskPrep", "LAYOUT_FALLBACK"}:
         return {tensor_name: "ACTIVATION" for tensor_name in inputs}
     if kind in {"ROPE", "ROPE_TABLE", "ROPETable"}:
         return _classify_rope_inputs(kind, inputs)
@@ -182,6 +184,8 @@ def resolve_output_memory_classes(
         return {tensor_name: "KV_CACHE" for tensor_name in outputs}
     if kind in {"KVLoad", "KVLOAD"}:
         return {tensor_name: "ACTIVATION" for tensor_name in outputs}
+    if kind in {"SDPA", "SDPA_DECODE"}:
+        return _classify_sdpa_outputs(outputs)
     if kind in {"ROPE_TABLE", "ROPETable", "ShapeHelper", "SHAPE_HELPER"}:
         return {tensor_name: "METADATA" for tensor_name in outputs}
     if kind in {"EmbeddingLookup", "EMBEDDING_LOOKUP"}:
@@ -276,6 +280,37 @@ def _classify_embedding_inputs(inputs: list[str]) -> dict[str, TensorMemoryClass
         classes[inputs[1]] = "METADATA"
     for tensor_name in inputs[2:]:
         classes[tensor_name] = "WEIGHT"
+    return classes
+
+
+def _classify_sdpa_inputs(inputs: list[str]) -> dict[str, TensorMemoryClass]:
+    classes: dict[str, TensorMemoryClass] = {}
+    for index, tensor_name in enumerate(inputs):
+        lower_name = tensor_name.lower()
+        if index < 4:
+            classes[tensor_name] = "ACTIVATION"
+            continue
+        if "past_key_values" in lower_name or lower_name.startswith("past.") or lower_name.startswith("past_"):
+            classes[tensor_name] = "KV_CACHE"
+            continue
+        if "cos_cache" in lower_name or "sin_cache" in lower_name:
+            classes[tensor_name] = "METADATA"
+            continue
+        if "attn_mask" in lower_name or "mask.seq" in lower_name or lower_name.endswith(".seq"):
+            classes[tensor_name] = "METADATA"
+            continue
+        classes[tensor_name] = "ACTIVATION"
+    return classes
+
+
+def _classify_sdpa_outputs(outputs: list[str]) -> dict[str, TensorMemoryClass]:
+    classes: dict[str, TensorMemoryClass] = {}
+    for tensor_name in outputs:
+        lower_name = tensor_name.lower()
+        if lower_name.startswith("present.") or "present." in lower_name:
+            classes[tensor_name] = "KV_CACHE"
+            continue
+        classes[tensor_name] = "ACTIVATION"
     return classes
 
 

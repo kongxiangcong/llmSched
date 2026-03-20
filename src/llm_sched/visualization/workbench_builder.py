@@ -651,6 +651,15 @@ function selectedSweepLayerDeltas(comparison) {
   );
 }
 
+function selectedSweepFittedLayerDeltas(comparison) {
+  if (!UI_STATE.sweepLayerFocus) {
+    return comparison.fitted_layer_deltas || [];
+  }
+  return (comparison.fitted_layer_deltas || []).filter(
+    (layerDelta) => String(layerDelta.layer_id) === String(UI_STATE.sweepLayerFocus)
+  );
+}
+
 function renderScalarDeltaRows(scalarDeltas) {
   return (scalarDeltas || []).map((scalarDelta) => `
       <li>
@@ -789,11 +798,84 @@ function renderScalarDeltaGroups(compareSummary) {
     .join("");
 }
 
+function renderPressureCompareLabelRow(label, deltaView) {
+  if (!deltaView) {
+    return "";
+  }
+  const baselineValue = deltaView.baseline_value || "n/a";
+  const candidateValue = deltaView.candidate_value || "n/a";
+  const changed = Boolean(deltaView.changed);
+  const directionTag = changed
+    ? buildDirectionTagMarkup("is-neutral", "changed")
+    : buildDirectionTagMarkup("is-neutral", "steady");
+  return `
+      <li>
+        <span>${label}</span>
+        <div class="metric-detail-values">
+          ${directionTag}
+          <strong>${candidateValue}</strong>
+          <em>${baselineValue} -> ${candidateValue}</em>
+        </div>
+      </li>
+    `;
+}
+
+function renderPressureCompareScalarRow(label, scalarDelta) {
+  if (!scalarDelta) {
+    return "";
+  }
+  return `
+      <li>
+        <span>${label}</span>
+        <div class="metric-detail-values">
+          ${buildScalarDeltaDirectionTag(scalarDelta)}
+          <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
+          <em>${formatMetricValue(scalarDelta.baseline_value)} -> ${formatMetricValue(scalarDelta.candidate_value)}</em>
+        </div>
+      </li>
+    `;
+}
+
+function renderPressureCompareSummary(compareSummary) {
+  const bandwidth = compareSummary.bandwidth_pressure_compare;
+  const vmem = compareSummary.vmem_pressure_compare;
+  if (!bandwidth && !vmem) {
+    return "";
+  }
+  const bandwidthRows = [
+    renderPressureCompareScalarRow("Peak Bandwidth Pressure", bandwidth && bandwidth.peak_bandwidth_pressure),
+    renderPressureCompareLabelRow("Peak Pressure Subject", bandwidth && bandwidth.peak_pressure_subject_id),
+    renderPressureCompareLabelRow("Read Backing Store", bandwidth && bandwidth.dominant_read_backing_store),
+    renderPressureCompareLabelRow("Write Memory Class", bandwidth && bandwidth.dominant_write_memory_class),
+  ].filter(Boolean).join("");
+  const vmemRows = [
+    renderPressureCompareLabelRow("Hottest Region", vmem && vmem.hottest_region),
+    renderPressureCompareScalarRow("Region Utilization", vmem && vmem.hottest_region_utilization),
+    renderPressureCompareLabelRow("Region Memory Class", vmem && vmem.hottest_region_dominant_memory_class),
+    renderPressureCompareLabelRow("Region Backing Store", vmem && vmem.hottest_region_dominant_backing_store),
+  ].filter(Boolean).join("");
+  return `
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">Peak Bandwidth Pressure</p>
+        </div>
+        <ul class="metric-detail-list">${bandwidthRows || '<li class="empty-cell">No bandwidth pressure compare.</li>'}</ul>
+      </section>
+      <section class="compare-summary-group">
+        <div class="compare-group-heading">
+          <p class="muted">VMEM Pressure Shifts</p>
+        </div>
+        <ul class="metric-detail-list">${vmemRows || '<li class="empty-cell">No VMEM pressure compare.</li>'}</ul>
+      </section>
+    `;
+}
+
 function renderSweepCompareSummary(compareSummary, metricDeltas) {
   if (
     compareSummary
     && (
       hasScalarDeltaGroups(compareSummary)
+      || renderPressureCompareSummary(compareSummary)
       || (
       (compareSummary.highlighted_scalar_deltas || []).length
       || (compareSummary.scalar_deltas || []).length
@@ -807,6 +889,7 @@ function renderSweepCompareSummary(compareSummary, metricDeltas) {
     const groupedRows = hasScalarDeltaGroups(compareSummary)
       ? renderScalarDeltaGroups(compareSummary)
       : "";
+    const pressureRows = renderPressureCompareSummary(compareSummary);
     const visibleRows = highlightedRows.length ? highlightedRows : scalarRows;
     const fullScalarDetails = scalarRows.length && (
       groupedRows || (highlightedRows.length && scalarRows.length > highlightedRows.length)
@@ -826,6 +909,7 @@ function renderSweepCompareSummary(compareSummary, metricDeltas) {
           ${highlightedRows.length ? `<p class="muted">Highlighted Metric Shifts</p>` : ""}
           <ul class="metric-detail-list">${renderScalarDeltaRows(visibleRows)}</ul>
         `}
+        ${pressureRows}
         ${fullScalarDetails}
       </div>
     `;
@@ -851,6 +935,9 @@ function buildSweepSnapshotMetadata(sweepData) {
     sweepData.focused_layer_delta_summary
       ? `Focused Layer Summary: ${sweepData.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(sweepData.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(sweepData.focused_layer_delta_summary.delta_bytes)}`
       : "",
+    sweepData.focused_fitted_layer_delta_summary
+      ? `Focused Fitted Layer Summary: ${sweepData.focused_fitted_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_fitted_layer_delta_summary.layer_id} / delta_fitted_work_cycles ${formatNumber(sweepData.focused_fitted_layer_delta_summary.delta_fitted_work_cycles)} / delta_bytes ${formatNumber(sweepData.focused_fitted_layer_delta_summary.delta_bytes)}`
+      : "",
   ].filter(Boolean);
   const titleParts = ["sweep snapshot"];
   if (sweepData.focused_sweep_candidate) {
@@ -874,6 +961,8 @@ function buildSweepExportData(bundle) {
     focused_comparison_count: 0,
     focused_layer_delta_count: 0,
     focused_layer_delta_summary: null,
+    focused_fitted_layer_delta_count: 0,
+    focused_fitted_layer_delta_summary: null,
     comparisons: [],
   };
   if (!bundle.sweep_view) {
@@ -885,6 +974,7 @@ function buildSweepExportData(bundle) {
   const comparisons = selectedSweepComparisons(bundle.sweep_view.comparisons || []).map((comparison) => ({
     ...comparison,
     layer_deltas: selectedSweepLayerDeltas(comparison),
+    fitted_layer_deltas: selectedSweepFittedLayerDeltas(comparison),
   }));
   const focusedLayerDeltaSummary = UI_STATE.sweepLayerFocus
     ? (() => {
@@ -907,6 +997,23 @@ function buildSweepExportData(bundle) {
         return null;
       })()
     : null;
+  const focusedFittedLayerDeltaSummary = UI_STATE.sweepLayerFocus
+    ? (() => {
+        for (const comparison of comparisons) {
+          for (const layerDelta of comparison.fitted_layer_deltas || []) {
+            return {
+              candidate_target_profile_name: comparison.candidate_target_profile_name,
+              scenario_name: comparison.scenario_name,
+              mode: comparison.mode,
+              layer_id: layerDelta.layer_id,
+              delta_fitted_work_cycles: layerDelta.delta_fitted_work_cycles,
+              delta_bytes: layerDelta.delta_bytes,
+            };
+          }
+        }
+        return null;
+      })()
+    : null;
   const sweepData = {
     baseline_target_profile_name: bundle.sweep_view.baseline_target_profile_name || null,
     focused_sweep_candidate: UI_STATE.sweepCandidate || null,
@@ -917,6 +1024,11 @@ function buildSweepExportData(bundle) {
       0,
     ),
     focused_layer_delta_summary: focusedLayerDeltaSummary,
+    focused_fitted_layer_delta_count: comparisons.reduce(
+      (total, comparison) => total + ((comparison.fitted_layer_deltas || []).length),
+      0,
+    ),
+    focused_fitted_layer_delta_summary: focusedFittedLayerDeltaSummary,
     comparisons,
   };
   return {
@@ -941,8 +1053,12 @@ function renderSweep(bundle) {
     sweepData.focused_sweep_layer ? `Focused Sweep Layer: ${sweepData.focused_sweep_layer}` : "",
     `Focused Comparisons: ${sweepData.focused_comparison_count}`,
     `Focused Layer Deltas: ${sweepData.focused_layer_delta_count}`,
+    `Focused Fitted Layer Deltas: ${sweepData.focused_fitted_layer_delta_count}`,
     sweepData.focused_layer_delta_summary
       ? `Focused Layer Summary: ${sweepData.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(sweepData.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(sweepData.focused_layer_delta_summary.delta_bytes)}`
+      : "",
+    sweepData.focused_fitted_layer_delta_summary
+      ? `Focused Fitted Layer Summary: ${sweepData.focused_fitted_layer_delta_summary.candidate_target_profile_name} / Layer ${sweepData.focused_fitted_layer_delta_summary.layer_id} / delta_fitted_work_cycles ${formatNumber(sweepData.focused_fitted_layer_delta_summary.delta_fitted_work_cycles)} / delta_bytes ${formatNumber(sweepData.focused_fitted_layer_delta_summary.delta_bytes)}`
       : "",
   ].filter(Boolean).map((line) => `<p class="muted">${line}</p>`).join("");
   const rows = comparisons.map((comparison) => `
@@ -951,10 +1067,15 @@ function renderSweep(bundle) {
       <td>${comparison.scenario_name}</td>
       <td>${comparison.mode}</td>
       <td>${renderSweepCompareSummary(comparison.compare_summary, comparison.metric_deltas)}</td>
-      <td>${(comparison.layer_deltas || []).length > 0
-        ? (comparison.layer_deltas || []).map((layerDelta) =>
-            `<span class="${sweepData.focused_sweep_layer && String(layerDelta.layer_id) === String(sweepData.focused_sweep_layer) ? "focused-sweep-row" : ""}">Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}, delta_bytes ${formatNumber(layerDelta.delta_bytes)}</span>`
-          ).join("<br>")
+      <td>${(comparison.layer_deltas || []).length > 0 || (comparison.fitted_layer_deltas || []).length > 0
+        ? [
+            (comparison.layer_deltas || []).map((layerDelta) =>
+              `<span class="${sweepData.focused_sweep_layer && String(layerDelta.layer_id) === String(sweepData.focused_sweep_layer) ? "focused-sweep-row" : ""}">Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}, delta_bytes ${formatNumber(layerDelta.delta_bytes)}</span>`
+            ).join("<br>"),
+            (comparison.fitted_layer_deltas || []).map((layerDelta) =>
+              `<span class="${sweepData.focused_sweep_layer && String(layerDelta.layer_id) === String(sweepData.focused_sweep_layer) ? "focused-sweep-row" : ""}">Layer ${layerDelta.layer_id}: delta_fitted_work_cycles ${formatNumber(layerDelta.delta_fitted_work_cycles)}, delta_bytes ${formatNumber(layerDelta.delta_bytes)}</span>`
+            ).join("<br>")
+          ].filter(Boolean).join("<br>")
         : `<span class="muted">${sweepData.focused_sweep_layer ? "Focused sweep layer not found." : "No layer deltas."}</span>`}</td>
     </tr>
   `).join("");
@@ -1130,6 +1251,7 @@ function buildPanelSnapshotLines(bundle, panelId) {
       lines.push(`Comparisons: ${(payload.data.comparisons || []).length}`);
       lines.push(`Focused Comparisons: ${payload.data.focused_comparison_count || 0}`);
       lines.push(`Focused Layer Deltas: ${payload.data.focused_layer_delta_count || 0}`);
+      lines.push(`Focused Fitted Layer Deltas: ${payload.data.focused_fitted_layer_delta_count || 0}`);
       if (snapshotHeaderRows.length === 0 && payload.data.focused_sweep_candidate) {
         lines.push(`Focused Sweep Candidate: ${payload.data.focused_sweep_candidate}`);
       }
@@ -1141,11 +1263,22 @@ function buildPanelSnapshotLines(bundle, panelId) {
           `Focused Layer Summary: ${payload.data.focused_layer_delta_summary.candidate_target_profile_name} / Layer ${payload.data.focused_layer_delta_summary.layer_id} / delta_cycles ${formatNumber(payload.data.focused_layer_delta_summary.delta_cycles)} / delta_bytes ${formatNumber(payload.data.focused_layer_delta_summary.delta_bytes)}`
         );
       }
+      if (snapshotHeaderRows.length === 0 && payload.data.focused_fitted_layer_delta_summary) {
+        lines.push(
+          `Focused Fitted Layer Summary: ${payload.data.focused_fitted_layer_delta_summary.candidate_target_profile_name} / Layer ${payload.data.focused_fitted_layer_delta_summary.layer_id} / delta_fitted_work_cycles ${formatNumber(payload.data.focused_fitted_layer_delta_summary.delta_fitted_work_cycles)} / delta_bytes ${formatNumber(payload.data.focused_fitted_layer_delta_summary.delta_bytes)}`
+        );
+      }
       (payload.data.comparisons || []).slice(0, 3).forEach((comparison) => {
         lines.push(`${comparison.candidate_target_profile_name}: ${(comparison.layer_deltas || []).length} layer deltas`);
         (comparison.layer_deltas || []).slice(0, 2).forEach((layerDelta) => {
           lines.push(`Layer ${layerDelta.layer_id}: delta_cycles ${formatNumber(layerDelta.delta_cycles)}`);
         });
+        if ((comparison.fitted_layer_deltas || []).length > 0) {
+          lines.push(`${comparison.candidate_target_profile_name}: ${(comparison.fitted_layer_deltas || []).length} fitted layer deltas`);
+          (comparison.fitted_layer_deltas || []).slice(0, 2).forEach((layerDelta) => {
+            lines.push(`Layer ${layerDelta.layer_id}: delta_fitted_work_cycles ${formatNumber(layerDelta.delta_fitted_work_cycles)}`);
+          });
+        }
       });
       break;
     default:

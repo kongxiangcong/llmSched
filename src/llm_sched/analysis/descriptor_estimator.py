@@ -11,7 +11,13 @@ from llm_sched.config.scenario_profile import ScenarioProfile
 from llm_sched.config.target_profile import TargetProfile
 from llm_sched.contracts.isa_coverage_report import ISACoverageReport
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
-from llm_sched.contracts.perf_report import PerfBottleneckIssue, PerfPhaseSummary, PerfSummaryReport
+from llm_sched.contracts.perf_report import (
+    PerfBandwidthPressureSummary,
+    PerfBottleneckIssue,
+    PerfPhaseSummary,
+    PerfSummaryReport,
+    PerfVMEMPressureSummary,
+)
 from llm_sched.contracts.tiling_plan import TileCandidate, TilingPlanArtifact
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.common import AuditRef
@@ -26,6 +32,9 @@ _PERF_PHASE_ORDER = ("projection", "kv_io", "attention", "sync", "other")
 _PROJECTION_MACROS = frozenset({"GEMM", "WDQ_GEMM", "RMSNORM_GEMM"})
 _KV_IO_MACROS = frozenset({"KVLOAD", "KVSTORE"})
 _ATTENTION_MACROS = frozenset({"SDPA_DECODE", "SDPA", "ROPE", "ATTENTION_MASK_PREP"})
+_ADDRESS_SPACE_PRIORITY = {"DDR": 3, "VMEM": 2}
+_BACKING_STORE_PRIORITY = {"ddr-backed-staged": 3, "ddr-persistent": 2, "vmem-local": 1}
+_MEMORY_CLASS_PRIORITY = {"WEIGHT": 5, "KV_CACHE": 4, "ACTIVATION": 3, "QUANT_PARAM": 2, "METADATA": 1}
 
 
 def estimate_descriptor_analysis(
@@ -188,12 +197,16 @@ def build_perf_summary_report(
     phase_write_bytes_by_backing_store: defaultdict[str, defaultdict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
+    read_bytes_by_backing_store: defaultdict[str, float] = defaultdict(float)
+    write_bytes_by_backing_store: defaultdict[str, float] = defaultdict(float)
     phase_read_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
     phase_write_bytes_by_memory_class: defaultdict[str, defaultdict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
+    read_bytes_by_memory_class: defaultdict[str, float] = defaultdict(float)
+    write_bytes_by_memory_class: defaultdict[str, float] = defaultdict(float)
     totals = {
         "estimated_cycles": 0.0,
         "fitted_work_cycles": 0.0,
@@ -292,6 +305,12 @@ def build_perf_summary_report(
             phase_read_bytes_by_backing_store,
             phase_write_bytes_by_backing_store,
         )
+        _accumulate_backing_store_breakdown(
+            descriptor,
+            record.metrics,
+            read_bytes_by_backing_store,
+            write_bytes_by_backing_store,
+        )
         _accumulate_phase_memory_class_breakdown(
             record_phase_name,
             descriptor,
@@ -299,6 +318,13 @@ def build_perf_summary_report(
             memory_class_by_storage_binding,
             phase_read_bytes_by_memory_class,
             phase_write_bytes_by_memory_class,
+        )
+        _accumulate_memory_class_breakdown(
+            descriptor,
+            record.metrics,
+            memory_class_by_storage_binding,
+            read_bytes_by_memory_class,
+            write_bytes_by_memory_class,
         )
 
     if schedule_ir is not None:
@@ -318,6 +344,22 @@ def build_perf_summary_report(
         vmem_region_capacity_bytes,
         vmem_region_peak_utilization,
     ) = _summarize_vmem_regions(memory_plan)
+    bandwidth_pressure_summary = _summarize_bandwidth_pressure(
+        analysis_ir,
+        data_movement_read_bytes_by_address_space,
+        data_movement_write_bytes_by_address_space,
+        read_bytes_by_backing_store,
+        write_bytes_by_backing_store,
+        read_bytes_by_memory_class,
+        write_bytes_by_memory_class,
+    )
+    vmem_pressure_summary = _summarize_vmem_pressure(
+        vmem_region_peak_bytes,
+        vmem_region_peak_bytes_by_memory_class,
+        vmem_region_peak_bytes_by_backing_store,
+        vmem_region_capacity_bytes,
+        vmem_region_peak_utilization,
+    )
     totals["critical_path_cycles"] = _critical_path_cycles(
         schedule_makespan_slots=schedule_makespan_slots,
         estimated_cycles=float(totals["estimated_cycles"]),
@@ -347,6 +389,8 @@ def build_perf_summary_report(
         vmem_region_peak_bytes_by_backing_store=vmem_region_peak_bytes_by_backing_store,
         vmem_region_capacity_bytes=vmem_region_capacity_bytes,
         vmem_region_peak_utilization=vmem_region_peak_utilization,
+        bandwidth_pressure_summary=bandwidth_pressure_summary,
+        vmem_pressure_summary=vmem_pressure_summary,
         totals=totals,
         phase_attribution=_build_phase_attribution(
             phase_cycles,
@@ -545,6 +589,99 @@ def _summarize_vmem_regions(
         capacity_bytes,
         peak_utilization,
     )
+
+
+def _summarize_bandwidth_pressure(
+    analysis_ir: AnalysisIR,
+    read_bytes_by_address_space: dict[str, float],
+    write_bytes_by_address_space: dict[str, float],
+    read_bytes_by_backing_store: dict[str, float],
+    write_bytes_by_backing_store: dict[str, float],
+    read_bytes_by_memory_class: dict[str, float],
+    write_bytes_by_memory_class: dict[str, float],
+) -> PerfBandwidthPressureSummary:
+    peak_record = max(
+        analysis_ir.records,
+        key=lambda record: (
+            float(record.metrics.get("bandwidth_pressure", 0.0)),
+            record.subject_id,
+        ),
+        default=None,
+    )
+    return PerfBandwidthPressureSummary(
+        peak_bandwidth_pressure=(
+            float(peak_record.metrics.get("bandwidth_pressure", 0.0)) if peak_record is not None else 0.0
+        ),
+        peak_pressure_subject_id=peak_record.subject_id if peak_record is not None else None,
+        dominant_read_address_space=_dominant_key(
+            read_bytes_by_address_space,
+            priority=_ADDRESS_SPACE_PRIORITY,
+        ),
+        dominant_write_address_space=_dominant_key(
+            write_bytes_by_address_space,
+            priority=_ADDRESS_SPACE_PRIORITY,
+        ),
+        dominant_read_backing_store=_dominant_key(
+            read_bytes_by_backing_store,
+            priority=_BACKING_STORE_PRIORITY,
+        ),
+        dominant_write_backing_store=_dominant_key(
+            write_bytes_by_backing_store,
+            priority=_BACKING_STORE_PRIORITY,
+        ),
+        dominant_read_memory_class=_dominant_key(
+            read_bytes_by_memory_class,
+            priority=_MEMORY_CLASS_PRIORITY,
+        ),
+        dominant_write_memory_class=_dominant_key(
+            write_bytes_by_memory_class,
+            priority=_MEMORY_CLASS_PRIORITY,
+        ),
+    )
+
+
+def _summarize_vmem_pressure(
+    vmem_region_peak_bytes: dict[str, int],
+    vmem_region_peak_bytes_by_memory_class: dict[str, dict[str, int]],
+    vmem_region_peak_bytes_by_backing_store: dict[str, dict[str, int]],
+    vmem_region_capacity_bytes: dict[str, int],
+    vmem_region_peak_utilization: dict[str, float],
+) -> PerfVMEMPressureSummary:
+    hottest_region = _dominant_key(vmem_region_peak_bytes)
+    if hottest_region is None:
+        return PerfVMEMPressureSummary()
+    return PerfVMEMPressureSummary(
+        hottest_region=hottest_region,
+        hottest_region_peak_bytes=int(vmem_region_peak_bytes.get(hottest_region, 0)),
+        hottest_region_capacity_bytes=int(vmem_region_capacity_bytes.get(hottest_region, 0)),
+        hottest_region_utilization=float(vmem_region_peak_utilization.get(hottest_region, 0.0)),
+        hottest_region_dominant_memory_class=_dominant_key(
+            vmem_region_peak_bytes_by_memory_class.get(hottest_region, {}),
+            priority=_MEMORY_CLASS_PRIORITY,
+        ),
+        hottest_region_dominant_backing_store=_dominant_key(
+            vmem_region_peak_bytes_by_backing_store.get(hottest_region, {}),
+            priority=_BACKING_STORE_PRIORITY,
+        ),
+    )
+
+
+def _dominant_key(
+    values: dict[str, float] | dict[str, int],
+    *,
+    priority: dict[str, int] | None = None,
+) -> str | None:
+    non_zero_items = [(key, float(value)) for key, value in values.items() if float(value) > 0.0]
+    if not non_zero_items:
+        return None
+    return max(
+        non_zero_items,
+        key=lambda item: (
+            item[1],
+            (priority or {}).get(item[0], 0),
+            item[0],
+        ),
+    )[0]
 
 
 def _phase_contribution_for_record(

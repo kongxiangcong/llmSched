@@ -102,6 +102,11 @@ def test_build_prefill_evaluation_report_aggregates_prefill_metrics() -> None:
         "ACTIVATION": 40960,
         "QUANT_PARAM": 8192,
     }
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure == pytest.approx(512.0)
+    assert report.bandwidth_pressure_summary.peak_pressure_subject_id == "nig.node.sdpa.0"
+    assert report.bandwidth_pressure_summary.dominant_read_backing_store == "ddr-persistent"
+    assert report.vmem_pressure_summary.hottest_region == "ping"
+    assert report.vmem_pressure_summary.hottest_region_dominant_memory_class == "ACTIVATION"
     assert report.isa_summary.unmapped_block_count == 1
     assert [hotspot.macro_op for hotspot in report.macro_hotspots] == ["WDQ_GEMM", "SDPA", "DMA_LOAD"]
     assert [hotspot.node_id for hotspot in report.node_hotspots] == [
@@ -196,6 +201,24 @@ def _perf_summary_report() -> PerfSummaryReport:
             "run_id": "run-prefill-001",
             "graph_id": "gemma3-prefill",
             "schedule_kind": "single-core",
+            "bandwidth_pressure_summary": {
+                "peak_bandwidth_pressure": 512.0,
+                "peak_pressure_subject_id": "nig.node.sdpa.0",
+                "dominant_read_address_space": "DDR",
+                "dominant_write_address_space": "VMEM",
+                "dominant_read_backing_store": "ddr-persistent",
+                "dominant_write_backing_store": "vmem-local",
+                "dominant_read_memory_class": "KV_CACHE",
+                "dominant_write_memory_class": "ACTIVATION",
+            },
+            "vmem_pressure_summary": {
+                "hottest_region": "ping",
+                "hottest_region_peak_bytes": 49152,
+                "hottest_region_capacity_bytes": 65536,
+                "hottest_region_utilization": 0.75,
+                "hottest_region_dominant_memory_class": "ACTIVATION",
+                "hottest_region_dominant_backing_store": "vmem-local",
+            },
             "totals": {
                 "estimated_cycles": 4096.0,
                 "fitted_work_cycles": 4608.0,

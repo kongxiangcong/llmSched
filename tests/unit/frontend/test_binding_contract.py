@@ -2,6 +2,8 @@ from pathlib import Path
 
 from llm_sched.config.loader import load_scenario_profile
 from llm_sched.frontend.binding import bind_nig_ir
+from llm_sched.frontend.binding import resolve_input_memory_classes
+from llm_sched.frontend.binding import resolve_output_memory_classes
 from llm_sched.frontend.nig_lowering import lower_graph_ir_to_nig
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.graph_ir import GraphIR, GraphNode
@@ -114,6 +116,79 @@ def test_bind_nig_ir_resolves_attention_and_kv_semantics_from_shape_binding() ->
     assert sdpa_node.binding.attention.kv_len == 2049
     assert sdpa_node.binding.attention.head_dim == 256
     assert sdpa_node.binding.attention.num_heads == 4
+
+
+def test_resolve_input_memory_classes_distinguishes_sdpa_auxiliary_inputs() -> None:
+    classes = resolve_input_memory_classes(
+        "SDPA",
+        [
+            "q.ready",
+            "k.ready",
+            "v.ready",
+            "attn.bias.expanded",
+            "past_key_values.0.key",
+            "past_key_values.0.value",
+            "attn.mask.seq.adjusted",
+            "attn.mask.seq",
+            "cos_cache_local",
+            "sin_cache_local",
+        ],
+    )
+
+    assert classes["q.ready"] == "ACTIVATION"
+    assert classes["k.ready"] == "ACTIVATION"
+    assert classes["v.ready"] == "ACTIVATION"
+    assert classes["attn.bias.expanded"] == "ACTIVATION"
+    assert classes["past_key_values.0.key"] == "KV_CACHE"
+    assert classes["past_key_values.0.value"] == "KV_CACHE"
+    assert classes["attn.mask.seq.adjusted"] == "METADATA"
+    assert classes["attn.mask.seq"] == "METADATA"
+    assert classes["cos_cache_local"] == "METADATA"
+    assert classes["sin_cache_local"] == "METADATA"
+
+
+def test_resolve_input_memory_classes_keeps_real_sdpa_main_inputs_as_activations() -> None:
+    classes = resolve_input_memory_classes(
+        "SDPA",
+        [
+            "/model/layers.0/attn/q_norm/Reshape_2/output_0",
+            "/model/layers.0/attn/k_norm/Reshape_2/output_0",
+            "/model/layers.0/attn/v_proj/MatMul/output_0",
+            "/model/gqa_attention_bias/Expand/output_0",
+            "past_key_values.0.key",
+            "past_key_values.0.value",
+            "/model/attn_mask_reformat/attn_mask_subgraph/Expand/Cast/output_0",
+            "/model/attn_mask_reformat/attn_mask_subgraph/Gather/Cast/output_0",
+            "cos_cache_local",
+            "sin_cache_local",
+        ],
+    )
+
+    assert classes["/model/layers.0/attn/q_norm/Reshape_2/output_0"] == "ACTIVATION"
+    assert classes["/model/layers.0/attn/k_norm/Reshape_2/output_0"] == "ACTIVATION"
+    assert classes["/model/layers.0/attn/v_proj/MatMul/output_0"] == "ACTIVATION"
+    assert classes["/model/gqa_attention_bias/Expand/output_0"] == "ACTIVATION"
+    assert classes["past_key_values.0.key"] == "KV_CACHE"
+    assert classes["past_key_values.0.value"] == "KV_CACHE"
+    assert classes["/model/attn_mask_reformat/attn_mask_subgraph/Expand/Cast/output_0"] == "METADATA"
+    assert classes["/model/attn_mask_reformat/attn_mask_subgraph/Gather/Cast/output_0"] == "METADATA"
+    assert classes["cos_cache_local"] == "METADATA"
+    assert classes["sin_cache_local"] == "METADATA"
+
+
+def test_resolve_output_memory_classes_distinguishes_sdpa_kv_outputs() -> None:
+    classes = resolve_output_memory_classes(
+        "SDPA",
+        [
+            "attn.out",
+            "present.0.key",
+            "present.0.value",
+        ],
+    )
+
+    assert classes["attn.out"] == "ACTIVATION"
+    assert classes["present.0.key"] == "KV_CACHE"
+    assert classes["present.0.value"] == "KV_CACHE"
 
 
 def _linear_frontend_graph() -> GraphIR:

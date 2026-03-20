@@ -66,6 +66,8 @@ def test_run_decode_evaluation_writes_report_and_updates_manifest(
         "ACTIVATION": 32768,
         "KV_CACHE": 8192,
     }
+    assert report.bandwidth_pressure_summary.peak_bandwidth_pressure >= 0.0
+    assert report.vmem_pressure_summary.hottest_region is not None
     assert report.node_hotspots
     assert report.node_hotspots[0].estimated_cycles > 0.0
     assert report.node_hotspots[0].fitted_work_cycles >= report.node_hotspots[0].estimated_cycles

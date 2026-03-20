@@ -194,6 +194,29 @@ Do not resume `SPEC-19` compare/workspace/screenshot hardening until:
 **Step 2: Limit Phase E work to roadmap `P1`**
 
 When `SPEC-19` work resumes, keep it to:
+
+## 2026-03-19 Real-Model Frontend Recovery Checkpoint
+
+- real Gemma3 frontend unsupported-op slice is closed:
+  - `GatherBlockQuantized + Mul` now canonicalizes to `EmbeddingLookup`
+  - direct `SimplifiedLayerNormalization` now canonicalizes to `RMSNorm`
+  - direct `Gelu/FastGelu + Mul` now canonicalizes to `GeGLU`
+  - `GroupQueryAttention` now normalizes onto the existing `SDPA` canonical surface, and the related bias/mask chain is traced as `AttentionMaskPrep`
+- fresh verification:
+  - `python -m pytest tests/unit/frontend/test_decomposition_extensions.py -q` -> `14 passed`
+  - `python -m pytest tests/unit/pipeline/test_frontend_analysis_workflow.py -q` -> `1 passed`
+  - `python -m pytest tests/smoke/test_cli_run_frontend_analysis.py -q` -> `2 passed`
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+  - `python -m pytest -q --durations=30` -> `436 passed`
+- closure outcome:
+  - `dynamic_shape_unresolved` is now `0` on the real-model frontend checkpoint
+  - SDPA auxiliary binding now keeps rope-cache tensors out of staged `weight`
+  - `run-phase-c-gate` is back on the accepted path, so `SPEC-08/09/10/11/12` can return to keep-green status
+- next todo list:
+  1. continue `SPEC-13 -> SPEC-14/15 -> SPEC-16`
+  2. keep `Phase C / M2` green while `M3` moves
+  3. continue `SPEC-19` hardening on top of the restored checkpoint
 - richer compare drill-down
 - deeper workspace drill-down
 - richer screenshot/export workflow

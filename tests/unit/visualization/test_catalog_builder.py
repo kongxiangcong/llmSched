@@ -93,6 +93,34 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                                     ],
                                 },
                             ],
+                            "bandwidth_pressure_compare": {
+                                "peak_bandwidth_pressure": {
+                                    "metric_name": "peak_bandwidth_pressure",
+                                    "baseline_value": 640.0,
+                                    "candidate_value": 512.0,
+                                    "delta_value": -128.0,
+                                    "delta_ratio": -0.2,
+                                },
+                                "peak_pressure_subject_id": {
+                                    "baseline_value": "nig.node.sdpa.0",
+                                    "candidate_value": "nig.node.linear.0",
+                                    "changed": True,
+                                },
+                            },
+                            "vmem_pressure_compare": {
+                                "hottest_region": {
+                                    "baseline_value": "ping",
+                                    "candidate_value": "pong",
+                                    "changed": True,
+                                },
+                                "hottest_region_utilization": {
+                                    "metric_name": "hottest_region_utilization",
+                                    "baseline_value": 0.75,
+                                    "candidate_value": 0.625,
+                                    "delta_value": -0.125,
+                                    "delta_ratio": -0.1666666667,
+                                },
+                            },
                         },
                         "layer_deltas": [
                             {
@@ -130,6 +158,38 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
                                 "baseline_bytes": 24576.0,
                                 "candidate_bytes": 22528.0,
                                 "delta_bytes": -2048.0,
+                            }
+                        ],
+                        "fitted_layer_deltas": [
+                            {
+                                "layer_id": 3,
+                                "baseline_fitted_work_cycles": 1408.0,
+                                "candidate_fitted_work_cycles": 1088.0,
+                                "delta_fitted_work_cycles": -320.0,
+                                "baseline_fitted_cycle_share": 0.22,
+                                "candidate_fitted_cycle_share": 0.19,
+                                "delta_fitted_cycle_share": -0.03,
+                                "delta_fitted_work_cycles_ratio": -0.2272727273,
+                                "baseline_bytes": 49152.0,
+                                "candidate_bytes": 45056.0,
+                                "delta_bytes": -4096.0,
+                                "delta_bytes_ratio": -0.0833333333,
+                                "change_direction": "down",
+                            },
+                            {
+                                "layer_id": 0,
+                                "baseline_fitted_work_cycles": 1792.0,
+                                "candidate_fitted_work_cycles": 1280.0,
+                                "delta_fitted_work_cycles": -512.0,
+                                "baseline_fitted_cycle_share": 0.28,
+                                "candidate_fitted_cycle_share": 0.225,
+                                "delta_fitted_cycle_share": -0.055,
+                                "delta_fitted_work_cycles_ratio": -0.2857142857,
+                                "baseline_bytes": 65536.0,
+                                "candidate_bytes": 49152.0,
+                                "delta_bytes": -16384.0,
+                                "delta_bytes_ratio": -0.25,
+                                "change_direction": "down",
                             }
                         ],
                     }
@@ -172,6 +232,10 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "catalog-compare-tray" in files["catalog/index.html"]
     assert "catalog-compare-workspace" in files["catalog/index.html"]
     assert "catalog-compare-workspace-content" in files["catalog/index.html"]
+    assert "copy-workspace-link-button" in files["catalog/index.html"]
+    assert "download-workspace-json-button" in files["catalog/index.html"]
+    assert "download-workspace-svg-button" in files["catalog/index.html"]
+    assert "catalog-workspace-action-status" in files["catalog/index.html"]
     assert "catalog-compare-scope-filter" in files["catalog/index.html"]
     assert "catalog-workbench-panel-filter" in files["catalog/index.html"]
     assert "catalog-layer-delta-focus-filter" in files["catalog/index.html"]
@@ -189,6 +253,13 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "function buildWorkspaceCandidateSet" in files["catalog/assets/app.js"]
     assert "function buildWorkspaceCompareRows" in files["catalog/assets/app.js"]
     assert "function renderCompareWorkspace" in files["catalog/assets/app.js"]
+    assert "function buildCurrentCatalogWorkspaceUrl" in files["catalog/assets/app.js"]
+    assert "function copyCurrentWorkspaceLink" in files["catalog/assets/app.js"]
+    assert "function buildWorkspaceExportData" in files["catalog/assets/app.js"]
+    assert "function buildWorkspaceSnapshotSvg" in files["catalog/assets/app.js"]
+    assert "function downloadCurrentWorkspaceJson" in files["catalog/assets/app.js"]
+    assert "function downloadCurrentWorkspaceSvg" in files["catalog/assets/app.js"]
+    assert "function bindCatalogWorkspaceActions" in files["catalog/assets/app.js"]
     assert "function currentWorkbenchPanel" in files["catalog/assets/app.js"]
     assert "function buildComparePanelLinks" in files["catalog/assets/app.js"]
     assert "function currentLayerDeltaFocus" in files["catalog/assets/app.js"]
@@ -216,6 +287,8 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "workspaceRatioSummaryTag: buildWorkspaceCompareRatioSummaryTag(baselineEntry, candidateEntry)," in files["catalog/assets/app.js"]
     assert "workspaceSweepSummaryTag: buildWorkspaceSweepSummaryTag(sweepComparison)," in files["catalog/assets/app.js"]
     assert "function buildWorkspaceSweepSummaryContent" in files["catalog/assets/app.js"]
+    assert "function renderWorkspaceCompareDrilldownSection" in files["catalog/assets/app.js"]
+    assert "function buildWorkspaceCompareDrilldownContent" in files["catalog/assets/app.js"]
     assert "function buildWorkspacePrimaryDeltaContent" in files["catalog/assets/app.js"]
     assert "function buildWorkspacePrimaryRatioContent" in files["catalog/assets/app.js"]
     assert "function renderWorkspaceSummaryCell" in files["catalog/assets/app.js"]
@@ -226,13 +299,32 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "MAX_SWEEP_LAYER_DELTA_ROWS" in files["catalog/assets/app.js"]
     assert "regressions-only" in files["catalog/assets/app.js"]
     assert "top-by-bytes" in files["catalog/assets/app.js"]
+    assert "top-by-fitted-work" in files["catalog/assets/app.js"]
+    assert "fitted-regressions-only" in files["catalog/assets/app.js"]
     assert "Shared Metric Deltas" in files["catalog/assets/app.js"]
     assert "Sweep Layer Deltas" in files["catalog/assets/app.js"]
     assert "Candidate Regressions" in files["catalog/assets/app.js"]
     assert "Top By Bytes" in files["catalog/assets/app.js"]
+    assert "Top By Fitted Work" in files["catalog/assets/app.js"]
+    assert "Fitted Work Regressions" in files["catalog/assets/app.js"]
     assert "Showing top 3 of" in files["catalog/assets/app.js"]
     assert "|delta_cycles|" in files["catalog/assets/app.js"]
     assert "|delta_bytes|" in files["catalog/assets/app.js"]
+    assert "|delta_fitted_work_cycles|" in files["catalog/assets/app.js"]
+    assert "fitted_layer_deltas" in files["catalog/assets/app.js"]
+    assert "Workspace Compare Drilldown" in files["catalog/assets/app.js"]
+    assert "Focused Layer Delta Mode" in files["catalog/assets/app.js"]
+    assert "Focused Compare Scope" in files["catalog/assets/app.js"]
+    assert "Focused Baseline" in files["catalog/assets/app.js"]
+    assert "Focused Candidate Count" in files["catalog/assets/app.js"]
+    assert "Focused Sweep Candidate" in files["catalog/assets/app.js"]
+    assert "Focused Sweep Layer" in files["catalog/assets/app.js"]
+    assert "Grouped Metric Deltas" in files["catalog/assets/app.js"]
+    assert "Estimated Layer Deltas" in files["catalog/assets/app.js"]
+    assert "Fitted Layer Deltas" in files["catalog/assets/app.js"]
+    assert "Exported workspace JSON." in files["catalog/assets/app.js"]
+    assert "Exported workspace SVG." in files["catalog/assets/app.js"]
+    assert "Workspace view link copied." in files["catalog/assets/app.js"]
     assert "Open Sweep Panel" in files["catalog/assets/app.js"]
     assert "Open Layer In Sweep" in files["catalog/assets/app.js"]
     assert "metric_values" in files["catalog/assets/app.js"]
@@ -241,6 +333,11 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "baseline_schedule_kind" in files["catalog/assets/app.js"]
     assert "profile_diff_fields" in files["catalog/assets/app.js"]
     assert "highlighted_scalar_deltas" in files["catalog/assets/app.js"]
+    assert "bandwidth_pressure_compare" in files["catalog/assets/app.js"]
+    assert "vmem_pressure_compare" in files["catalog/assets/app.js"]
+    assert "function renderPressureCompareSummary" in files["catalog/assets/app.js"]
+    assert "Peak Bandwidth Pressure" in files["catalog/assets/app.js"]
+    assert "VMEM Pressure Shifts" in files["catalog/assets/app.js"]
     assert "Highlighted Metric Shifts" in files["catalog/assets/app.js"]
     assert "scalar_delta_groups" in files["catalog/assets/app.js"]
     assert "function scalarDeltaIsPositive" in files["catalog/assets/app.js"]
@@ -279,7 +376,9 @@ def test_build_visualization_catalog_generates_static_index_assets() -> None:
     assert "sweepComparison," in files["catalog/assets/app.js"]
     assert 'resolveWorkspacePrimaryScalarDelta(baselineEntry, candidateEntry)' in files["catalog/assets/app.js"]
     assert 'resolveWorkspaceSweepSummaryState(sweepComparison)' in files["catalog/assets/app.js"]
-    assert 'buildWorkspaceSweepSummaryContent(baselineEntry, entry, rowState.sweepComparison)' in files["catalog/assets/app.js"]
+    assert 'const sweepComparison = rowState.sweepComparison;' in files["catalog/assets/app.js"]
+    assert 'buildWorkspaceSweepSummaryContent(baselineEntry, entry, sweepComparison)' in files["catalog/assets/app.js"]
+    assert 'buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison)' in files["catalog/assets/app.js"]
     assert 'buildWorkspacePrimaryDeltaContent(rowState.sameMetric, rowState.delta)' in files["catalog/assets/app.js"]
     assert 'buildWorkspacePrimaryRatioContent(rowState.sameMetric, rowState.ratio)' in files["catalog/assets/app.js"]
     assert "const sameMetric = entry.primary_metric_name === baselineEntry.primary_metric_name;" not in files["catalog/assets/app.js"]

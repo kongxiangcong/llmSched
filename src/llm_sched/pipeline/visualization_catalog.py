@@ -17,11 +17,15 @@ from llm_sched.contracts.visualization_catalog import (
     VisualizationCatalogPhaseCBlockedCase,
     VisualizationCatalogEntry,
     VisualizationCatalogPhaseCGateSummary,
+    VisualizationCatalogSweepBandwidthPressureCompare,
+    VisualizationCatalogSweepCompareLabelDelta,
     VisualizationCatalogSweepCompareScalarDelta,
     VisualizationCatalogSweepCompareScalarDeltaGroup,
     VisualizationCatalogSweepCompareSummary,
     VisualizationCatalogSweepComparison,
+    VisualizationCatalogSweepFittedLayerDelta,
     VisualizationCatalogSweepLayerDelta,
+    VisualizationCatalogSweepVMEMPressureCompare,
 )
 from llm_sched.contracts.visualization_workbench import VisualizationWorkbenchArtifact
 from llm_sched.visualization import build_visualization_catalog
@@ -202,6 +206,64 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                         )
                         for scalar_delta_group in comparison.compare_summary.scalar_delta_groups
                     ],
+                    bandwidth_pressure_compare=(
+                        VisualizationCatalogSweepBandwidthPressureCompare(
+                            peak_bandwidth_pressure=VisualizationCatalogSweepCompareScalarDelta(
+                                metric_name=comparison.compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.metric_name,
+                                baseline_value=comparison.compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.baseline_value,
+                                candidate_value=comparison.compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.candidate_value,
+                                delta_value=comparison.compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value,
+                                delta_ratio=comparison.compare_summary.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_ratio,
+                            ),
+                            peak_pressure_subject_id=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.peak_pressure_subject_id
+                            ),
+                            dominant_read_address_space=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_read_address_space
+                            ),
+                            dominant_write_address_space=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_write_address_space
+                            ),
+                            dominant_read_backing_store=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_read_backing_store
+                            ),
+                            dominant_write_backing_store=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_write_backing_store
+                            ),
+                            dominant_read_memory_class=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_read_memory_class
+                            ),
+                            dominant_write_memory_class=_build_catalog_label_delta(
+                                comparison.compare_summary.bandwidth_pressure_compare.dominant_write_memory_class
+                            ),
+                        )
+                        if comparison.compare_summary.bandwidth_pressure_compare is not None
+                        else None
+                    ),
+                    vmem_pressure_compare=(
+                        VisualizationCatalogSweepVMEMPressureCompare(
+                            hottest_region=_build_catalog_label_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region
+                            ),
+                            hottest_region_peak_bytes=_build_catalog_optional_scalar_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region_peak_bytes
+                            ),
+                            hottest_region_capacity_bytes=_build_catalog_optional_scalar_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region_capacity_bytes
+                            ),
+                            hottest_region_utilization=_build_catalog_optional_scalar_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region_utilization
+                            ),
+                            hottest_region_dominant_memory_class=_build_catalog_label_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region_dominant_memory_class
+                            ),
+                            hottest_region_dominant_backing_store=_build_catalog_label_delta(
+                                comparison.compare_summary.vmem_pressure_compare.hottest_region_dominant_backing_store
+                            ),
+                        )
+                        if comparison.compare_summary.vmem_pressure_compare is not None
+                        else None
+                    ),
                 )
                 if comparison.compare_summary is not None
                 else None
@@ -227,9 +289,54 @@ def _collect_sweep_comparisons(bundle: VisualizationBundle) -> list[Visualizatio
                     key=lambda item: (-abs(item.delta_cycles), item.layer_id),
                 )
             ],
+            fitted_layer_deltas=[
+                VisualizationCatalogSweepFittedLayerDelta(
+                    layer_id=layer_delta.layer_id,
+                    baseline_fitted_work_cycles=layer_delta.baseline_fitted_work_cycles,
+                    candidate_fitted_work_cycles=layer_delta.candidate_fitted_work_cycles,
+                    delta_fitted_work_cycles=layer_delta.delta_fitted_work_cycles,
+                    baseline_fitted_cycle_share=layer_delta.baseline_fitted_cycle_share,
+                    candidate_fitted_cycle_share=layer_delta.candidate_fitted_cycle_share,
+                    delta_fitted_cycle_share=layer_delta.delta_fitted_cycle_share,
+                    delta_fitted_work_cycles_ratio=layer_delta.delta_fitted_work_cycles_ratio,
+                    baseline_bytes=layer_delta.baseline_bytes,
+                    candidate_bytes=layer_delta.candidate_bytes,
+                    delta_bytes=layer_delta.delta_bytes,
+                    delta_bytes_ratio=layer_delta.delta_bytes_ratio,
+                    change_direction=layer_delta.change_direction,
+                )
+                for layer_delta in sorted(
+                    comparison.fitted_layer_deltas,
+                    key=lambda item: (-abs(item.delta_fitted_work_cycles), item.layer_id),
+                )
+            ],
         )
         for comparison in bundle.sweep_view.comparisons
     ]
+
+
+def _build_catalog_label_delta(
+    label_delta,
+) -> VisualizationCatalogSweepCompareLabelDelta:
+    return VisualizationCatalogSweepCompareLabelDelta(
+        baseline_value=label_delta.baseline_value,
+        candidate_value=label_delta.candidate_value,
+        changed=label_delta.changed,
+    )
+
+
+def _build_catalog_optional_scalar_delta(
+    scalar_delta,
+) -> VisualizationCatalogSweepCompareScalarDelta | None:
+    if scalar_delta is None:
+        return None
+    return VisualizationCatalogSweepCompareScalarDelta(
+        metric_name=scalar_delta.metric_name,
+        baseline_value=scalar_delta.baseline_value,
+        candidate_value=scalar_delta.candidate_value,
+        delta_value=scalar_delta.delta_value,
+        delta_ratio=scalar_delta.delta_ratio,
+    )
 
 
 def _resolve_run_roots(

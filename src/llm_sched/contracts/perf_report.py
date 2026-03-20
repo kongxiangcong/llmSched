@@ -41,6 +41,30 @@ class PerfPhaseSummary(BaseModel):
     write_bytes_by_memory_class: dict[str, float] = Field(default_factory=dict)
 
 
+class PerfBandwidthPressureSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    peak_bandwidth_pressure: float = Field(ge=0.0, default=0.0)
+    peak_pressure_subject_id: str | None = None
+    dominant_read_address_space: str | None = None
+    dominant_write_address_space: str | None = None
+    dominant_read_backing_store: str | None = None
+    dominant_write_backing_store: str | None = None
+    dominant_read_memory_class: str | None = None
+    dominant_write_memory_class: str | None = None
+
+
+class PerfVMEMPressureSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    hottest_region: str | None = None
+    hottest_region_peak_bytes: int = Field(ge=0, default=0)
+    hottest_region_capacity_bytes: int = Field(ge=0, default=0)
+    hottest_region_utilization: float = Field(ge=0.0, default=0.0)
+    hottest_region_dominant_memory_class: str | None = None
+    hottest_region_dominant_backing_store: str | None = None
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,6 +84,10 @@ class PerfSummaryReport(BaseModel):
     vmem_region_peak_bytes_by_backing_store: dict[str, dict[str, int]] = Field(default_factory=dict)
     vmem_region_capacity_bytes: dict[str, int] = Field(default_factory=dict)
     vmem_region_peak_utilization: dict[str, float] = Field(default_factory=dict)
+    bandwidth_pressure_summary: PerfBandwidthPressureSummary = Field(
+        default_factory=PerfBandwidthPressureSummary
+    )
+    vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
     totals: dict[str, float] = Field(default_factory=dict)
     phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
     per_macro_cycles: dict[str, float] = Field(default_factory=dict)

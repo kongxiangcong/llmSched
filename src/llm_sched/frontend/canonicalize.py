@@ -49,13 +49,15 @@ def canonicalize_graph_ir(graph_ir: GraphIR) -> GraphIR:
     with_linear = _fuse_matmul_add(with_quant_linear)
     with_plain_linear = _normalize_constant_matmul(with_linear)
     with_embedding = _fuse_embedding_lookup(with_plain_linear)
-    with_rmsnorm = _fuse_rmsnorm(with_embedding)
+    with_direct_rmsnorm = _normalize_simplified_layernorm(with_embedding)
+    with_rmsnorm = _fuse_rmsnorm(with_direct_rmsnorm)
     with_geglu = _fuse_geglu(with_rmsnorm)
     with_rope_table = _fuse_rope_table(with_geglu)
     with_rope = _fuse_rope(with_rope_table)
     with_kv_store = _fuse_kv_store(with_rope)
     with_kv_load = _fuse_kv_load(with_kv_store)
-    with_sdpa = _fuse_sdpa(with_kv_load)
+    with_group_query_attention = _normalize_group_query_attention(with_kv_load)
+    with_sdpa = _fuse_sdpa(with_group_query_attention)
     with_residual = _fuse_residual_add(with_sdpa)
     with_mask_prep = _classify_attention_mask_prep_nodes(with_residual)
     with_shape_helpers = _classify_shape_helpers(with_mask_prep)
@@ -170,8 +172,24 @@ def _normalize_constant_matmul(graph_ir: GraphIR) -> GraphIR:
 
 
 def _fuse_embedding_lookup(graph_ir: GraphIR) -> GraphIR:
-    with_scaled = _fuse_scaled_embedding_lookup(graph_ir)
+    with_quantized = _normalize_quantized_embedding_lookup(graph_ir)
+    with_scaled = _fuse_scaled_embedding_lookup(with_quantized)
     return _normalize_embedding_gather(with_scaled)
+
+
+def _normalize_quantized_embedding_lookup(graph_ir: GraphIR) -> GraphIR:
+    producer_by_tensor = _build_producer_map(graph_ir.nodes)
+    fused_nodes: dict[str, GraphNode] = {}
+
+    for node in graph_ir.nodes:
+        if node.op_kind != "GatherBlockQuantized":
+            continue
+
+        fused_node = _try_normalize_quantized_embedding_gather(node, producer_by_tensor)
+        if fused_node is not None:
+            fused_nodes[node.node_id] = fused_node
+
+    return _rewrite_graph_with_matches(graph_ir, fused_nodes, skipped_node_ids=set())
 
 
 def _fuse_scaled_embedding_lookup(graph_ir: GraphIR) -> GraphIR:
@@ -328,6 +346,21 @@ def _fuse_kv_load(graph_ir: GraphIR) -> GraphIR:
         skipped_node_ids.update(matched["skip_ids"])
 
     return _rewrite_graph_with_matches(graph_ir, fused_nodes, skipped_node_ids)
+
+
+def _normalize_group_query_attention(graph_ir: GraphIR) -> GraphIR:
+    producer_by_tensor = _build_producer_map(graph_ir.nodes)
+    fused_nodes: dict[str, GraphNode] = {}
+
+    for node in graph_ir.nodes:
+        if node.op_kind != "GroupQueryAttention":
+            continue
+
+        fused_node = _try_normalize_group_query_attention(node, producer_by_tensor)
+        if fused_node is not None:
+            fused_nodes[node.node_id] = fused_node
+
+    return _rewrite_graph_with_matches(graph_ir, fused_nodes, skipped_node_ids=set())
 
 
 def _fuse_sdpa(graph_ir: GraphIR) -> GraphIR:
@@ -488,32 +521,35 @@ def _try_fuse_scaled_embedding_lookup(
 
         if gather_node is None or scale_node is None:
             continue
-        if gather_node.op_kind != "Gather" or scale_node.op_kind != "Constant":
+        if gather_node.op_kind not in {"Gather", "EmbeddingLookup"} or scale_node.op_kind != "Constant":
             continue
         if not gather_node.outputs or consumer_count.get(gather_node.outputs[0], 0) != 1:
             continue
 
-        embedding_inputs = _match_embedding_gather_inputs(gather_node, producer_by_tensor)
-        if embedding_inputs is None:
-            continue
+        if gather_node.op_kind == "Gather":
+            normalized_gather = _try_normalize_embedding_gather(gather_node, producer_by_tensor)
+            if normalized_gather is None:
+                continue
+            gather_node = normalized_gather
 
         pattern_nodes = [gather_node, mul_node]
         source_ref, graph_node_ids, source_ids = _collect_traceability(pattern_nodes)
+        scaled_inputs = [*gather_node.inputs, scale_tensor]
+        scaled_attrs = {
+            **gather_node.attrs,
+            "canonical_pattern": "EmbeddingLookup",
+            "scaled_output": True,
+        }
 
         return {
             "node": GraphNode(
                 node_id=mul_node.node_id,
                 op_kind="EmbeddingLookup",
-                inputs=[embedding_inputs["table_tensor"], embedding_inputs["index_tensor"], scale_tensor],
+                inputs=scaled_inputs,
                 outputs=mul_node.outputs,
                 shape=mul_node.shape,
                 dtype=mul_node.dtype,
-                attrs={
-                    "canonical_pattern": "EmbeddingLookup",
-                    "vocab_size": embedding_inputs["vocab_size"],
-                    "embedding_dim": embedding_inputs["embedding_dim"],
-                    "scaled_output": True,
-                },
+                attrs=scaled_attrs,
                 source_ref=source_ref,
                 audit_ref=AuditRef(graph_node_ids=graph_node_ids, source_ids=source_ids),
             ),
@@ -550,6 +586,59 @@ def _try_normalize_embedding_gather(
             source_ids=gather_node.audit_ref.source_ids,
         ),
     )
+
+
+def _try_normalize_quantized_embedding_gather(
+    gather_node: GraphNode,
+    producer_by_tensor: dict[str, GraphNode],
+) -> GraphNode | None:
+    embedding_inputs = _match_quantized_embedding_gather_inputs(gather_node, producer_by_tensor)
+    if embedding_inputs is None:
+        return None
+
+    return GraphNode(
+        node_id=gather_node.node_id,
+        op_kind="EmbeddingLookup",
+        inputs=[
+            embedding_inputs["table_tensor"],
+            embedding_inputs["index_tensor"],
+            embedding_inputs["scale_tensor"],
+            embedding_inputs["zero_point_tensor"],
+        ],
+        outputs=gather_node.outputs,
+        shape=gather_node.shape,
+        dtype=gather_node.dtype,
+        attrs={
+            "canonical_pattern": "EmbeddingLookup",
+            "vocab_size": embedding_inputs["vocab_size"],
+            "embedding_dim": embedding_inputs["embedding_dim"],
+            "scaled_output": False,
+            "bits": int(gather_node.attrs.get("bits", 0)),
+            "block_size": int(gather_node.attrs.get("block_size", 0)),
+            "gather_axis": int(gather_node.attrs.get("gather_axis", 0)),
+            "quantize_axis": int(gather_node.attrs.get("quantize_axis", 1)),
+        },
+        source_ref=gather_node.source_ref,
+        audit_ref=AuditRef(
+            graph_node_ids=gather_node.audit_ref.graph_node_ids or [gather_node.node_id],
+            source_ids=gather_node.audit_ref.source_ids,
+        ),
+    )
+
+
+def _normalize_simplified_layernorm(graph_ir: GraphIR) -> GraphIR:
+    producer_by_tensor = _build_producer_map(graph_ir.nodes)
+    fused_nodes: dict[str, GraphNode] = {}
+
+    for node in graph_ir.nodes:
+        if node.op_kind not in {"SimplifiedLayerNormalization", "LayerNorm"}:
+            continue
+
+        fused_node = _try_normalize_simplified_layernorm(node, producer_by_tensor)
+        if fused_node is not None:
+            fused_nodes[node.node_id] = fused_node
+
+    return _rewrite_graph_with_matches(graph_ir, fused_nodes, skipped_node_ids=set())
 
 
 def _try_fuse_rmsnorm(
@@ -667,7 +756,7 @@ def _try_fuse_geglu(
     for gelu_index in (0, 1):
         gelu_tensor = output_mul_node.inputs[gelu_index]
         up_tensor = output_mul_node.inputs[1 - gelu_index]
-        matched_gelu = _match_gelu_tanh(gelu_tensor, producer_by_tensor, consumer_count)
+        matched_gelu = _match_gelu(gelu_tensor, producer_by_tensor, consumer_count)
         if matched_gelu is None:
             continue
 
@@ -691,6 +780,37 @@ def _try_fuse_geglu(
         }
 
     return None
+
+
+def _try_normalize_simplified_layernorm(
+    norm_node: GraphNode,
+    producer_by_tensor: dict[str, GraphNode],
+) -> GraphNode | None:
+    if len(norm_node.inputs) != 2:
+        return None
+
+    scale_tensor = norm_node.inputs[1]
+    scale_node = producer_by_tensor.get(scale_tensor)
+    if scale_node is None or scale_node.op_kind != "Constant":
+        return None
+
+    return GraphNode(
+        node_id=norm_node.node_id,
+        op_kind="RMSNorm",
+        inputs=[norm_node.inputs[0], scale_tensor],
+        outputs=norm_node.outputs,
+        shape=norm_node.shape,
+        dtype=norm_node.dtype,
+        attrs={
+            "canonical_pattern": "RMSNorm",
+            "epsilon": float(norm_node.attrs.get("epsilon", 0.0)),
+        },
+        source_ref=norm_node.source_ref,
+        audit_ref=AuditRef(
+            graph_node_ids=norm_node.audit_ref.graph_node_ids or [norm_node.node_id],
+            source_ids=norm_node.audit_ref.source_ids,
+        ),
+    )
 
 
 def _try_fuse_rope(
@@ -1101,6 +1221,80 @@ def _try_fuse_residual_add(
     )
 
 
+def _match_gelu(
+    output_tensor: str,
+    producer_by_tensor: dict[str, GraphNode],
+    consumer_count: dict[str, int],
+) -> dict[str, str | list[GraphNode]] | None:
+    direct_match = _match_gelu_node(output_tensor, producer_by_tensor, consumer_count)
+    if direct_match is not None:
+        return direct_match
+
+    return _match_gelu_tanh(output_tensor, producer_by_tensor, consumer_count)
+
+
+def _match_gelu_node(
+    output_tensor: str,
+    producer_by_tensor: dict[str, GraphNode],
+    consumer_count: dict[str, int],
+) -> dict[str, str | list[GraphNode]] | None:
+    gelu_node = producer_by_tensor.get(output_tensor)
+    if gelu_node is None or gelu_node.op_kind != "Gelu" or not gelu_node.inputs or not gelu_node.outputs:
+        return None
+    if consumer_count.get(gelu_node.outputs[0], 0) != 1:
+        return None
+
+    approximate = str(gelu_node.attrs.get("approximate", ""))
+    if approximate and approximate != "tanh":
+        return None
+
+    return {
+        "gate_tensor": gelu_node.inputs[0],
+        "pattern_nodes": [gelu_node],
+    }
+
+
+def _try_normalize_group_query_attention(
+    gqa_node: GraphNode,
+    producer_by_tensor: dict[str, GraphNode],
+) -> GraphNode | None:
+    if len(gqa_node.inputs) < 11 or len(gqa_node.outputs) < 3:
+        return None
+
+    query_tensor = gqa_node.inputs[0]
+    key_tensor = gqa_node.inputs[1]
+    value_tensor = gqa_node.inputs[2]
+    mask_tensor = gqa_node.inputs[10]
+    if not query_tensor or not key_tensor or not value_tensor or not mask_tensor:
+        return None
+
+    ordered_extra_inputs = [
+        input_name for input_name in gqa_node.inputs[3:10] if input_name
+    ]
+    source_ref = list(gqa_node.source_ref)
+    source_ids = list(gqa_node.audit_ref.source_ids)
+    graph_node_ids = gqa_node.audit_ref.graph_node_ids or [gqa_node.node_id]
+
+    return GraphNode(
+        node_id=gqa_node.node_id,
+        op_kind="SDPA",
+        inputs=[query_tensor, key_tensor, value_tensor, mask_tensor, *ordered_extra_inputs],
+        outputs=gqa_node.outputs,
+        shape=gqa_node.shape,
+        dtype=gqa_node.dtype,
+        attrs={
+            "canonical_pattern": "SDPA",
+            "source_op_kind": "GroupQueryAttention",
+            "num_heads": int(gqa_node.attrs.get("num_heads", 0)),
+            "kv_num_heads": int(gqa_node.attrs.get("kv_num_heads", 0)),
+            "head_dim": _infer_group_query_attention_head_dim(gqa_node, producer_by_tensor),
+            "scale": float(gqa_node.attrs.get("scale", 0.0)),
+        },
+        source_ref=source_ref,
+        audit_ref=AuditRef(graph_node_ids=graph_node_ids, source_ids=source_ids),
+    )
+
+
 def _match_gelu_tanh(
     output_tensor: str,
     producer_by_tensor: dict[str, GraphNode],
@@ -1383,6 +1577,46 @@ def _match_embedding_gather_inputs(
     }
 
 
+def _match_quantized_embedding_gather_inputs(
+    gather_node: GraphNode,
+    producer_by_tensor: dict[str, GraphNode],
+) -> dict[str, str | int] | None:
+    if len(gather_node.inputs) != 4:
+        return None
+    if gather_node.dtype not in {"bf16", "float16", "float32"}:
+        return None
+
+    table_tensor, index_tensor, scale_tensor, zero_point_tensor = gather_node.inputs
+    table_node = producer_by_tensor.get(table_tensor)
+    index_node = producer_by_tensor.get(index_tensor)
+    scale_node = producer_by_tensor.get(scale_tensor)
+    zero_point_node = producer_by_tensor.get(zero_point_tensor)
+
+    if table_node is None or table_node.op_kind != "Constant" or len(table_node.shape) != 2:
+        return None
+    if index_node is None or index_node.dtype not in {"int32", "int64"}:
+        return None
+    if scale_node is None or scale_node.op_kind != "Constant" or len(scale_node.shape) != 2:
+        return None
+    if zero_point_node is None or zero_point_node.op_kind != "Constant":
+        return None
+
+    bits = int(gather_node.attrs.get("bits", 0))
+    block_size = int(gather_node.attrs.get("block_size", 0))
+    if bits <= 0 or block_size <= 0:
+        return None
+
+    embedding_dim = int(scale_node.shape[1]) * block_size
+    return {
+        "table_tensor": table_tensor,
+        "index_tensor": index_tensor,
+        "scale_tensor": scale_tensor,
+        "zero_point_tensor": zero_point_tensor,
+        "vocab_size": int(table_node.shape[0]),
+        "embedding_dim": embedding_dim,
+    }
+
+
 def _find_shared_trig_pair(
     tensor_name: str,
     cos_node: GraphNode,
@@ -1558,7 +1792,7 @@ def _is_shape_helper_candidate(node: GraphNode) -> bool:
     if node.op_kind in {"Shape", "Range", "ConstantOfShape"}:
         return True
 
-    return node.op_kind in {"Gather", "Unsqueeze", "Concat", "Reshape", "Slice", "Cast", "Expand", "Where", "Equal"} and node.dtype in {
+    return node.op_kind in {"Gather", "Unsqueeze", "Concat", "Reshape", "Slice", "Cast", "Expand", "Where", "Equal", "Sub"} and node.dtype in {
         "bool",
         "int32",
         "int64",
@@ -1783,9 +2017,11 @@ def _collect_attention_mask_prep_node_ids(
         "Equal",
         "Expand",
         "Gather",
+        "LayoutFallback",
         "Range",
         "Reshape",
         "Shape",
+        "ShapeHelper",
         "Slice",
         "Transpose",
         "Unsqueeze",
@@ -1823,6 +2059,29 @@ def _bits_to_weight_dtype(bits: object) -> str:
     if bits == 8:
         return "int8"
     return "unknown"
+
+
+def _infer_group_query_attention_head_dim(
+    gqa_node: GraphNode,
+    producer_by_tensor: dict[str, GraphNode],
+) -> int:
+    num_heads = int(gqa_node.attrs.get("num_heads", 0))
+    if num_heads > 0 and gqa_node.shape:
+        hidden_size = int(gqa_node.shape[-1])
+        if hidden_size > 0 and hidden_size % num_heads == 0:
+            return hidden_size // num_heads
+
+    scale = float(gqa_node.attrs.get("scale", 0.0))
+    if scale > 0:
+        return int(round((1.0 / scale) ** 2))
+
+    value_node = producer_by_tensor.get(gqa_node.inputs[2]) if len(gqa_node.inputs) >= 3 else None
+    if value_node is not None and value_node.shape:
+        tail_dim = int(value_node.shape[-1])
+        if tail_dim > 0:
+            return tail_dim
+
+    return 0
 
 
 def _resolve_tensor_alias(tensor_name: str, rewritten_tensors: dict[str, str]) -> str:

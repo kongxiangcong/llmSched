@@ -30,11 +30,15 @@ from llm_sched.contracts.visualization_bundle import (
     VisualizationKVFormulaView,
     VisualizationKVView,
     VisualizationReportSummary,
+    VisualizationSweepBandwidthPressureCompareView,
+    VisualizationSweepCompareLabelDeltaView,
     VisualizationSweepCompareScalarDeltaView,
     VisualizationSweepCompareScalarDeltaGroupView,
     VisualizationSweepCompareSummaryView,
     VisualizationSweepComparisonView,
+    VisualizationSweepFittedLayerDeltaView,
     VisualizationSweepLayerDeltaView,
+    VisualizationSweepVMEMPressureCompareView,
     VisualizationSweepView,
     VisualizationTimelineBlockView,
     VisualizationTimelineView,
@@ -430,6 +434,24 @@ def _build_sweep_view(
                     },
                     compare_summary=compare_summary,
                     layer_deltas=layer_deltas_by_key.get(comparison_key, []),
+                    fitted_layer_deltas=[
+                        VisualizationSweepFittedLayerDeltaView(
+                            layer_id=layer_delta.layer_id,
+                            baseline_fitted_work_cycles=layer_delta.baseline_fitted_work_cycles,
+                            candidate_fitted_work_cycles=layer_delta.candidate_fitted_work_cycles,
+                            delta_fitted_work_cycles=layer_delta.delta_fitted_work_cycles,
+                            baseline_fitted_cycle_share=layer_delta.baseline_fitted_cycle_share,
+                            candidate_fitted_cycle_share=layer_delta.candidate_fitted_cycle_share,
+                            delta_fitted_cycle_share=layer_delta.delta_fitted_cycle_share,
+                            delta_fitted_work_cycles_ratio=layer_delta.delta_fitted_work_cycles_ratio,
+                            baseline_bytes=layer_delta.baseline_bytes,
+                            candidate_bytes=layer_delta.candidate_bytes,
+                            delta_bytes=layer_delta.delta_bytes,
+                            delta_bytes_ratio=layer_delta.delta_bytes_ratio,
+                            change_direction=layer_delta.change_direction,
+                        )
+                        for layer_delta in compare_row.fitted_layer_deltas
+                    ],
                 )
             )
             seen_keys.add(comparison_key)
@@ -452,17 +474,43 @@ def _build_sweep_view(
             )
             if comparison_key in seen_keys:
                 continue
+            compare_summary = _build_compare_summary_from_sweep_comparison(comparison)
             comparisons.append(
                 VisualizationSweepComparisonView(
                     candidate_target_profile_name=comparison.candidate_target_profile_name,
                     scenario_name=comparison.scenario_name,
                     mode=comparison.mode,
-                    metric_deltas={
-                        metric_delta.metric_name: metric_delta.delta_value
-                        for metric_delta in comparison.metric_deltas
-                    },
-                    compare_summary=None,
+                    metric_deltas=(
+                        {
+                            scalar_delta.metric_name: scalar_delta.delta_value
+                            for scalar_delta in compare_summary.scalar_deltas
+                        }
+                        if compare_summary is not None
+                        else {
+                            metric_delta.metric_name: metric_delta.delta_value
+                            for metric_delta in comparison.metric_deltas
+                        }
+                    ),
+                    compare_summary=compare_summary,
                     layer_deltas=layer_deltas_by_key.get(comparison_key, []),
+                    fitted_layer_deltas=[
+                        VisualizationSweepFittedLayerDeltaView(
+                            layer_id=layer_delta.layer_id,
+                            baseline_fitted_work_cycles=layer_delta.baseline_fitted_work_cycles,
+                            candidate_fitted_work_cycles=layer_delta.candidate_fitted_work_cycles,
+                            delta_fitted_work_cycles=layer_delta.delta_fitted_work_cycles,
+                            baseline_fitted_cycle_share=layer_delta.baseline_fitted_cycle_share,
+                            candidate_fitted_cycle_share=layer_delta.candidate_fitted_cycle_share,
+                            delta_fitted_cycle_share=layer_delta.delta_fitted_cycle_share,
+                            delta_fitted_work_cycles_ratio=layer_delta.delta_fitted_work_cycles_ratio,
+                            baseline_bytes=layer_delta.baseline_bytes,
+                            candidate_bytes=layer_delta.candidate_bytes,
+                            delta_bytes=layer_delta.delta_bytes,
+                            delta_bytes_ratio=layer_delta.delta_bytes_ratio,
+                            change_direction=layer_delta.change_direction,
+                        )
+                        for layer_delta in comparison.fitted_layer_deltas
+                    ],
                 )
             )
 
@@ -670,6 +718,172 @@ def _build_compare_summary(
             compare_mode=compare_mode,
             headline_metric_names=headline_metric_names,
         ),
+        bandwidth_pressure_compare=_build_bandwidth_pressure_compare_view(
+            getattr(compare_row, "bandwidth_pressure_compare", None)
+        ),
+        vmem_pressure_compare=_build_vmem_pressure_compare_view(
+            getattr(compare_row, "vmem_pressure_compare", None)
+        ),
+    )
+
+
+def _build_compare_summary_from_sweep_comparison(
+    comparison,
+) -> VisualizationSweepCompareSummaryView | None:
+    if (
+        comparison.baseline_schedule_kind is None
+        or comparison.candidate_schedule_kind is None
+    ):
+        return None
+
+    scalar_deltas = [
+        VisualizationSweepCompareScalarDeltaView(
+            metric_name=metric_delta.metric_name,
+            baseline_value=metric_delta.baseline_value,
+            candidate_value=metric_delta.candidate_value,
+            delta_value=metric_delta.delta_value,
+            delta_ratio=metric_delta.delta_ratio,
+        )
+        for metric_delta in comparison.metric_deltas
+    ]
+    headline_metric_names = (
+        (
+            "estimated_cycles",
+            "critical_path_cycles",
+            "tokens_per_critical_path_cycle",
+            "tokens_per_cycle",
+            "bytes_per_cycle",
+            "max_region_utilization",
+        )
+        if comparison.mode == "prefill"
+        else (
+            "estimated_cycles",
+            "critical_path_cycles",
+            "critical_path_cycles_per_token",
+            "cycles_per_token",
+            "kv_related_cycle_share",
+            "kv_related_bytes",
+        )
+    )
+    scalar_delta_groups = [
+        VisualizationSweepCompareScalarDeltaGroupView(
+            group_id=metric_group.group_id,
+            title=metric_group.title,
+            scalar_deltas=[
+                VisualizationSweepCompareScalarDeltaView(
+                    metric_name=metric_delta.metric_name,
+                    baseline_value=metric_delta.baseline_value,
+                    candidate_value=metric_delta.candidate_value,
+                    delta_value=metric_delta.delta_value,
+                    delta_ratio=metric_delta.delta_ratio,
+                )
+                for metric_delta in metric_group.metric_deltas
+            ],
+        )
+        for metric_group in comparison.metric_delta_groups
+    ]
+    if not scalar_delta_groups:
+        scalar_delta_groups = _build_scalar_delta_groups(
+            scalar_deltas,
+            compare_mode=comparison.mode,
+            headline_metric_names=headline_metric_names,
+        )
+
+    return VisualizationSweepCompareSummaryView(
+        baseline_schedule_kind=comparison.baseline_schedule_kind,
+        candidate_schedule_kind=comparison.candidate_schedule_kind,
+        profile_diff_fields=comparison.profile_diff_fields,
+        highlighted_scalar_deltas=_select_highlighted_scalar_deltas(
+            scalar_deltas,
+            headline_metric_names=headline_metric_names,
+        ),
+        scalar_deltas=scalar_deltas,
+        scalar_delta_groups=scalar_delta_groups,
+        bandwidth_pressure_compare=_build_bandwidth_pressure_compare_view(
+            getattr(comparison, "bandwidth_pressure_compare", None)
+        ),
+        vmem_pressure_compare=_build_vmem_pressure_compare_view(
+            getattr(comparison, "vmem_pressure_compare", None)
+        ),
+    )
+
+
+def _build_bandwidth_pressure_compare_view(
+    pressure_compare,
+) -> VisualizationSweepBandwidthPressureCompareView | None:
+    if pressure_compare is None:
+        return None
+    return VisualizationSweepBandwidthPressureCompareView(
+        peak_bandwidth_pressure=_build_scalar_delta(
+            "peak_bandwidth_pressure",
+            pressure_compare.peak_bandwidth_pressure,
+        ),
+        peak_pressure_subject_id=_build_label_delta_view(pressure_compare.peak_pressure_subject_id),
+        dominant_read_address_space=_build_label_delta_view(
+            pressure_compare.dominant_read_address_space
+        ),
+        dominant_write_address_space=_build_label_delta_view(
+            pressure_compare.dominant_write_address_space
+        ),
+        dominant_read_backing_store=_build_label_delta_view(
+            pressure_compare.dominant_read_backing_store
+        ),
+        dominant_write_backing_store=_build_label_delta_view(
+            pressure_compare.dominant_write_backing_store
+        ),
+        dominant_read_memory_class=_build_label_delta_view(
+            pressure_compare.dominant_read_memory_class
+        ),
+        dominant_write_memory_class=_build_label_delta_view(
+            pressure_compare.dominant_write_memory_class
+        ),
+    )
+
+
+def _build_vmem_pressure_compare_view(
+    pressure_compare,
+) -> VisualizationSweepVMEMPressureCompareView | None:
+    if pressure_compare is None:
+        return None
+    return VisualizationSweepVMEMPressureCompareView(
+        hottest_region=_build_label_delta_view(pressure_compare.hottest_region),
+        hottest_region_peak_bytes=_build_optional_scalar_delta(
+            "hottest_region_peak_bytes",
+            getattr(pressure_compare, "hottest_region_peak_bytes", None),
+        ),
+        hottest_region_capacity_bytes=_build_optional_scalar_delta(
+            "hottest_region_capacity_bytes",
+            getattr(pressure_compare, "hottest_region_capacity_bytes", None),
+        ),
+        hottest_region_utilization=_build_optional_scalar_delta(
+            "hottest_region_utilization",
+            getattr(pressure_compare, "hottest_region_utilization", None),
+        ),
+        hottest_region_dominant_memory_class=_build_label_delta_view(
+            pressure_compare.hottest_region_dominant_memory_class
+        ),
+        hottest_region_dominant_backing_store=_build_label_delta_view(
+            pressure_compare.hottest_region_dominant_backing_store
+        ),
+    )
+
+
+def _build_optional_scalar_delta(
+    metric_name: str,
+    scalar_delta: SweepScalarDelta | None,
+) -> VisualizationSweepCompareScalarDeltaView | None:
+    if scalar_delta is None:
+        return None
+    return _build_scalar_delta(metric_name, scalar_delta)
+
+
+def _build_label_delta_view(label_delta) -> VisualizationSweepCompareLabelDeltaView:
+    if label_delta is None:
+        return VisualizationSweepCompareLabelDeltaView()
+    return VisualizationSweepCompareLabelDeltaView(
+        baseline_value=label_delta.baseline_value,
+        candidate_value=label_delta.candidate_value,
+        changed=label_delta.changed,
     )
 
 

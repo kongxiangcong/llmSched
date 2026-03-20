@@ -131,6 +131,8 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
                 <option value="top-cycle">Top By Cycles</option>
                 <option value="regressions-only">Candidate Regressions</option>
                 <option value="top-by-bytes">Top By Bytes</option>
+                <option value="top-by-fitted-work">Top By Fitted Work</option>
+                <option value="fitted-regressions-only">Fitted Work Regressions</option>
               </select>
             </label>
           </div>
@@ -153,9 +155,13 @@ def _build_index_html(artifact: VisualizationCatalogArtifact) -> str:
                 <option value="all-visible">All visible runs</option>
               </select>
             </label>
+            <button id="copy-workspace-link-button" type="button">Copy Workspace Link</button>
+            <button id="download-workspace-json-button" type="button">Export Workspace JSON</button>
+            <button id="download-workspace-svg-button" type="button">Export Workspace SVG</button>
             <button class="compare-toggle" id="swap-compare-order-button" type="button">Swap Baseline/Candidate</button>
           </div>
         </div>
+        <p class="muted" id="catalog-workspace-action-status" aria-live="polite"></p>
         <div id="catalog-compare-workspace-content">
           <p class="empty">Select a baseline run to open the scenario compare workspace.</p>
         </div>
@@ -349,6 +355,22 @@ function currentWorkbenchPanel() {
 function currentLayerDeltaFocus() {
   const layerDeltaFocusFilter = document.querySelector("#catalog-layer-delta-focus-filter");
   return layerDeltaFocusFilter ? layerDeltaFocusFilter.value : "top-cycle";
+}
+
+function escapeSvgText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function setCatalogWorkspaceActionStatus(message) {
+  const status = document.querySelector("#catalog-workspace-action-status");
+  if (status) {
+    status.textContent = message;
+  }
 }
 
 function workbenchPanelLabel(panel) {
@@ -593,7 +615,7 @@ function renderWorkspaceSummaryCell(tagMarkup, contentMarkup) {
 }
 
 function buildWorkspaceSweepSummaryContent(baselineEntry, candidateEntry, sweepComparison) {
-  return `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}`;
+  return `${renderSweepComparisonSummary(sweepComparison)}${buildSweepDrilldownLink(baselineEntry, candidateEntry)}${renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepComparison)}${buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison)}`;
 }
 
 function buildWorkspacePrimaryDeltaContent(sameMetric, deltaValue) {
@@ -713,6 +735,153 @@ function renderScalarDeltaGroups(compareSummary) {
     .join("");
 }
 
+function renderPressureCompareLabelRow(label, deltaView) {
+  if (!deltaView) {
+    return "";
+  }
+  const baselineValue = deltaView.baseline_value || "n/a";
+  const candidateValue = deltaView.candidate_value || "n/a";
+  const changed = Boolean(deltaView.changed);
+  const directionTag = changed
+    ? buildDirectionTagMarkup("is-neutral", "changed")
+    : buildDirectionTagMarkup("is-neutral", "steady");
+  return `
+      <li>
+        <span>${label}</span>
+        <div class="metric-detail-values">
+          ${directionTag}
+          <strong>${candidateValue}</strong>
+          <em>${baselineValue} -> ${candidateValue}</em>
+        </div>
+      </li>
+    `;
+}
+
+function renderPressureCompareScalarRow(label, scalarDelta) {
+  if (!scalarDelta) {
+    return "";
+  }
+  return `
+      <li>
+        <span>${label}</span>
+        <div class="metric-detail-values">
+          ${buildScalarDeltaDirectionTag(scalarDelta)}
+          <strong>${formatMetricDelta(scalarDelta.delta_value)}</strong>
+          <em>${formatMetricValue(scalarDelta.baseline_value)} -> ${formatMetricValue(scalarDelta.candidate_value)}</em>
+        </div>
+      </li>
+    `;
+}
+
+function renderPressureCompareSummary(compareSummary) {
+  const bandwidth = compareSummary.bandwidth_pressure_compare;
+  const vmem = compareSummary.vmem_pressure_compare;
+  if (!bandwidth && !vmem) {
+    return "";
+  }
+  const bandwidthRows = [
+    renderPressureCompareScalarRow("Peak Bandwidth Pressure", bandwidth && bandwidth.peak_bandwidth_pressure),
+    renderPressureCompareLabelRow("Peak Pressure Subject", bandwidth && bandwidth.peak_pressure_subject_id),
+    renderPressureCompareLabelRow("Read Backing Store", bandwidth && bandwidth.dominant_read_backing_store),
+    renderPressureCompareLabelRow("Write Memory Class", bandwidth && bandwidth.dominant_write_memory_class),
+  ].filter(Boolean).join("");
+  const vmemRows = [
+    renderPressureCompareLabelRow("Hottest Region", vmem && vmem.hottest_region),
+    renderPressureCompareScalarRow("Region Utilization", vmem && vmem.hottest_region_utilization),
+    renderPressureCompareLabelRow("Region Memory Class", vmem && vmem.hottest_region_dominant_memory_class),
+    renderPressureCompareLabelRow("Region Backing Store", vmem && vmem.hottest_region_dominant_backing_store),
+  ].filter(Boolean).join("");
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">Peak Bandwidth Pressure</p>
+      </div>
+      <ul class="metric-detail-list">${bandwidthRows || '<li class="empty-cell">No bandwidth pressure compare.</li>'}</ul>
+    </section>
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">VMEM Pressure Shifts</p>
+      </div>
+      <ul class="metric-detail-list">${vmemRows || '<li class="empty-cell">No VMEM pressure compare.</li>'}</ul>
+    </section>
+  `;
+}
+
+function renderWorkspaceCompareDrilldownSection(title, contentMarkup) {
+  if (!contentMarkup) {
+    return "";
+  }
+  return `
+    <section class="compare-summary-group">
+      <div class="compare-group-heading">
+        <p class="muted">${title}</p>
+      </div>
+      ${contentMarkup}
+    </section>
+  `;
+}
+
+function renderWorkspaceLayerDrilldownRows(baselineEntry, candidateEntry, layerDeltas, mode) {
+  const focus = currentLayerDeltaFocus();
+  const fittedMode = mode === "fitted";
+  const filteredLayerDeltas = fittedMode
+    ? (
+      focus === "fitted-regressions-only"
+        ? (layerDeltas || []).filter((layerDelta) => Number(layerDelta.delta_fitted_work_cycles || 0) > 0)
+        : (layerDeltas || [])
+    )
+    : (
+      focus === "regressions-only"
+        ? (layerDeltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0)
+        : (layerDeltas || [])
+    );
+  const orderedLayerDeltas = [...filteredLayerDeltas].sort((left, right) => {
+    const leftScore = fittedMode
+      ? Math.abs(Number(left.delta_fitted_work_cycles || 0))
+      : focus === "top-by-bytes"
+        ? Math.abs(Number(left.delta_bytes || 0))
+        : Math.abs(Number(left.delta_cycles || 0));
+    const rightScore = fittedMode
+      ? Math.abs(Number(right.delta_fitted_work_cycles || 0))
+      : focus === "top-by-bytes"
+        ? Math.abs(Number(right.delta_bytes || 0))
+        : Math.abs(Number(right.delta_cycles || 0));
+    const deltaDiff = rightScore - leftScore;
+    if (deltaDiff !== 0) {
+      return deltaDiff;
+    }
+    return Number(left.layer_id || 0) - Number(right.layer_id || 0);
+  });
+  const visibleLayerDeltas = orderedLayerDeltas.slice(0, MAX_SWEEP_LAYER_DELTA_ROWS);
+  if (!visibleLayerDeltas.length) {
+    return fittedMode
+      ? '<p class="empty">No fitted layer deltas.</p>'
+      : '<p class="empty">No estimated layer deltas.</p>';
+  }
+  const sortDescriptor = fittedMode
+    ? "|delta_fitted_work_cycles|"
+    : focus === "top-by-bytes"
+      ? "|delta_bytes|"
+      : "|delta_cycles|";
+  const countDescriptor = fittedMode ? "fitted layers" : "estimated layers";
+  const truncationNote = orderedLayerDeltas.length > MAX_SWEEP_LAYER_DELTA_ROWS
+    ? `<p class="muted">Showing top 3 of ${orderedLayerDeltas.length} ${countDescriptor} by ${sortDescriptor}.</p>`
+    : "";
+  return `${truncationNote}<ul class="metric-detail-list">${visibleLayerDeltas.map((layerDelta) => `
+    <li>
+      <span>Layer ${layerDelta.layer_id}</span>
+      <div class="metric-detail-values">
+        ${fittedMode
+          ? `<strong>${formatMetricDelta(layerDelta.delta_fitted_work_cycles)} fitted work cycles</strong>`
+          : `<strong>${formatMetricDelta(layerDelta.delta_cycles)} cycles</strong>`
+        }
+        <em>${formatMetricDelta(layerDelta.delta_bytes)} bytes</em>
+      </div>
+      ${buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerDelta.layer_id)}
+    </li>
+  `).join("")}</ul>`;
+}
+
 function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComparison) {
   if (!sweepComparison || !sweepComparison.compare_summary) {
     return buildSharedMetricDeltaRows(baselineEntry, candidateEntry);
@@ -724,8 +893,9 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
   const groupedRows = hasScalarDeltaGroups(compareSummary)
     ? renderScalarDeltaGroups(compareSummary)
     : "";
+  const pressureRows = renderPressureCompareSummary(compareSummary);
   const visibleRows = highlightedRows.length ? highlightedRows : scalarRows;
-  if (!groupedRows && !visibleRows.length) {
+  if (!groupedRows && !pressureRows && !visibleRows.length) {
     return '<p class="empty">No matched Phase D compare summary rows.</p>';
   }
   const fullScalarDetails = scalarRows.length && (
@@ -745,7 +915,46 @@ function buildMatchedCompareSummaryRows(baselineEntry, candidateEntry, sweepComp
       ${highlightedRows.length ? '<p class="muted">Highlighted Metric Shifts</p>' : ""}
       <ul class="metric-detail-list">${renderScalarDeltaListItems(visibleRows)}</ul>
     `}
+    ${pressureRows}
     ${fullScalarDetails}
+  `;
+}
+
+function buildWorkspaceCompareDrilldownContent(baselineEntry, candidateEntry, sweepComparison) {
+  if (!sweepComparison || !sweepComparison.compare_summary) {
+    return "";
+  }
+  const compareSummary = sweepComparison.compare_summary;
+  const groupedScalarContent = hasScalarDeltaGroups(compareSummary)
+    ? renderScalarDeltaGroups(compareSummary)
+    : "";
+  const pressureContent = renderPressureCompareSummary(compareSummary);
+  const estimatedLayerContent = renderWorkspaceLayerDrilldownRows(
+    baselineEntry,
+    candidateEntry,
+    sweepComparison.layer_deltas || [],
+    "estimated",
+  );
+  const fittedLayerContent = renderWorkspaceLayerDrilldownRows(
+    baselineEntry,
+    candidateEntry,
+    sweepComparison.fitted_layer_deltas || [],
+    "fitted",
+  );
+  const drilldownSections = [
+    renderWorkspaceCompareDrilldownSection("Grouped Metric Deltas", groupedScalarContent),
+    renderWorkspaceCompareDrilldownSection("Pressure Compare", pressureContent),
+    renderWorkspaceCompareDrilldownSection("Estimated Layer Deltas", estimatedLayerContent),
+    renderWorkspaceCompareDrilldownSection("Fitted Layer Deltas", fittedLayerContent),
+  ].filter(Boolean).join("");
+  if (!drilldownSections) {
+    return "";
+  }
+  return `
+    <details class="compare-summary-details">
+      <summary>Workspace Compare Drilldown</summary>
+      ${drilldownSections}
+    </details>
   `;
 }
 
@@ -783,10 +992,14 @@ function orderedSweepLayerDeltas(layerDeltas) {
   return [...(layerDeltas || [])].sort((left, right) => {
     const leftScore = focus === "top-by-bytes"
       ? Math.abs(Number(left.delta_bytes || 0))
-      : Math.abs(Number(left.delta_cycles || 0));
+      : focus === "top-by-fitted-work" || focus === "fitted-regressions-only"
+        ? Math.abs(Number(left.delta_fitted_work_cycles || 0))
+        : Math.abs(Number(left.delta_cycles || 0));
     const rightScore = focus === "top-by-bytes"
       ? Math.abs(Number(right.delta_bytes || 0))
-      : Math.abs(Number(right.delta_cycles || 0));
+      : focus === "top-by-fitted-work" || focus === "fitted-regressions-only"
+        ? Math.abs(Number(right.delta_fitted_work_cycles || 0))
+        : Math.abs(Number(right.delta_cycles || 0));
     const deltaDiff = rightScore - leftScore;
     if (deltaDiff !== 0) {
       return deltaDiff;
@@ -799,7 +1012,9 @@ function selectSweepLayerDeltas(layerDeltas) {
   const focus = currentLayerDeltaFocus();
   const filteredLayerDeltas = focus === "regressions-only"
     ? (layerDeltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0)
-    : (layerDeltas || []);
+    : focus === "fitted-regressions-only"
+      ? (layerDeltas || []).filter((layerDelta) => Number(layerDelta.delta_fitted_work_cycles || 0) > 0)
+      : (layerDeltas || []);
   return orderedSweepLayerDeltas(filteredLayerDeltas).slice(0, MAX_SWEEP_LAYER_DELTA_ROWS);
 }
 
@@ -823,19 +1038,35 @@ function renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepCompariso
   if (!sweepComparison) {
     return '<p class="empty">No matched sweep compare summary.</p>';
   }
-  const orderedLayerDeltas = orderedSweepLayerDeltas(sweepComparison.layer_deltas || []);
-  const layerDeltas = selectSweepLayerDeltas(sweepComparison.layer_deltas || []);
+  const sourceLayerDeltas = currentLayerDeltaFocus() === "top-by-fitted-work"
+    || currentLayerDeltaFocus() === "fitted-regressions-only"
+    ? (sweepComparison.fitted_layer_deltas || [])
+    : (sweepComparison.layer_deltas || []);
+  const orderedLayerDeltas = orderedSweepLayerDeltas(sourceLayerDeltas);
+  const layerDeltas = selectSweepLayerDeltas(sourceLayerDeltas);
   const focus = currentLayerDeltaFocus();
   if (!layerDeltas.length) {
     return focus === "regressions-only"
       ? '<p class="empty">No candidate regression layers in matched sweep summary.</p>'
-      : '<p class="empty">No matched sweep layer deltas.</p>';
+      : focus === "fitted-regressions-only"
+        ? '<p class="empty">No fitted-work regression layers in matched sweep summary.</p>'
+        : '<p class="empty">No matched sweep layer deltas.</p>';
   }
   const visibleLayerCount = focus === "regressions-only"
-    ? (sweepComparison.layer_deltas || []).filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0).length
+    ? sourceLayerDeltas.filter((layerDelta) => Number(layerDelta.delta_cycles || 0) > 0).length
+    : focus === "fitted-regressions-only"
+      ? sourceLayerDeltas.filter((layerDelta) => Number(layerDelta.delta_fitted_work_cycles || 0) > 0).length
     : orderedLayerDeltas.length;
-  const sortDescriptor = focus === "top-by-bytes" ? "|delta_bytes|" : "|delta_cycles|";
-  const countDescriptor = focus === "regressions-only" ? "regression layers" : "layers";
+  const sortDescriptor = focus === "top-by-bytes"
+    ? "|delta_bytes|"
+    : focus === "top-by-fitted-work" || focus === "fitted-regressions-only"
+      ? "|delta_fitted_work_cycles|"
+      : "|delta_cycles|";
+  const countDescriptor = focus === "regressions-only"
+    ? "regression layers"
+    : focus === "fitted-regressions-only"
+      ? "fitted regression layers"
+      : "layers";
   const truncationNote = visibleLayerCount > MAX_SWEEP_LAYER_DELTA_ROWS
     ? `<p class="muted">Showing top 3 of ${visibleLayerCount} ${countDescriptor} by ${sortDescriptor}.</p>`
     : "";
@@ -844,6 +1075,9 @@ function renderSweepLayerDeltaRows(baselineEntry, candidateEntry, sweepCompariso
       <span>Layer ${layerDelta.layer_id}</span>
       <div class="metric-detail-values">
         <strong>${formatMetricDelta(layerDelta.delta_cycles)} cycles</strong>
+        ${Object.prototype.hasOwnProperty.call(layerDelta, "delta_fitted_work_cycles")
+          ? `<em>${formatMetricDelta(layerDelta.delta_fitted_work_cycles)} fitted work cycles</em>`
+          : ""}
         <em>${formatMetricDelta(layerDelta.delta_bytes)} bytes</em>
       </div>
       ${buildSweepLayerDrilldownLink(baselineEntry, candidateEntry, layerDelta.layer_id)}
@@ -880,6 +1114,8 @@ function renderSweepComparisonSummary(sweepComparison) {
     "top-cycle": "Top By Cycles",
     "regressions-only": "Candidate Regressions",
     "top-by-bytes": "Top By Bytes",
+    "top-by-fitted-work": "Top By Fitted Work",
+    "fitted-regressions-only": "Fitted Work Regressions",
   };
   return `<p class="muted">${focusLabels[currentLayerDeltaFocus()] || "Top By Cycles"} | ${metricRows.map(([name, delta]) => `${name}: ${formatMetricDelta(delta)}`).join(" | ")}</p>`;
 }
@@ -1008,6 +1244,197 @@ function currentCompareScope() {
   return scopeFilter ? scopeFilter.value : "same-scenario";
 }
 
+function resolveCurrentWorkspaceState() {
+  const state = serializeCatalogState();
+  const visibleEntries = filterCatalogEntries(
+    CATALOG_ENTRIES,
+    state.search,
+    state.mode,
+    state.schedule,
+  );
+  const baselineEntryId = COMPARE_SELECTION[0];
+  const baselineEntry = visibleEntries.find((entry) => entry.entry_id === baselineEntryId)
+    || CATALOG_ENTRIES.find((entry) => entry.entry_id === baselineEntryId)
+    || null;
+  if (!baselineEntry) {
+    return {
+      baselineEntry: null,
+      visibleEntries,
+      candidates: [],
+      compareScope: currentCompareScope(),
+      focusedSweepCandidate: null,
+      focusedSweepLayer: null,
+      focusedLayerDeltaMode: currentLayerDeltaFocus(),
+    };
+  }
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    baselineEntry,
+    visibleEntries,
+    candidates: buildWorkspaceCandidateSet(baselineEntry, visibleEntries, currentCompareScope())
+      .sort((left, right) => left.primary_metric_value - right.primary_metric_value),
+    compareScope: currentCompareScope(),
+    focusedSweepCandidate: urlParams.get("sweep_candidate") || null,
+    focusedSweepLayer: urlParams.get("sweep_layer_focus") || null,
+    focusedLayerDeltaMode: currentLayerDeltaFocus(),
+  };
+}
+
+function buildCurrentCatalogWorkspaceUrl() {
+  return buildCatalogReturnUrl();
+}
+
+async function copyCurrentWorkspaceLink() {
+  const url = buildCurrentCatalogWorkspaceUrl();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(url);
+    setCatalogWorkspaceActionStatus("Workspace view link copied.");
+    return;
+  }
+  setCatalogWorkspaceActionStatus(`Workspace view link ready: ${url}`);
+}
+
+function buildWorkspaceExportData() {
+  const workspaceState = resolveCurrentWorkspaceState();
+  const baselineEntry = workspaceState.baselineEntry;
+  const snapshotHeaderRows = [
+    {
+      label: "Focused Compare Scope",
+      value: workspaceState.compareScope,
+    },
+    {
+      label: "Focused Layer Delta Mode",
+      value: workspaceState.focusedLayerDeltaMode,
+    },
+    {
+      label: "Focused Baseline",
+      value: baselineEntry ? baselineEntry.run_id : "unselected",
+    },
+    {
+      label: "Focused Candidate Count",
+      value: String(workspaceState.candidates.length),
+    },
+  ];
+  if (workspaceState.focusedSweepCandidate) {
+    snapshotHeaderRows.push({
+      label: "Focused Sweep Candidate",
+      value: workspaceState.focusedSweepCandidate,
+    });
+  }
+  if (workspaceState.focusedSweepLayer) {
+    snapshotHeaderRows.push({
+      label: "Focused Sweep Layer",
+      value: workspaceState.focusedSweepLayer,
+    });
+  }
+  return {
+    exported_at: new Date().toISOString(),
+    workspace_url: buildCurrentCatalogWorkspaceUrl(),
+    compare_scope: workspaceState.compareScope,
+    layer_delta_focus: workspaceState.focusedLayerDeltaMode,
+    baseline_entry_id: baselineEntry ? baselineEntry.entry_id : null,
+    baseline_run_id: baselineEntry ? baselineEntry.run_id : null,
+    focused_sweep_candidate: workspaceState.focusedSweepCandidate,
+    focused_sweep_layer: workspaceState.focusedSweepLayer,
+    snapshot_metadata: {
+      title: baselineEntry
+        ? `catalog workspace snapshot ${baselineEntry.run_id}`
+        : "catalog workspace snapshot",
+      header_rows: snapshotHeaderRows,
+    },
+    visible_entry_ids: workspaceState.visibleEntries.map((entry) => entry.entry_id),
+    candidate_rows: workspaceState.candidates.map((entry) => {
+      const rowState = baselineEntry ? resolveWorkspaceCompareRowState(baselineEntry, entry) : null;
+      return {
+        entry_id: entry.entry_id,
+        run_id: entry.run_id,
+        scenario_name: entry.scenario_name,
+        mode: entry.mode,
+        schedule_kind: entry.schedule_kind,
+        target_profile_name: entry.target_profile_name,
+        primary_metric_name: entry.primary_metric_name,
+        primary_metric_value: entry.primary_metric_value,
+        metric_values: entry.metric_values || {},
+        sweep_comparisons: entry.sweep_comparisons || [],
+        compare_summary: rowState && rowState.sweepComparison ? rowState.sweepComparison.compare_summary || null : null,
+        profile_diff_fields: rowState && rowState.sweepComparison && rowState.sweepComparison.compare_summary
+          ? rowState.sweepComparison.compare_summary.profile_diff_fields || []
+          : [],
+      };
+    }),
+  };
+}
+
+function buildWorkspaceSnapshotSvg() {
+  const payload = buildWorkspaceExportData();
+  const headerRows = payload.snapshot_metadata && Array.isArray(payload.snapshot_metadata.header_rows)
+    ? payload.snapshot_metadata.header_rows
+    : [];
+  const candidateLines = payload.candidate_rows.length
+    ? payload.candidate_rows.slice(0, 6).map((row) => `${row.run_id} | ${row.primary_metric_name} | ${formatMetricValue(row.primary_metric_value)}`)
+    : ["No workspace candidates available."];
+  const bodyLines = headerRows
+    .map((row) => `${row.label}: ${row.value}`)
+    .concat(candidateLines);
+  const lineHeight = 20;
+  const height = 160 + (bodyLines.length * lineHeight);
+  const lineSvg = bodyLines.map((line, index) => {
+    const y = 120 + (index * lineHeight);
+    return `<text x="32" y="${y}" font-size="14" fill="#102033">${escapeSvgText(line)}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="${height}" viewBox="0 0 960 ${height}">
+  <rect width="960" height="${height}" fill="#f4efe3" />
+  <rect x="24" y="24" width="912" height="${height - 48}" rx="18" fill="#ffffff" stroke="#d6c7ab" />
+  <text x="32" y="64" font-size="24" fill="#102033">Catalog Workspace Snapshot</text>
+  <text x="32" y="92" font-size="14" fill="#5b6980">${escapeSvgText(payload.baseline_run_id || "No baseline selected")}</text>
+  ${lineSvg}
+</svg>`;
+}
+
+function downloadCurrentWorkspaceJson() {
+  const payload = buildWorkspaceExportData();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const downloadUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl;
+  anchor.download = "catalog-workspace.view.json";
+  anchor.click();
+  URL.revokeObjectURL(downloadUrl);
+  setCatalogWorkspaceActionStatus("Exported workspace JSON.");
+}
+
+function downloadCurrentWorkspaceSvg() {
+  const svg = buildWorkspaceSnapshotSvg();
+  const blob = new Blob([svg], { type: "image/svg+xml" });
+  const downloadUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl;
+  anchor.download = "catalog-workspace.snapshot.svg";
+  anchor.click();
+  URL.revokeObjectURL(downloadUrl);
+  setCatalogWorkspaceActionStatus("Exported workspace SVG.");
+}
+
+function bindCatalogWorkspaceActions() {
+  const copyButton = document.querySelector("#copy-workspace-link-button");
+  const jsonButton = document.querySelector("#download-workspace-json-button");
+  const svgButton = document.querySelector("#download-workspace-svg-button");
+  if (!copyButton || !jsonButton || !svgButton) {
+    return;
+  }
+  copyButton.addEventListener("click", () => {
+    copyCurrentWorkspaceLink().catch((error) => {
+      setCatalogWorkspaceActionStatus(`Unable to copy workspace link: ${error}`);
+    });
+  });
+  jsonButton.addEventListener("click", () => {
+    downloadCurrentWorkspaceJson();
+  });
+  svgButton.addEventListener("click", () => {
+    downloadCurrentWorkspaceSvg();
+  });
+}
+
 function buildWorkspaceCandidateSet(baselineEntry, entries, scope) {
   const visibleCandidates = entries.filter((entry) => entry.entry_id !== baselineEntry.entry_id);
   if (scope === "all-visible") {
@@ -1044,6 +1471,7 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
       <tbody>
         ${candidates.map((entry) => {
           const rowState = resolveWorkspaceCompareRowState(baselineEntry, entry);
+          const sweepComparison = rowState.sweepComparison;
             return `
               <tr>
                 <td>${entry.run_id}</td>
@@ -1060,11 +1488,11 @@ function buildWorkspaceCompareRows(baselineEntry, entries, scope) {
                 )}
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceSummaryTag,
-                  buildMatchedCompareSummaryRows(baselineEntry, entry, rowState.sweepComparison)
+                  buildMatchedCompareSummaryRows(baselineEntry, entry, sweepComparison)
                 )}
                 ${renderWorkspaceSummaryCell(
                   rowState.workspaceSweepSummaryTag,
-                  buildWorkspaceSweepSummaryContent(baselineEntry, entry, rowState.sweepComparison)
+                  buildWorkspaceSweepSummaryContent(baselineEntry, entry, sweepComparison)
                 )}
                 <td>${buildComparePanelLinks(entry)}</td>
               </tr>
@@ -1189,6 +1617,7 @@ function bindCatalogFilters() {
     swapCompareSelectionOrder();
     refresh();
   });
+  bindCatalogWorkspaceActions();
   refresh();
 }
 

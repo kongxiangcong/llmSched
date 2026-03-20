@@ -184,6 +184,83 @@ def test_build_phase_d_compare_report_forwards_fitted_hotspot_and_layer_compare_
     )
 
 
+def test_build_phase_d_compare_report_forwards_pressure_summary_compares() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+    from llm_sched.contracts.sweep_report import (
+        SweepBandwidthPressureCompareSummary,
+        SweepLabelDelta,
+        SweepVMEMPressureCompareSummary,
+    )
+
+    sweep_report = _sweep_report()
+    prefill_source = sweep_report.comparisons[0]
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.pressure",
+        sweep_report=SimpleNamespace(
+            sweep_name=sweep_report.sweep_name,
+            baseline_target_profile_name=sweep_report.baseline_target_profile_name,
+            completed_run_count=sweep_report.completed_run_count,
+            failed_run_count=sweep_report.failed_run_count,
+            issues=sweep_report.issues,
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name=prefill_source.scenario_name,
+                    mode=prefill_source.mode,
+                    baseline_target_profile_name=prefill_source.baseline_target_profile_name,
+                    candidate_target_profile_name=prefill_source.candidate_target_profile_name,
+                    profile_diff_fields=prefill_source.profile_diff_fields,
+                    layer_deltas=prefill_source.layer_deltas,
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    bandwidth_pressure_compare=SweepBandwidthPressureCompareSummary(
+                        peak_bandwidth_pressure=_scalar_delta(640.0, 512.0),
+                        peak_pressure_subject_id=SweepLabelDelta(
+                            baseline_value="nig.node.sdpa.0",
+                            candidate_value="nig.node.linear.0",
+                            changed=True,
+                        ),
+                        dominant_read_backing_store=SweepLabelDelta(
+                            baseline_value="ddr-persistent",
+                            candidate_value="ddr-backed-staged",
+                            changed=True,
+                        ),
+                        dominant_write_memory_class=SweepLabelDelta(
+                            baseline_value="ACTIVATION",
+                            candidate_value="ACTIVATION",
+                            changed=False,
+                        ),
+                    ),
+                    vmem_pressure_compare=SweepVMEMPressureCompareSummary(
+                        hottest_region=SweepLabelDelta(
+                            baseline_value="ping",
+                            candidate_value="pong",
+                            changed=True,
+                        ),
+                        hottest_region_peak_bytes=_scalar_delta(786432, 524288),
+                        hottest_region_capacity_bytes=_scalar_delta(1048576, 1048576),
+                        hottest_region_utilization=_scalar_delta(0.75, 0.5),
+                        hottest_region_dominant_memory_class=SweepLabelDelta(
+                            baseline_value="ACTIVATION",
+                            candidate_value="KV_CACHE",
+                            changed=True,
+                        ),
+                    ),
+                    prefill_compare=prefill_source.prefill_compare,
+                    decode_compare=None,
+                )
+            ],
+        ),
+    )
+
+    row = report.prefill_compares[0]
+    assert row.bandwidth_pressure_compare is not None
+    assert row.bandwidth_pressure_compare.peak_bandwidth_pressure.delta_value == -128.0
+    assert row.bandwidth_pressure_compare.peak_pressure_subject_id.changed is True
+    assert row.vmem_pressure_compare is not None
+    assert row.vmem_pressure_compare.hottest_region.changed is True
+    assert row.vmem_pressure_compare.hottest_region_utilization.delta_value == pytest.approx(-0.25)
+
+
 def test_build_phase_d_compare_report_forwards_phase_balance_scalars() -> None:
     from llm_sched.analysis import build_phase_d_compare_report
 
