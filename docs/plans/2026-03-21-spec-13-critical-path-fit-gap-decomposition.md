@@ -195,3 +195,5 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 - full Task 4 verification:
   - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
   - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- next follow-on:
+  - landed in `docs/plans/2026-03-21-spec-13-fit-floor-source-summary.md`, which extends estimator trust by explaining which floor actually lifts `fitted_work_cycles`

@@ -39,10 +39,13 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "total_bytes": 32768.0,
         "estimated_cycles": 48.0,
         "fitted_work_cycles": 48.0,
+        "schedule_floor_cycles": 0.0,
+        "external_bandwidth_floor_cycles": 0.0,
+        "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 682.6666666666666,
     }
-    assert compute_record.tags == ["descriptor-analysis", "compute-bound"]
+    assert compute_record.tags == ["descriptor-analysis", "compute-bound", "fit-floor:estimated"]
 
     dma_record = analysis.records[1]
     assert dma_record.metrics == {
@@ -51,10 +54,13 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "total_bytes": 8192.0,
         "estimated_cycles": 7.0,
         "fitted_work_cycles": 7.0,
+        "schedule_floor_cycles": 0.0,
+        "external_bandwidth_floor_cycles": 0.0,
+        "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 1170.2857142857142,
     }
-    assert dma_record.tags == ["descriptor-analysis", "memory-bound"]
+    assert dma_record.tags == ["descriptor-analysis", "memory-bound", "fit-floor:estimated"]
 
     transfer_record = analysis.records[2]
     assert transfer_record.metrics == {
@@ -63,10 +69,13 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "total_bytes": 16384.0,
         "estimated_cycles": 26.0,
         "fitted_work_cycles": 26.0,
+        "schedule_floor_cycles": 0.0,
+        "external_bandwidth_floor_cycles": 0.0,
+        "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 18.0,
         "bandwidth_pressure": 630.1538461538462,
     }
-    assert transfer_record.tags == ["descriptor-analysis", "sync-bound"]
+    assert transfer_record.tags == ["descriptor-analysis", "sync-bound", "fit-floor:estimated"]
 
     gap_record = analysis.records[3]
     assert gap_record.metrics == {
@@ -75,6 +84,9 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "total_bytes": 0.0,
         "estimated_cycles": 0.0,
         "fitted_work_cycles": 0.0,
+        "schedule_floor_cycles": 0.0,
+        "external_bandwidth_floor_cycles": 0.0,
+        "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 0.0,
     }
@@ -97,6 +109,10 @@ def test_estimate_descriptor_analysis_uses_schedule_duration_floor() -> None:
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 64.0
     assert compute_record.metrics["fitted_work_cycles"] == 64.0
+    assert compute_record.metrics["schedule_floor_cycles"] == 64.0
+    assert compute_record.metrics["external_bandwidth_floor_cycles"] == 0.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 0.0
+    assert "fit-floor:estimated" in compute_record.tags
 
 
 def test_estimate_descriptor_analysis_raises_fitted_work_cycles_for_tiled_external_reads() -> None:
@@ -114,6 +130,10 @@ def test_estimate_descriptor_analysis_raises_fitted_work_cycles_for_tiled_extern
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 48.0
     assert compute_record.metrics["fitted_work_cycles"] == 96.0
+    assert compute_record.metrics["schedule_floor_cycles"] == 48.0
+    assert compute_record.metrics["external_bandwidth_floor_cycles"] == 96.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 48.0
+    assert "fit-floor:external_bandwidth" in compute_record.tags
 
 
 def _descriptor_ir_fixture() -> DescriptorIR:

@@ -114,10 +114,13 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "total_bytes": 32768.0,
                     "estimated_cycles": 48.0,
                     "fitted_work_cycles": 64.0,
+                    "schedule_floor_cycles": 32.0,
+                    "external_bandwidth_floor_cycles": 64.0,
+                    "fit_floor_gap_cycles": 16.0,
                     "sync_cycles": 0.0,
                     "bandwidth_pressure": 682.6666666666666,
                 },
-                tags=["descriptor-analysis", "compute-bound"],
+                tags=["descriptor-analysis", "compute-bound", "fit-floor:external_bandwidth"],
                 audit_ref=AuditRef(schedule_block_ids=["sched.block.0"], descriptor_ids=["desc.0"]),
             ),
             AnalysisRecord(
@@ -129,10 +132,13 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "total_bytes": 16384.0,
                     "estimated_cycles": 26.0,
                     "fitted_work_cycles": 26.0,
+                    "schedule_floor_cycles": 12.0,
+                    "external_bandwidth_floor_cycles": 0.0,
+                    "fit_floor_gap_cycles": 0.0,
                     "sync_cycles": 18.0,
                     "bandwidth_pressure": 630.1538461538462,
                 },
-                tags=["descriptor-analysis", "sync-bound"],
+                tags=["descriptor-analysis", "sync-bound", "fit-floor:estimated"],
                 audit_ref=AuditRef(schedule_block_ids=["sched.transfer.0"], descriptor_ids=["desc.1"]),
             ),
             AnalysisRecord(
@@ -144,6 +150,9 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
                     "total_bytes": 0.0,
                     "estimated_cycles": 0.0,
                     "fitted_work_cycles": 0.0,
+                    "schedule_floor_cycles": 0.0,
+                    "external_bandwidth_floor_cycles": 0.0,
+                    "fit_floor_gap_cycles": 0.0,
                     "sync_cycles": 0.0,
                     "bandwidth_pressure": 0.0,
                 },
@@ -266,6 +275,14 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.critical_path_fit_gap_summary.dominant_phase_vs_fitted == "projection"
     assert report.critical_path_fit_gap_summary.dominant_macro_vs_estimated == "WDQ_GEMM"
     assert report.critical_path_fit_gap_summary.dominant_macro_vs_fitted == "WDQ_GEMM"
+    assert report.fit_floor_source_summary.schedule_floor_gap_cycles == pytest.approx(0.0)
+    assert report.fit_floor_source_summary.external_bandwidth_gap_cycles == pytest.approx(16.0)
+    assert report.fit_floor_source_summary.estimated_dominant_subject_count == 1
+    assert report.fit_floor_source_summary.schedule_floor_dominant_subject_count == 0
+    assert report.fit_floor_source_summary.external_bandwidth_dominant_subject_count == 1
+    assert report.fit_floor_source_summary.dominant_floor_source == "external_bandwidth"
+    assert report.fit_floor_source_summary.dominant_floor_phase == "projection"
+    assert report.fit_floor_source_summary.dominant_floor_macro == "WDQ_GEMM"
     assert report.vmem_region_capacity_bytes == {"ping": 30720, "pong": 30720, "weight": 32768}
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {

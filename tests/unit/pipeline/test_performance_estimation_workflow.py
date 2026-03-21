@@ -105,8 +105,25 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
         "",
     }
     assert summary_report.critical_path_fit_gap_summary.critical_path_minus_fitted_cycles <= 0.0
+    assert summary_report.fit_floor_source_summary.schedule_floor_gap_cycles >= 0.0
+    assert summary_report.fit_floor_source_summary.external_bandwidth_gap_cycles >= 0.0
+    assert summary_report.fit_floor_source_summary.dominant_floor_source in {
+        "estimated",
+        "schedule_floor",
+        "external_bandwidth",
+        "",
+    }
+    assert summary_report.fit_floor_source_summary.dominant_floor_phase in {
+        "projection",
+        "kv_io",
+        "attention",
+        "sync",
+        "other",
+        "",
+    }
     assert '"fit_gap_summary"' in summary_report_payload
     assert '"critical_path_fit_gap_summary"' in summary_report_payload
+    assert '"fit_floor_source_summary"' in summary_report_payload
     assert summary_report.phase_attribution
     assert "other" in summary_report.phase_attribution
     assert summary_report.phase_attribution["other"].fitted_work_cycles >= 0.0

@@ -3420,6 +3420,25 @@ graph TD
   - one more estimator-trust gap is now closed because the canonical perf artifact can explain which phase and macro sit closest to the schedule critical path without reopening raw reports
   - the next `SPEC-13` follow-on should focus on deeper cycle-fitting math or compare-grade estimator aggregation rather than another top-level trust summary
 
+## 2026-03-21 SPEC-13 Fit Floor Source Summary Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-fit-floor-source-summary.md`
+- `PerfSummaryReport` now also exposes `fit_floor_source_summary`, making fitted-cycle inflation attributable to `estimated`, `schedule_floor`, or `external_bandwidth` dominance instead of treating `fitted_work_cycles` as an opaque topline.
+- this slice stays intentionally estimator-local:
+  - it reuses existing fitted-cycle logic rather than changing the estimator math itself
+  - it threads floor-source signals through `AnalysisIR` using numeric metrics plus `fit-floor:*` tags
+  - it does not yet add compare-grade estimator consumers
+- new closure evidence:
+  - descriptor analysis now preserves `schedule_floor_cycles`, `external_bandwidth_floor_cycles`, and `fit_floor_gap_cycles`
+  - `fit_floor_source_summary` now carries schedule-floor uplift, external-bandwidth uplift, dominant-subject counts, and dominant floor source/phase/macro hints
+  - focused `SPEC-13` unit/workflow verification is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - another deeper estimator-trust gap is now closed because the canonical perf artifact can explain which floor actually lifts fitted cycles
+  - the next `SPEC-13` follow-on should now bias toward compare-grade estimator aggregation or genuinely richer cycle-fitting math, not another summary-only trust field
+
 ## Current Next Slice
 
 - `M3`
@@ -3429,6 +3448,7 @@ graph TD
   - treat the current verdict-summary plus decode `kv_len` aggregation plus decode token-latency decomposition plus prefill layer decomposition plus cross-mode compare closure slices as revalidated and landed
   - treat the current `SPEC-13` fit-gap summary slice as landed
   - treat the current `SPEC-13` critical-path fit-gap decomposition slice as landed
+  - treat the current `SPEC-13` fit-floor source summary slice as landed
   - shift the next focused follow-on toward `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation now that the main standalone compare closure questions are answered without reopening raw artifacts
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`

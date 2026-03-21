@@ -87,6 +87,19 @@ class PerfCriticalPathFitGapSummary(BaseModel):
     dominant_macro_vs_fitted: str = ""
 
 
+class PerfFitFloorSourceSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schedule_floor_gap_cycles: float = Field(default=0.0)
+    external_bandwidth_gap_cycles: float = Field(default=0.0)
+    estimated_dominant_subject_count: int = Field(ge=0, default=0)
+    schedule_floor_dominant_subject_count: int = Field(ge=0, default=0)
+    external_bandwidth_dominant_subject_count: int = Field(ge=0, default=0)
+    dominant_floor_source: str = ""
+    dominant_floor_phase: str = ""
+    dominant_floor_macro: str = ""
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -113,6 +126,9 @@ class PerfSummaryReport(BaseModel):
     fit_gap_summary: PerfFitGapSummary = Field(default_factory=PerfFitGapSummary)
     critical_path_fit_gap_summary: PerfCriticalPathFitGapSummary = Field(
         default_factory=PerfCriticalPathFitGapSummary
+    )
+    fit_floor_source_summary: PerfFitFloorSourceSummary = Field(
+        default_factory=PerfFitFloorSourceSummary
     )
     totals: dict[str, float] = Field(default_factory=dict)
     phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)

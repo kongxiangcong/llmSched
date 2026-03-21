@@ -60,6 +60,16 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 "dominant_macro_vs_estimated": "WDQ_GEMM",
                 "dominant_macro_vs_fitted": "WDQ_GEMM",
             },
+            "fit_floor_source_summary": {
+                "schedule_floor_gap_cycles": 96.0,
+                "external_bandwidth_gap_cycles": 60.0,
+                "estimated_dominant_subject_count": 0,
+                "schedule_floor_dominant_subject_count": 1,
+                "external_bandwidth_dominant_subject_count": 1,
+                "dominant_floor_source": "schedule_floor",
+                "dominant_floor_phase": "projection",
+                "dominant_floor_macro": "WDQ_GEMM",
+            },
             "totals": {
                 "estimated_cycles": 1024.0,
                 "fitted_work_cycles": 1180.0,
@@ -255,6 +265,14 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.critical_path_fit_gap_summary.dominant_phase_vs_fitted == "projection"
     assert report.critical_path_fit_gap_summary.dominant_macro_vs_estimated == "WDQ_GEMM"
     assert report.critical_path_fit_gap_summary.dominant_macro_vs_fitted == "WDQ_GEMM"
+    assert report.fit_floor_source_summary.schedule_floor_gap_cycles == 96.0
+    assert report.fit_floor_source_summary.external_bandwidth_gap_cycles == 60.0
+    assert report.fit_floor_source_summary.estimated_dominant_subject_count == 0
+    assert report.fit_floor_source_summary.schedule_floor_dominant_subject_count == 1
+    assert report.fit_floor_source_summary.external_bandwidth_dominant_subject_count == 1
+    assert report.fit_floor_source_summary.dominant_floor_source == "schedule_floor"
+    assert report.fit_floor_source_summary.dominant_floor_phase == "projection"
+    assert report.fit_floor_source_summary.dominant_floor_macro == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0

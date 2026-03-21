@@ -16,6 +16,7 @@ from llm_sched.contracts.perf_report import (
     PerfBottleneckIssue,
     PerfCriticalPathFitGapSummary,
     PerfFitGapSummary,
+    PerfFitFloorSourceSummary,
     PerfPhaseSummary,
     PerfSummaryReport,
     PerfVMEMPressureSummary,
@@ -70,13 +71,15 @@ def estimate_descriptor_analysis(
             if schedule_block is not None and schedule_block.tiling_candidate_id is not None
             else None
         )
-        metrics["fitted_work_cycles"] = _fitted_work_cycles_for_descriptor(
+        fit_floor_metrics, fit_floor_tag = _fitted_work_cycle_metrics_for_descriptor(
             descriptor,
             metrics,
             schedule_block=schedule_block,
             tiling_candidate=tiling_candidate,
             capabilities=capabilities,
         )
+        metrics.update(fit_floor_metrics)
+        tags = [*tags, fit_floor_tag]
         records.append(
             AnalysisRecord(
                 record_id=_analysis_record_id(descriptor.schedule_block_id),
@@ -112,35 +115,78 @@ def estimate_descriptor_analysis(
     )
 
 
-def _fitted_work_cycles_for_descriptor(
+def _fitted_work_cycle_metrics_for_descriptor(
     descriptor: DescriptorRecord,
     metrics: dict[str, float],
     *,
     schedule_block: ScheduleBlock | None,
     tiling_candidate: TileCandidate | None,
     capabilities: ArchitectureCapabilities,
-) -> float:
+) -> tuple[dict[str, float], str]:
     stage = _record_stage(descriptor)
     estimated_cycles = float(metrics.get("estimated_cycles", 0.0))
     schedule_floor = float(max(0, int(descriptor.ctrl_fields.get("duration_slots", 0))))
     if schedule_block is not None:
         schedule_floor = max(schedule_floor, float(max(0, schedule_block.duration_slots)))
     fitted_cycles = max(estimated_cycles, schedule_floor)
+    external_read_cycles = 0.0
 
     if stage != "compute" or tiling_candidate is None or tiling_candidate.resource_summary is None:
-        return float(fitted_cycles)
+        return _build_fit_floor_metrics(
+            estimated_cycles=estimated_cycles,
+            schedule_floor_cycles=schedule_floor,
+            external_bandwidth_floor_cycles=external_read_cycles,
+            fitted_work_cycles=fitted_cycles,
+        )
 
     external_read_bytes = float(
         tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-backed-staged", 0)
         + tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-persistent", 0)
     )
     if external_read_bytes <= 0.0:
-        return float(fitted_cycles)
+        return _build_fit_floor_metrics(
+            estimated_cycles=estimated_cycles,
+            schedule_floor_cycles=schedule_floor,
+            external_bandwidth_floor_cycles=external_read_cycles,
+            fitted_work_cycles=fitted_cycles,
+        )
 
     external_read_cycles = float(
         _bandwidth_cycles(external_read_bytes, capabilities.shared_dma.effective_bandwidth_gbps)
     )
-    return float(max(fitted_cycles, external_read_cycles))
+    return _build_fit_floor_metrics(
+        estimated_cycles=estimated_cycles,
+        schedule_floor_cycles=schedule_floor,
+        external_bandwidth_floor_cycles=external_read_cycles,
+        fitted_work_cycles=max(fitted_cycles, external_read_cycles),
+    )
+
+
+def _build_fit_floor_metrics(
+    *,
+    estimated_cycles: float,
+    schedule_floor_cycles: float,
+    external_bandwidth_floor_cycles: float,
+    fitted_work_cycles: float,
+) -> tuple[dict[str, float], str]:
+    fit_floor_source = "estimated"
+    if fitted_work_cycles == external_bandwidth_floor_cycles and fitted_work_cycles > max(
+        estimated_cycles,
+        schedule_floor_cycles,
+    ):
+        fit_floor_source = "external_bandwidth"
+    elif fitted_work_cycles == schedule_floor_cycles and fitted_work_cycles > estimated_cycles:
+        fit_floor_source = "schedule_floor"
+
+    return (
+        {
+            "fitted_work_cycles": float(fitted_work_cycles),
+            "schedule_floor_cycles": float(schedule_floor_cycles),
+            "external_bandwidth_floor_cycles": float(external_bandwidth_floor_cycles),
+            "fit_floor_gap_cycles": float(max(0.0, fitted_work_cycles - estimated_cycles)),
+        },
+        f"fit-floor:{fit_floor_source}",
+    )
 
 
 def build_perf_summary_report(
@@ -185,6 +231,10 @@ def build_perf_summary_report(
     per_layer_bytes: Counter[str] = Counter()
     bottleneck_counts: Counter[str] = Counter()
     issues: list[PerfBottleneckIssue] = []
+    fit_floor_gap_by_source: Counter[str] = Counter()
+    fit_floor_subject_count_by_source: Counter[str] = Counter()
+    fit_floor_phase_gap_by_source: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    fit_floor_macro_gap_by_source: defaultdict[str, Counter[str]] = defaultdict(Counter)
     data_movement_read_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
     data_movement_write_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
     phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]] = defaultdict(
@@ -249,6 +299,8 @@ def build_perf_summary_report(
             per_node_bytes[node_id] += record.metrics.get("total_bytes", 0.0)
 
         descriptor = descriptor_by_subject.get(record.subject_id)
+        fit_floor_source = _fit_floor_source_from_tags(record.tags)
+        fit_floor_gap_cycles = float(record.metrics.get("fit_floor_gap_cycles", 0.0))
         attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
         attributed_fitted_work_cycles = _phase_fitted_work_cycle_contribution_for_record(
             descriptor,
@@ -282,11 +334,19 @@ def build_perf_summary_report(
             per_layer_bytes[layer_key] += record.metrics.get("total_bytes", 0.0)
 
         if descriptor is None:
+            if fit_floor_source is not None:
+                fit_floor_subject_count_by_source[fit_floor_source] += 1
             continue
         macro = str(descriptor.ctrl_fields.get("macro_op", descriptor.opcode))
         per_macro_cycles[macro] += record.metrics.get("estimated_cycles", 0.0)
         per_macro_fitted_work_cycles[macro] += _record_fitted_work_cycles(record.metrics)
         per_macro_bytes[macro] += record.metrics.get("total_bytes", 0.0)
+        if fit_floor_source is not None:
+            fit_floor_subject_count_by_source[fit_floor_source] += 1
+            fit_floor_gap_by_source[fit_floor_source] += fit_floor_gap_cycles
+            record_phase_name = _classify_record_phase(descriptor)
+            fit_floor_phase_gap_by_source[fit_floor_source][record_phase_name] += fit_floor_gap_cycles
+            fit_floor_macro_gap_by_source[fit_floor_source][macro] += fit_floor_gap_cycles
         _accumulate_data_movement_breakdown(
             descriptor,
             record.metrics,
@@ -406,6 +466,12 @@ def build_perf_summary_report(
             phase_fitted_work_cycles=phase_fitted_work_cycles,
             per_macro_cycles=per_macro_cycles,
             per_macro_fitted_work_cycles=per_macro_fitted_work_cycles,
+        ),
+        fit_floor_source_summary=_build_fit_floor_source_summary(
+            fit_floor_gap_by_source=fit_floor_gap_by_source,
+            fit_floor_subject_count_by_source=fit_floor_subject_count_by_source,
+            fit_floor_phase_gap_by_source=fit_floor_phase_gap_by_source,
+            fit_floor_macro_gap_by_source=fit_floor_macro_gap_by_source,
         ),
         totals=totals,
         phase_attribution=_build_phase_attribution(
@@ -551,6 +617,65 @@ def _closest_critical_path_contributor(
         non_zero_items,
         key=lambda item: (abs(critical_path_cycles - item[1]), -item[1], item[0]),
     )[0]
+
+
+def _fit_floor_source_from_tags(tags: list[str]) -> str | None:
+    for tag in tags:
+        if tag.startswith("fit-floor:"):
+            return tag.split(":", 1)[1]
+    return None
+
+
+def _build_fit_floor_source_summary(
+    *,
+    fit_floor_gap_by_source: Counter[str],
+    fit_floor_subject_count_by_source: Counter[str],
+    fit_floor_phase_gap_by_source: defaultdict[str, Counter[str]],
+    fit_floor_macro_gap_by_source: defaultdict[str, Counter[str]],
+) -> PerfFitFloorSourceSummary:
+    dominant_floor_source = ""
+    if fit_floor_gap_by_source:
+        dominant_floor_source = max(
+            fit_floor_gap_by_source,
+            key=lambda source_name: (
+                float(fit_floor_gap_by_source.get(source_name, 0.0)),
+                float(fit_floor_subject_count_by_source.get(source_name, 0)),
+                source_name,
+            ),
+        )
+
+    dominant_floor_phase = ""
+    if dominant_floor_source and fit_floor_phase_gap_by_source.get(dominant_floor_source):
+        dominant_floor_phase = max(
+            fit_floor_phase_gap_by_source[dominant_floor_source],
+            key=lambda phase_name: float(
+                fit_floor_phase_gap_by_source[dominant_floor_source].get(phase_name, 0.0)
+            ),
+        )
+
+    dominant_floor_macro = ""
+    if dominant_floor_source and fit_floor_macro_gap_by_source.get(dominant_floor_source):
+        dominant_floor_macro = max(
+            fit_floor_macro_gap_by_source[dominant_floor_source],
+            key=lambda macro_name: float(
+                fit_floor_macro_gap_by_source[dominant_floor_source].get(macro_name, 0.0)
+            ),
+        )
+
+    return PerfFitFloorSourceSummary(
+        schedule_floor_gap_cycles=float(fit_floor_gap_by_source.get("schedule_floor", 0.0)),
+        external_bandwidth_gap_cycles=float(fit_floor_gap_by_source.get("external_bandwidth", 0.0)),
+        estimated_dominant_subject_count=int(fit_floor_subject_count_by_source.get("estimated", 0)),
+        schedule_floor_dominant_subject_count=int(
+            fit_floor_subject_count_by_source.get("schedule_floor", 0)
+        ),
+        external_bandwidth_dominant_subject_count=int(
+            fit_floor_subject_count_by_source.get("external_bandwidth", 0)
+        ),
+        dominant_floor_source=dominant_floor_source,
+        dominant_floor_phase=dominant_floor_phase,
+        dominant_floor_macro=dominant_floor_macro,
+    )
 
 
 def _critical_path_cycles(*, schedule_makespan_slots: int, estimated_cycles: float) -> float:
@@ -1393,6 +1518,9 @@ def _zero_metrics() -> dict[str, float]:
         "total_bytes": 0.0,
         "estimated_cycles": 0.0,
         "fitted_work_cycles": 0.0,
+        "schedule_floor_cycles": 0.0,
+        "external_bandwidth_floor_cycles": 0.0,
+        "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
         "bandwidth_pressure": 0.0,
     }
