@@ -3581,6 +3581,7 @@ graph TD
 
 - `M3`
   - freeze the current recommendation-detail branch as a practical stop-line
+  - revalidate that `SPEC-16 / SPEC-19` closeout boundary with `docs/plans/2026-03-22-spec-16-spec-19-closeout.md`
   - execute `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` as the handoff artifact for broader blocker reclassification
   - treat the current `SPEC-14/15` eval-compare closure lane as practically closed for the main decision path
   - treat the current verdict-summary plus decode `kv_len` aggregation plus decode token-latency decomposition plus prefill layer decomposition plus cross-mode compare closure slices as revalidated and landed
@@ -3598,7 +3599,23 @@ graph TD
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
+  - fresh 2026-03-22 visualization proof reconfirms the current static catalog/workbench surface is sufficient for project closeout
   - keep `SPEC-19` as downstream polish, not as the reason this project remains open
+
+## 2026-03-22 SPEC-16 / SPEC-19 Closeout Reconfirmation
+
+- closeout plan doc: `../plans/2026-03-22-spec-16-spec-19-closeout.md`
+- closure judgment remains unchanged after fresh verification:
+  - freeze the current `SPEC-16` recommendation-detail branch as a practical stop-line
+  - keep any follow-on `SPEC-16` work gated on a concrete blocker instead of default interaction expansion
+  - treat the current `SPEC-19` catalog/workbench surface as sufficient for project closeout, with only downstream polish left open
+- fresh verification evidence:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- closeout implication:
+  - recommendation-detail no longer reopens by default
+  - richer screenshot/convenience work remains optional `SPEC-19` polish
+  - project blocker review should stay above this layer unless new failing evidence appears
 
 ## 2026-03-20 SPEC-19 Workspace Export Hardening Update
 

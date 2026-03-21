@@ -105,3 +105,14 @@ Exact next action:
 - freeze the current `SPEC-16` recommendation-detail branch as a practical stop-line
 - move the blocker review back to the remaining broader `SPEC-16` / `SPEC-13/14/15` gaps
 - keep `SPEC-19` classified as downstream polish only
+
+## 2026-03-22 Reconfirmation
+
+- the close-enough decision remains unchanged after a fresh visualization recheck
+- fresh verification evidence:
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- reconfirmed interpretation:
+  - `SPEC-16` recommendation-detail remains frozen at the practical stop-line
+  - current `SPEC-19` catalog/workbench surface is sufficient for project closeout
+  - remaining `SPEC-19` work stays downstream polish only

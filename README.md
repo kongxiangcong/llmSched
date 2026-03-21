@@ -179,6 +179,12 @@ python -m pytest tests/smoke -m milestone_matrix -q
   - 当前 recommendation-detail 这条 `SPEC-16` 子主线已经通过 closure pass，可按 practical stop-line 冻结
   - 下一步不该再默认继续发散更多同类交互，而应把 blocker review 拉回更上层的剩余 `SPEC-16` / `SPEC-13/14/15`
   - `SPEC-19` 继续作为 downstream polish，不应因为 convenience interaction 继续阻塞项目收尾
+- `SPEC-16 / SPEC-19` 这条 closeout 判断已在 `2026-03-22` 用 fresh visualization proof 重新确认：
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- 当前对 `SPEC-16 / SPEC-19` 更合理的解释已经进一步收敛：
+  - `SPEC-16` recommendation-detail 分支继续保持冻结，除非后续 blocker audit 重新发现真实缺口
+  - `SPEC-19` 当前 static catalog/workbench surface 已足够支撑项目 closeout，剩余 richer screenshot / convenience polish 不再作为默认收尾门槛
 - 当前推荐的执行方式已经进一步具体化：
   - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md` 已完成本轮 closure 判定
   - recommendation-detail 这条子主线现在应保持冻结，除非后续 blocker review 重新发现真实缺口
@@ -243,9 +249,10 @@ Current active execution plan:
   - `docs/plans/2026-03-21-spec-16-workbench-detail-export-continuity.md`
   - `docs/plans/2026-03-21-spec-16-catalog-recommendation-detail-continuity.md`
   - `docs/plans/2026-03-21-spec-16-recommendation-detail-shared-builders.md`
-  - `docs/plans/2026-03-21-spec-16-recommendation-detail-shared-renderers.md`
-  - `docs/plans/2026-03-21-spec-16-spec-19-closure-audit.md`
-  - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md`
+- `docs/plans/2026-03-21-spec-16-recommendation-detail-shared-renderers.md`
+- `docs/plans/2026-03-21-spec-16-spec-19-closure-audit.md`
+- `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md`
+- `docs/plans/2026-03-22-spec-16-spec-19-closeout.md`
 
 Canonical documentation roles:
 
