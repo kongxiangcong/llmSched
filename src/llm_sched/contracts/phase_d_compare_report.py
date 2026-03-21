@@ -45,6 +45,19 @@ class PhaseDCompareModeSummary(BaseModel):
     neutral_count: int = Field(ge=0, default=0)
 
 
+class PhaseDEstimatorCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    compare_count: int = Field(ge=0, default=0)
+    candidate_tighter_fit_count: int = Field(ge=0, default=0)
+    baseline_tighter_fit_count: int = Field(ge=0, default=0)
+    neutral_fit_count: int = Field(ge=0, default=0)
+    avg_fit_gap_delta: float = 0.0
+    avg_critical_path_gap_delta: float = 0.0
+    dominant_fit_gap_phase: str = ""
+    dominant_critical_path_delta_phase: str = ""
+
+
 class PhaseDDecodeKVLenSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -529,7 +542,13 @@ class PhaseDCompareReport(BaseModel):
     prefill_compare_count: int = Field(ge=0)
     decode_compare_count: int = Field(ge=0)
     prefill_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
+    prefill_estimator_summary: PhaseDEstimatorCompareSummary = Field(
+        default_factory=PhaseDEstimatorCompareSummary
+    )
     decode_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
+    decode_estimator_summary: PhaseDEstimatorCompareSummary = Field(
+        default_factory=PhaseDEstimatorCompareSummary
+    )
     decode_kv_len_summaries: list[PhaseDDecodeKVLenSummary] = Field(default_factory=list)
     decode_latency_decomposition_summary: PhaseDDecodeLatencyDecompositionSummary = Field(
         default_factory=PhaseDDecodeLatencyDecompositionSummary

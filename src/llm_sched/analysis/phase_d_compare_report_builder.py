@@ -5,6 +5,7 @@ from __future__ import annotations
 from llm_sched.contracts.phase_d_compare_report import (
     PhaseDCrossModeCompareSummary,
     PhaseDCompareReport,
+    PhaseDEstimatorCompareSummary,
     PhaseDDecodeLatencyDecompositionSummary,
     PhaseDDecodeLatencyPhaseEntry,
     PhaseDDecodeKVLenSummary,
@@ -244,7 +245,9 @@ def build_phase_d_compare_report(
         prefill_compare_count=len(prefill_compares),
         decode_compare_count=len(decode_compares),
         prefill_summary=_build_mode_summary(prefill_compares),
+        prefill_estimator_summary=_build_estimator_summary(prefill_compares),
         decode_summary=_build_mode_summary(decode_compares),
+        decode_estimator_summary=_build_estimator_summary(decode_compares),
         decode_kv_len_summaries=_build_decode_kv_len_summaries(decode_compares),
         decode_latency_decomposition_summary=_build_decode_latency_decomposition_summary(
             decode_compares
@@ -267,6 +270,65 @@ def _build_mode_summary(compares) -> PhaseDCompareModeSummary:
         baseline_better_count=verdicts.count("baseline-better"),
         mixed_count=verdicts.count("mixed"),
         neutral_count=verdicts.count("neutral"),
+    )
+
+
+def _build_estimator_summary(compares) -> PhaseDEstimatorCompareSummary:
+    if not compares:
+        return PhaseDEstimatorCompareSummary()
+
+    fit_gap_deltas = [
+        row.fitted_work_cycles.delta_value - row.estimated_cycles.delta_value
+        for row in compares
+    ]
+    critical_path_gap_deltas = [
+        row.critical_path_cycles.delta_value - row.estimated_cycles.delta_value
+        for row in compares
+    ]
+
+    candidate_tighter_fit_count = sum(1 for value in fit_gap_deltas if value < 0.0)
+    baseline_tighter_fit_count = sum(1 for value in fit_gap_deltas if value > 0.0)
+    neutral_fit_count = sum(1 for value in fit_gap_deltas if value == 0.0)
+
+    fit_gap_phase_scores = {
+        phase_name: sum(
+            abs(
+                _field(row, f"{phase_name}_fitted_work_cycles").delta_value
+                - _field(row, f"{phase_name}_cycles").delta_value
+            )
+            for row in compares
+        )
+        / len(compares)
+        for phase_name in _PHASE_COMPARE_NAMES
+    }
+    dominant_fit_gap_phase = max(
+        fit_gap_phase_scores,
+        key=lambda phase_name: (fit_gap_phase_scores[phase_name], -_PHASE_COMPARE_NAMES.index(phase_name)),
+    )
+    avg_critical_path_gap_delta = sum(critical_path_gap_deltas) / len(critical_path_gap_deltas)
+    dominant_critical_path_delta_phase = min(
+        _PHASE_COMPARE_NAMES,
+        key=lambda phase_name: (
+            abs(
+                avg_critical_path_gap_delta
+                - (
+                    sum(_field(row, f"{phase_name}_cycles").delta_value for row in compares)
+                    / len(compares)
+                )
+            ),
+            _PHASE_COMPARE_NAMES.index(phase_name),
+        ),
+    )
+
+    return PhaseDEstimatorCompareSummary(
+        compare_count=len(compares),
+        candidate_tighter_fit_count=candidate_tighter_fit_count,
+        baseline_tighter_fit_count=baseline_tighter_fit_count,
+        neutral_fit_count=neutral_fit_count,
+        avg_fit_gap_delta=sum(fit_gap_deltas) / len(fit_gap_deltas),
+        avg_critical_path_gap_delta=avg_critical_path_gap_delta,
+        dominant_fit_gap_phase=dominant_fit_gap_phase,
+        dominant_critical_path_delta_phase=dominant_critical_path_delta_phase,
     )
 
 

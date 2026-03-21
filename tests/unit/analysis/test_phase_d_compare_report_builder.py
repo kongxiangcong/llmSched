@@ -19,8 +19,24 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.decode_compare_count == 1
     assert report.prefill_summary.compare_count == 1
     assert report.prefill_summary.candidate_better_count == 1
+    assert report.prefill_estimator_summary.compare_count == 1
+    assert report.prefill_estimator_summary.candidate_tighter_fit_count == 0
+    assert report.prefill_estimator_summary.baseline_tighter_fit_count == 0
+    assert report.prefill_estimator_summary.neutral_fit_count == 1
+    assert report.prefill_estimator_summary.avg_fit_gap_delta == pytest.approx(0.0)
+    assert report.prefill_estimator_summary.avg_critical_path_gap_delta == pytest.approx(-256.0)
+    assert report.prefill_estimator_summary.dominant_fit_gap_phase == "projection"
+    assert report.prefill_estimator_summary.dominant_critical_path_delta_phase == "attention"
     assert report.decode_summary.compare_count == 1
     assert report.decode_summary.candidate_better_count == 1
+    assert report.decode_estimator_summary.compare_count == 1
+    assert report.decode_estimator_summary.candidate_tighter_fit_count == 0
+    assert report.decode_estimator_summary.baseline_tighter_fit_count == 0
+    assert report.decode_estimator_summary.neutral_fit_count == 1
+    assert report.decode_estimator_summary.avg_fit_gap_delta == pytest.approx(0.0)
+    assert report.decode_estimator_summary.avg_critical_path_gap_delta == pytest.approx(-240.0)
+    assert report.decode_estimator_summary.dominant_fit_gap_phase == "projection"
+    assert report.decode_estimator_summary.dominant_critical_path_delta_phase == "projection"
     assert report.decode_kv_len_summaries[0].kv_len == 2048
     assert report.decode_kv_len_summaries[0].compare_count == 1
     assert report.decode_kv_len_summaries[0].preferred_target_profile_name == "riscv_npu_dual_core_v1"

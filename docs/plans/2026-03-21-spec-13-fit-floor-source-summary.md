@@ -237,3 +237,4 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 - updated interpretation:
   - this slice closes another estimator-trust gap by making the source of fitted-cycle inflation explicit in the canonical perf artifact
   - the next remaining `SPEC-13` blocker is now more likely compare-grade estimator aggregation or genuinely deeper fitted-cycle math, not missing floor-source interpretation
+  - the immediate follow-on landed in `docs/plans/2026-03-21-spec-13-compare-grade-estimator-summary.md`, which lifts these estimator trust signals into `PhaseDCompareReport`

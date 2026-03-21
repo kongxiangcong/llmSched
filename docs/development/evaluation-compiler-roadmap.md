@@ -3439,6 +3439,26 @@ graph TD
   - another deeper estimator-trust gap is now closed because the canonical perf artifact can explain which floor actually lifts fitted cycles
   - the next `SPEC-13` follow-on should now bias toward compare-grade estimator aggregation or genuinely richer cycle-fitting math, not another summary-only trust field
 
+## 2026-03-21 SPEC-13 Compare-Grade Estimator Summary Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-compare-grade-estimator-summary.md`
+- `PhaseDCompareReport` now exposes compare-grade estimator summaries directly on top of the existing prefill/decode compare rows:
+  - `prefill_estimator_summary`
+  - `decode_estimator_summary`
+- this slice stays intentionally compare-topline:
+  - it reuses existing compare rows instead of expanding every row contract
+  - it aggregates fitted-vs-estimated gap movement and critical-path-gap movement per mode
+  - it does not yet reopen deeper fitted-cycle math
+- new closure evidence:
+  - `PhaseDCompareReport` now carries compare counts, tighter-fit counts, average fit-gap deltas, average critical-path-gap deltas, and dominant estimator phases for prefill/decode
+  - focused Phase D compare verification is green:
+    - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `17 passed`
+  - visualization consumer reconfirmation remains green:
+    - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- interpretation:
+  - current estimator-trust surfaces are no longer trapped inside `PerfSummaryReport`; standalone compare artifacts can now summarize them directly
+  - the next remaining `SPEC-13` blocker is now more clearly deeper cycle-fitting math, not missing compare-grade aggregation
+
 ## Current Next Slice
 
 - `M3`
@@ -3449,7 +3469,8 @@ graph TD
   - treat the current `SPEC-13` fit-gap summary slice as landed
   - treat the current `SPEC-13` critical-path fit-gap decomposition slice as landed
   - treat the current `SPEC-13` fit-floor source summary slice as landed
-  - shift the next focused follow-on toward `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation now that the main standalone compare closure questions are answered without reopening raw artifacts
+  - treat the current `SPEC-13` compare-grade estimator summary slice as landed
+  - shift the next focused follow-on toward genuinely deeper `SPEC-13` cycle-fitting math now that both standalone compare closure and compare-grade estimator aggregation are in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

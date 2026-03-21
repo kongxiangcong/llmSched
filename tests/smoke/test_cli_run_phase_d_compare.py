@@ -54,6 +54,8 @@ def test_run_phase_d_compare_writes_report(
     assert report["prefill_compare_count"] == 1
     assert report["decode_compare_count"] == 0
     assert report["prefill_summary"]["compare_count"] == 1
+    assert report["prefill_estimator_summary"]["compare_count"] == 1
+    assert report["decode_estimator_summary"]["compare_count"] == 0
     assert report["decode_kv_len_summaries"] == []
     assert report["decode_latency_decomposition_summary"]["compare_count"] == 0
     assert report["prefill_layer_decomposition_summary"]["compare_count"] == 1

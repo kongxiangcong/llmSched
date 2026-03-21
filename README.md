@@ -231,6 +231,7 @@ Current active execution plan:
 - `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
 - `docs/plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`
 - `docs/plans/2026-03-21-spec-13-fit-floor-source-summary.md`
+- `docs/plans/2026-03-21-spec-13-compare-grade-estimator-summary.md`
 - 最新已落盘的 `SPEC-16` execution slices 位于：
   - `docs/plans/2026-03-20-spec-16-*.md`
   - `docs/plans/2026-03-21-spec-16-analysis-flow-candidate-inspection.md`
@@ -330,7 +331,9 @@ Current working interpretation:
   - `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
   - `docs/plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`
   - `docs/plans/2026-03-21-spec-13-fit-floor-source-summary.md`
+  - `docs/plans/2026-03-21-spec-13-compare-grade-estimator-summary.md`
   - `PerfSummaryReport` 已补上 `fit_gap_summary`、`critical_path_fit_gap_summary` 和 `fit_floor_source_summary`
-  - focused `SPEC-13` unit/workflow/smoke regression 已 fresh 通过：`19 passed`
+  - `PhaseDCompareReport` 已补上 `prefill_estimator_summary` 和 `decode_estimator_summary`
+  - focused `SPEC-13` compare-grade regression 已 fresh 通过：`17 passed`
   - downstream `SPEC-14/15` unit/workflow/smoke regression 已 fresh 通过：`16 passed`
-  - broader perf smoke 已 fresh 通过：`6 passed`
+  - visualization consumer reconfirmation 已 fresh 通过：`28 passed`
