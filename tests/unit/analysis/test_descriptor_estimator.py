@@ -40,6 +40,8 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "estimated_cycles": 48.0,
         "fitted_work_cycles": 48.0,
         "schedule_floor_cycles": 0.0,
+        "external_read_floor_cycles": 0.0,
+        "external_write_floor_cycles": 0.0,
         "external_bandwidth_floor_cycles": 0.0,
         "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
@@ -55,6 +57,8 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "estimated_cycles": 7.0,
         "fitted_work_cycles": 7.0,
         "schedule_floor_cycles": 0.0,
+        "external_read_floor_cycles": 0.0,
+        "external_write_floor_cycles": 0.0,
         "external_bandwidth_floor_cycles": 0.0,
         "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
@@ -70,6 +74,8 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "estimated_cycles": 26.0,
         "fitted_work_cycles": 26.0,
         "schedule_floor_cycles": 0.0,
+        "external_read_floor_cycles": 0.0,
+        "external_write_floor_cycles": 0.0,
         "external_bandwidth_floor_cycles": 0.0,
         "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 18.0,
@@ -85,6 +91,8 @@ def test_estimate_descriptor_analysis_emits_compute_dma_transfer_and_gap_records
         "estimated_cycles": 0.0,
         "fitted_work_cycles": 0.0,
         "schedule_floor_cycles": 0.0,
+        "external_read_floor_cycles": 0.0,
+        "external_write_floor_cycles": 0.0,
         "external_bandwidth_floor_cycles": 0.0,
         "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,
@@ -131,6 +139,8 @@ def test_estimate_descriptor_analysis_raises_fitted_work_cycles_for_tiled_extern
     assert compute_record.metrics["estimated_cycles"] == 48.0
     assert compute_record.metrics["fitted_work_cycles"] == 96.0
     assert compute_record.metrics["schedule_floor_cycles"] == 48.0
+    assert compute_record.metrics["external_read_floor_cycles"] == 96.0
+    assert compute_record.metrics["external_write_floor_cycles"] == 0.0
     assert compute_record.metrics["external_bandwidth_floor_cycles"] == 96.0
     assert compute_record.metrics["fit_floor_gap_cycles"] == 48.0
     assert "fit-floor:external_bandwidth" in compute_record.tags
@@ -162,6 +172,8 @@ def test_estimate_descriptor_analysis_adds_residual_external_stall_above_schedul
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 48.0
     assert compute_record.metrics["schedule_floor_cycles"] == 64.0
+    assert compute_record.metrics["external_read_floor_cycles"] == 96.0
+    assert compute_record.metrics["external_write_floor_cycles"] == 0.0
     assert compute_record.metrics["external_bandwidth_floor_cycles"] == 96.0
     assert compute_record.metrics["fitted_work_cycles"] == 112.0
     assert compute_record.metrics["fit_floor_gap_cycles"] == 64.0
@@ -196,6 +208,8 @@ def test_estimate_descriptor_analysis_adds_residual_external_write_stall() -> No
 
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["external_read_floor_cycles"] == 0.0
+    assert compute_record.metrics["external_write_floor_cycles"] == 32.0
     assert compute_record.metrics["external_bandwidth_floor_cycles"] == 32.0
     assert compute_record.metrics["fitted_work_cycles"] == 48.0
 
@@ -229,6 +243,8 @@ def test_estimate_descriptor_analysis_adds_bidirectional_shared_dma_stall_above_
     compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
     assert compute_record.metrics["estimated_cycles"] == 48.0
     assert compute_record.metrics["schedule_floor_cycles"] == 64.0
+    assert compute_record.metrics["external_read_floor_cycles"] == 96.0
+    assert compute_record.metrics["external_write_floor_cycles"] == 32.0
     assert compute_record.metrics["external_bandwidth_floor_cycles"] == 128.0
     assert compute_record.metrics["fitted_work_cycles"] == 144.0
     assert compute_record.metrics["fit_floor_gap_cycles"] == 96.0

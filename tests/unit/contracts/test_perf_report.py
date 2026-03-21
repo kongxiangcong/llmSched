@@ -70,6 +70,13 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 "dominant_floor_phase": "projection",
                 "dominant_floor_macro": "WDQ_GEMM",
             },
+            "fit_floor_direction_summary": {
+                "external_read_gap_cycles": 96.0,
+                "external_write_gap_cycles": 32.0,
+                "dominant_external_direction": "read",
+                "dominant_external_phase": "projection",
+                "dominant_external_macro": "WDQ_GEMM",
+            },
             "totals": {
                 "estimated_cycles": 1024.0,
                 "fitted_work_cycles": 1180.0,
@@ -273,6 +280,11 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.fit_floor_source_summary.dominant_floor_source == "schedule_floor"
     assert report.fit_floor_source_summary.dominant_floor_phase == "projection"
     assert report.fit_floor_source_summary.dominant_floor_macro == "WDQ_GEMM"
+    assert report.fit_floor_direction_summary.external_read_gap_cycles == 96.0
+    assert report.fit_floor_direction_summary.external_write_gap_cycles == 32.0
+    assert report.fit_floor_direction_summary.dominant_external_direction == "read"
+    assert report.fit_floor_direction_summary.dominant_external_phase == "projection"
+    assert report.fit_floor_direction_summary.dominant_external_macro == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0

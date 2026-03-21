@@ -909,6 +909,8 @@ def test_build_perf_summary_report_preserves_residual_external_stall_fit_gap() -
                     "estimated_cycles": 48.0,
                     "fitted_work_cycles": 112.0,
                     "schedule_floor_cycles": 64.0,
+                    "external_read_floor_cycles": 96.0,
+                    "external_write_floor_cycles": 0.0,
                     "external_bandwidth_floor_cycles": 96.0,
                     "fit_floor_gap_cycles": 64.0,
                     "sync_cycles": 0.0,
@@ -943,6 +945,11 @@ def test_build_perf_summary_report_preserves_residual_external_stall_fit_gap() -
     assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(64.0)
     assert report.fit_floor_source_summary.external_bandwidth_gap_cycles == pytest.approx(64.0)
     assert report.fit_floor_source_summary.dominant_floor_source == "external_bandwidth"
+    assert report.fit_floor_direction_summary.external_read_gap_cycles == pytest.approx(96.0)
+    assert report.fit_floor_direction_summary.external_write_gap_cycles == pytest.approx(0.0)
+    assert report.fit_floor_direction_summary.dominant_external_direction == "read"
+    assert report.fit_floor_direction_summary.dominant_external_phase == "projection"
+    assert report.fit_floor_direction_summary.dominant_external_macro == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == pytest.approx(48.0)
     assert report.totals["fitted_work_cycles"] == pytest.approx(112.0)
     assert report.phase_attribution["projection"].fitted_work_cycles == pytest.approx(112.0)
@@ -998,6 +1005,8 @@ def test_build_perf_summary_report_preserves_bidirectional_shared_dma_fit_gap() 
                     "estimated_cycles": 48.0,
                     "fitted_work_cycles": 144.0,
                     "schedule_floor_cycles": 64.0,
+                    "external_read_floor_cycles": 96.0,
+                    "external_write_floor_cycles": 32.0,
                     "external_bandwidth_floor_cycles": 128.0,
                     "fit_floor_gap_cycles": 96.0,
                     "sync_cycles": 0.0,
@@ -1032,6 +1041,11 @@ def test_build_perf_summary_report_preserves_bidirectional_shared_dma_fit_gap() 
     assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(96.0)
     assert report.fit_floor_source_summary.external_bandwidth_gap_cycles == pytest.approx(96.0)
     assert report.fit_floor_source_summary.dominant_floor_source == "external_bandwidth"
+    assert report.fit_floor_direction_summary.external_read_gap_cycles == pytest.approx(96.0)
+    assert report.fit_floor_direction_summary.external_write_gap_cycles == pytest.approx(32.0)
+    assert report.fit_floor_direction_summary.dominant_external_direction == "read"
+    assert report.fit_floor_direction_summary.dominant_external_phase == "projection"
+    assert report.fit_floor_direction_summary.dominant_external_macro == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == pytest.approx(48.0)
     assert report.totals["fitted_work_cycles"] == pytest.approx(144.0)
     assert report.phase_attribution["projection"].fitted_work_cycles == pytest.approx(144.0)

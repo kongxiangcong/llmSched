@@ -3498,6 +3498,26 @@ graph TD
   - current `SPEC-13` deeper-cycle work now covers both residual external reads and bidirectional shared-DMA pressure
   - the next remaining blocker is finer-grained overlap budgeting or direction-aware stall decomposition, not missing external-write awareness
 
+## 2026-03-21 SPEC-13 Fit-Floor Direction Summary Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-fit-floor-direction-summary.md`
+- `SPEC-13` now preserves direction-aware external floor observability on top of the existing shared-DMA deeper-cycle math:
+  - descriptor-analysis records now carry `external_read_floor_cycles` and `external_write_floor_cycles`
+  - `PerfSummaryReport` now exposes `fit_floor_direction_summary`
+  - downstream consumers can now tell whether current external-bandwidth uplift is read-dominant or write-dominant without reopening raw analysis records
+- this slice stays summary-grade:
+  - no new deeper-cycle math
+  - no reopening of compare/report-local contracts outside canonical perf artifact
+- new closure evidence:
+  - `fit_floor_direction_summary` now carries read/write external floor totals plus dominant direction/phase/macro hints
+  - focused `SPEC-13` regression is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `27 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - current estimator trust surface now has enough direction-level observability for future compare-grade consumers
+  - the next remaining `SPEC-13` blocker is finer-grained overlap budgeting, not missing read/write floor decomposition
+
 ## Current Next Slice
 
 - `M3`
@@ -3511,7 +3531,8 @@ graph TD
   - treat the current `SPEC-13` compare-grade estimator summary slice as landed
   - treat the current `SPEC-13` residual external stall fitting slice as landed
   - treat the current `SPEC-13` shared-DMA bidirectional stall slice as landed
-  - shift the next focused follow-on toward finer-grained overlap budgeting / direction-aware stall math now that both standalone compare closure and the current deeper-cycle slices are in place
+  - treat the current `SPEC-13` fit-floor direction summary slice as landed
+  - shift the next focused follow-on toward finer-grained overlap budgeting now that current deeper-cycle math and direction-aware observability are both in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

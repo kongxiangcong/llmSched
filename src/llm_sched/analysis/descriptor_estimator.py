@@ -15,6 +15,7 @@ from llm_sched.contracts.perf_report import (
     PerfBandwidthPressureSummary,
     PerfBottleneckIssue,
     PerfCriticalPathFitGapSummary,
+    PerfFitFloorDirectionSummary,
     PerfFitGapSummary,
     PerfFitFloorSourceSummary,
     PerfPhaseSummary,
@@ -135,6 +136,8 @@ def _fitted_work_cycle_metrics_for_descriptor(
         return _build_fit_floor_metrics(
             estimated_cycles=estimated_cycles,
             schedule_floor_cycles=schedule_floor,
+            external_read_floor_cycles=0.0,
+            external_write_floor_cycles=0.0,
             external_bandwidth_floor_cycles=external_read_cycles,
             fitted_work_cycles=fitted_cycles,
         )
@@ -151,6 +154,8 @@ def _fitted_work_cycle_metrics_for_descriptor(
         return _build_fit_floor_metrics(
             estimated_cycles=estimated_cycles,
             schedule_floor_cycles=schedule_floor,
+            external_read_floor_cycles=0.0,
+            external_write_floor_cycles=0.0,
             external_bandwidth_floor_cycles=external_read_cycles,
             fitted_work_cycles=fitted_cycles,
         )
@@ -170,6 +175,8 @@ def _fitted_work_cycle_metrics_for_descriptor(
     return _build_fit_floor_metrics(
         estimated_cycles=estimated_cycles,
         schedule_floor_cycles=schedule_floor,
+        external_read_floor_cycles=external_read_cycles,
+        external_write_floor_cycles=external_write_cycles,
         external_bandwidth_floor_cycles=external_bandwidth_floor_cycles,
         fitted_work_cycles=max(fitted_cycles, schedule_floor + residual_external_stall_cycles),
     )
@@ -179,6 +186,8 @@ def _build_fit_floor_metrics(
     *,
     estimated_cycles: float,
     schedule_floor_cycles: float,
+    external_read_floor_cycles: float,
+    external_write_floor_cycles: float,
     external_bandwidth_floor_cycles: float,
     fitted_work_cycles: float,
 ) -> tuple[dict[str, float], str]:
@@ -195,6 +204,8 @@ def _build_fit_floor_metrics(
         {
             "fitted_work_cycles": float(fitted_work_cycles),
             "schedule_floor_cycles": float(schedule_floor_cycles),
+            "external_read_floor_cycles": float(external_read_floor_cycles),
+            "external_write_floor_cycles": float(external_write_floor_cycles),
             "external_bandwidth_floor_cycles": float(external_bandwidth_floor_cycles),
             "fit_floor_gap_cycles": float(max(0.0, fitted_work_cycles - estimated_cycles)),
         },
@@ -248,6 +259,9 @@ def build_perf_summary_report(
     fit_floor_subject_count_by_source: Counter[str] = Counter()
     fit_floor_phase_gap_by_source: defaultdict[str, Counter[str]] = defaultdict(Counter)
     fit_floor_macro_gap_by_source: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    external_floor_cycles_by_direction: Counter[str] = Counter()
+    external_floor_phase_cycles_by_direction: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    external_floor_macro_cycles_by_direction: defaultdict[str, Counter[str]] = defaultdict(Counter)
     data_movement_read_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
     data_movement_write_bytes_by_address_space: defaultdict[str, float] = defaultdict(float)
     phase_read_bytes_by_address_space: defaultdict[str, defaultdict[str, float]] = defaultdict(
@@ -314,6 +328,8 @@ def build_perf_summary_report(
         descriptor = descriptor_by_subject.get(record.subject_id)
         fit_floor_source = _fit_floor_source_from_tags(record.tags)
         fit_floor_gap_cycles = float(record.metrics.get("fit_floor_gap_cycles", 0.0))
+        external_read_floor_cycles = float(record.metrics.get("external_read_floor_cycles", 0.0))
+        external_write_floor_cycles = float(record.metrics.get("external_write_floor_cycles", 0.0))
         attributed_cycles, attributed_bytes = _phase_contribution_for_record(descriptor, record.metrics)
         attributed_fitted_work_cycles = _phase_fitted_work_cycle_contribution_for_record(
             descriptor,
@@ -360,6 +376,14 @@ def build_perf_summary_report(
             record_phase_name = _classify_record_phase(descriptor)
             fit_floor_phase_gap_by_source[fit_floor_source][record_phase_name] += fit_floor_gap_cycles
             fit_floor_macro_gap_by_source[fit_floor_source][macro] += fit_floor_gap_cycles
+            if external_read_floor_cycles > 0.0:
+                external_floor_cycles_by_direction["read"] += external_read_floor_cycles
+                external_floor_phase_cycles_by_direction["read"][record_phase_name] += external_read_floor_cycles
+                external_floor_macro_cycles_by_direction["read"][macro] += external_read_floor_cycles
+            if external_write_floor_cycles > 0.0:
+                external_floor_cycles_by_direction["write"] += external_write_floor_cycles
+                external_floor_phase_cycles_by_direction["write"][record_phase_name] += external_write_floor_cycles
+                external_floor_macro_cycles_by_direction["write"][macro] += external_write_floor_cycles
         _accumulate_data_movement_breakdown(
             descriptor,
             record.metrics,
@@ -485,6 +509,11 @@ def build_perf_summary_report(
             fit_floor_subject_count_by_source=fit_floor_subject_count_by_source,
             fit_floor_phase_gap_by_source=fit_floor_phase_gap_by_source,
             fit_floor_macro_gap_by_source=fit_floor_macro_gap_by_source,
+        ),
+        fit_floor_direction_summary=_build_fit_floor_direction_summary(
+            external_floor_cycles_by_direction=external_floor_cycles_by_direction,
+            external_floor_phase_cycles_by_direction=external_floor_phase_cycles_by_direction,
+            external_floor_macro_cycles_by_direction=external_floor_macro_cycles_by_direction,
         ),
         totals=totals,
         phase_attribution=_build_phase_attribution(
@@ -688,6 +717,55 @@ def _build_fit_floor_source_summary(
         dominant_floor_source=dominant_floor_source,
         dominant_floor_phase=dominant_floor_phase,
         dominant_floor_macro=dominant_floor_macro,
+    )
+
+
+def _build_fit_floor_direction_summary(
+    *,
+    external_floor_cycles_by_direction: Counter[str],
+    external_floor_phase_cycles_by_direction: defaultdict[str, Counter[str]],
+    external_floor_macro_cycles_by_direction: defaultdict[str, Counter[str]],
+) -> PerfFitFloorDirectionSummary:
+    dominant_external_direction = ""
+    if external_floor_cycles_by_direction:
+        dominant_external_direction = max(
+            external_floor_cycles_by_direction,
+            key=lambda direction_name: (
+                float(external_floor_cycles_by_direction.get(direction_name, 0.0)),
+                direction_name,
+            ),
+        )
+
+    dominant_external_phase = ""
+    if (
+        dominant_external_direction
+        and external_floor_phase_cycles_by_direction.get(dominant_external_direction)
+    ):
+        dominant_external_phase = max(
+            external_floor_phase_cycles_by_direction[dominant_external_direction],
+            key=lambda phase_name: float(
+                external_floor_phase_cycles_by_direction[dominant_external_direction].get(phase_name, 0.0)
+            ),
+        )
+
+    dominant_external_macro = ""
+    if (
+        dominant_external_direction
+        and external_floor_macro_cycles_by_direction.get(dominant_external_direction)
+    ):
+        dominant_external_macro = max(
+            external_floor_macro_cycles_by_direction[dominant_external_direction],
+            key=lambda macro_name: float(
+                external_floor_macro_cycles_by_direction[dominant_external_direction].get(macro_name, 0.0)
+            ),
+        )
+
+    return PerfFitFloorDirectionSummary(
+        external_read_gap_cycles=float(external_floor_cycles_by_direction.get("read", 0.0)),
+        external_write_gap_cycles=float(external_floor_cycles_by_direction.get("write", 0.0)),
+        dominant_external_direction=dominant_external_direction,
+        dominant_external_phase=dominant_external_phase,
+        dominant_external_macro=dominant_external_macro,
     )
 
 
@@ -1532,6 +1610,8 @@ def _zero_metrics() -> dict[str, float]:
         "estimated_cycles": 0.0,
         "fitted_work_cycles": 0.0,
         "schedule_floor_cycles": 0.0,
+        "external_read_floor_cycles": 0.0,
+        "external_write_floor_cycles": 0.0,
         "external_bandwidth_floor_cycles": 0.0,
         "fit_floor_gap_cycles": 0.0,
         "sync_cycles": 0.0,

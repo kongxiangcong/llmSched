@@ -261,3 +261,6 @@ Copy the exact passing commands and counts from Task 5 into roadmap/README wordi
 - interpretation:
   - this slice closes the remaining read-only blind spot in current `SPEC-13` deeper-cycle fitting
   - the next remaining estimator blocker is finer-grained overlap budgeting or direction-aware stall decomposition beyond the current bidirectional shared-DMA model
+- downstream follow-on landed after this slice:
+  - `../plans/2026-03-21-spec-13-fit-floor-direction-summary.md`
+  - direction-aware read/write floor observability now lives in the canonical perf artifact, so the next remaining blocker has tightened further toward overlap-budget fidelity rather than external-bandwidth attribution

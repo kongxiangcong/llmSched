@@ -100,6 +100,16 @@ class PerfFitFloorSourceSummary(BaseModel):
     dominant_floor_macro: str = ""
 
 
+class PerfFitFloorDirectionSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    external_read_gap_cycles: float = Field(default=0.0)
+    external_write_gap_cycles: float = Field(default=0.0)
+    dominant_external_direction: str = ""
+    dominant_external_phase: str = ""
+    dominant_external_macro: str = ""
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -129,6 +139,9 @@ class PerfSummaryReport(BaseModel):
     )
     fit_floor_source_summary: PerfFitFloorSourceSummary = Field(
         default_factory=PerfFitFloorSourceSummary
+    )
+    fit_floor_direction_summary: PerfFitFloorDirectionSummary = Field(
+        default_factory=PerfFitFloorDirectionSummary
     )
     totals: dict[str, float] = Field(default_factory=dict)
     phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)

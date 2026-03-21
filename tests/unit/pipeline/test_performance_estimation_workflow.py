@@ -295,6 +295,8 @@ def test_run_performance_estimation_serializes_residual_external_stall_metrics(
                     "estimated_cycles": 48.0,
                     "fitted_work_cycles": 112.0,
                     "schedule_floor_cycles": 64.0,
+                    "external_read_floor_cycles": 96.0,
+                    "external_write_floor_cycles": 0.0,
                     "external_bandwidth_floor_cycles": 96.0,
                     "fit_floor_gap_cycles": 64.0,
                     "sync_cycles": 0.0,
@@ -335,6 +337,13 @@ def test_run_performance_estimation_serializes_residual_external_stall_metrics(
             "dominant_floor_phase": "projection",
             "dominant_floor_macro": "WDQ_GEMM",
         },
+        fit_floor_direction_summary={
+            "external_read_gap_cycles": 96.0,
+            "external_write_gap_cycles": 0.0,
+            "dominant_external_direction": "read",
+            "dominant_external_phase": "projection",
+            "dominant_external_macro": "WDQ_GEMM",
+        },
     )
 
     with (
@@ -358,6 +367,8 @@ def test_run_performance_estimation_serializes_residual_external_stall_metrics(
     assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(112.0)
     assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(64.0)
     assert summary_payload["fit_floor_source_summary"]["external_bandwidth_gap_cycles"] == pytest.approx(64.0)
+    assert summary_payload["fit_floor_direction_summary"]["external_read_gap_cycles"] == pytest.approx(96.0)
+    assert summary_payload["fit_floor_direction_summary"]["external_write_gap_cycles"] == pytest.approx(0.0)
 
 
 def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_metrics(
@@ -429,6 +440,13 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
             "dominant_floor_phase": "projection",
             "dominant_floor_macro": "WDQ_GEMM",
         },
+        fit_floor_direction_summary={
+            "external_read_gap_cycles": 96.0,
+            "external_write_gap_cycles": 32.0,
+            "dominant_external_direction": "read",
+            "dominant_external_phase": "projection",
+            "dominant_external_macro": "WDQ_GEMM",
+        },
     )
 
     with (
@@ -453,3 +471,5 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
     assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(144.0)
     assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(96.0)
     assert summary_payload["fit_floor_source_summary"]["external_bandwidth_gap_cycles"] == pytest.approx(96.0)
+    assert summary_payload["fit_floor_direction_summary"]["external_read_gap_cycles"] == pytest.approx(96.0)
+    assert summary_payload["fit_floor_direction_summary"]["external_write_gap_cycles"] == pytest.approx(32.0)
