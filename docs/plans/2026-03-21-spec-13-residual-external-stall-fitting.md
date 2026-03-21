@@ -192,3 +192,6 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 - interpretation:
   - this is the first post-summary `SPEC-13` slice that materially changes fitted-cycle values again
   - the next remaining estimator blocker is richer overlap/stall fidelity beyond the current residual model
+- downstream follow-on landed after this slice:
+  - `../plans/2026-03-21-spec-13-shared-dma-bidirectional-stall.md`
+  - estimator math now covers shared-DMA read/write pressure as well, so the next remaining blocker has moved toward finer-grained overlap budgeting rather than missing bidirectional external bandwidth awareness

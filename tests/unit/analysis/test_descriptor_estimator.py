@@ -168,6 +168,73 @@ def test_estimate_descriptor_analysis_adds_residual_external_stall_above_schedul
     assert "fit-floor:external_bandwidth" in compute_record.tags
 
 
+def test_tiling_plan_fixture_preserves_external_write_backing_store_bytes() -> None:
+    tiling_plan = _tiling_plan_fixture(
+        ddr_backed_staged_bytes=122880,
+        ddr_backed_staged_write_bytes=40960,
+    )
+
+    resource_summary = tiling_plan.candidates[0].resource_summary
+    assert resource_summary is not None
+    assert resource_summary.storage_write_bytes_by_backing_store == {"ddr-backed-staged": 40960}
+
+
+def test_estimate_descriptor_analysis_adds_residual_external_write_stall() -> None:
+    from llm_sched.analysis import estimate_descriptor_analysis
+
+    analysis = estimate_descriptor_analysis(
+        _descriptor_ir_fixture(),
+        _coverage_report_fixture(),
+        _test_target_profile(),
+        _test_prefill_scenario(),
+        schedule_ir=_schedule_ir_fixture(),
+        tiling_plan=_tiling_plan_fixture(
+            ddr_backed_staged_bytes=0,
+            ddr_backed_staged_write_bytes=40960,
+        ),
+    )
+
+    compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
+    assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["external_bandwidth_floor_cycles"] == 32.0
+    assert compute_record.metrics["fitted_work_cycles"] == 48.0
+
+
+def test_estimate_descriptor_analysis_adds_bidirectional_shared_dma_stall_above_schedule_floor() -> None:
+    from llm_sched.analysis import estimate_descriptor_analysis
+
+    schedule_ir = _schedule_ir_fixture().model_copy(
+        update={
+            "blocks": [
+                block.model_copy(update={"duration_slots": 64})
+                if block.block_id == "sched.block.linear.compute"
+                else block
+                for block in _schedule_ir_fixture().blocks
+            ]
+        }
+    )
+
+    analysis = estimate_descriptor_analysis(
+        _descriptor_ir_fixture(),
+        _coverage_report_fixture(),
+        _test_target_profile(),
+        _test_prefill_scenario(),
+        schedule_ir=schedule_ir,
+        tiling_plan=_tiling_plan_fixture(
+            ddr_backed_staged_bytes=122880,
+            ddr_backed_staged_write_bytes=40960,
+        ),
+    )
+
+    compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
+    assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["schedule_floor_cycles"] == 64.0
+    assert compute_record.metrics["external_bandwidth_floor_cycles"] == 128.0
+    assert compute_record.metrics["fitted_work_cycles"] == 144.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 96.0
+    assert "fit-floor:external_bandwidth" in compute_record.tags
+
+
 def _descriptor_ir_fixture() -> DescriptorIR:
     return DescriptorIR(
         ir_version="phase-a.v1",
@@ -444,7 +511,11 @@ def _schedule_ir_fixture() -> ScheduleIR:
     )
 
 
-def _tiling_plan_fixture(*, ddr_backed_staged_bytes: int) -> TilingPlanArtifact:
+def _tiling_plan_fixture(
+    *,
+    ddr_backed_staged_bytes: int,
+    ddr_backed_staged_write_bytes: int = 0,
+) -> TilingPlanArtifact:
     return TilingPlanArtifact(
         graph_id="spec13-graph",
         scenario_name="prefill-seq128",
@@ -475,6 +546,7 @@ def _tiling_plan_fixture(*, ddr_backed_staged_bytes: int) -> TilingPlanArtifact:
                     storage_binding_ids=["storage.weight"],
                     storage_read_bytes_by_source_kind={"weight_tensor": ddr_backed_staged_bytes},
                     storage_read_bytes_by_backing_store={"ddr-backed-staged": ddr_backed_staged_bytes},
+                    storage_write_bytes_by_backing_store={"ddr-backed-staged": ddr_backed_staged_write_bytes},
                 ),
                 issues=[],
             )

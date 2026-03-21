@@ -948,6 +948,95 @@ def test_build_perf_summary_report_preserves_residual_external_stall_fit_gap() -
     assert report.phase_attribution["projection"].fitted_work_cycles == pytest.approx(112.0)
 
 
+def test_build_perf_summary_report_preserves_bidirectional_shared_dma_fit_gap() -> None:
+    from llm_sched.analysis.descriptor_estimator import build_perf_summary_report
+    from llm_sched.contracts.isa_coverage_report import ISACoverageReport
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.ir.descriptor_ir import DescriptorIR, DescriptorRecord
+
+    descriptor_ir = DescriptorIR(
+        ir_version="phase-a.v1",
+        graph_id="spec13-bidirectional-stall",
+        descriptors=[
+            DescriptorRecord(
+                descriptor_id="desc.compute.0",
+                schedule_block_id="sched.block.compute.0",
+                opcode="WDQ_GEMM",
+                core_id=0,
+                encoding_bits=512,
+                ctrl_fields={"macro_op": "WDQ_GEMM", "stage": "compute"},
+                packing_profile=DescriptorPackingProfile(
+                    stage_family="compute",
+                    opcode_family="tensor_compute",
+                    layout_template="wdq_compute_v1",
+                    field_groups=["ctrl", "shape"],
+                    required_ctrl_fields=["stage", "macro_op"],
+                    required_shape_axes=["m", "n", "k"],
+                    required_addr_roles=[],
+                    required_dma_fields=[],
+                    field_widths={"opcode": 16, "control": 16, "shape": 16},
+                ),
+                shape_pack={"m": 48, "n": 128, "k": 128},
+                addr_fields={},
+                address_fields=[],
+                dma_fields={},
+                audit_ref=AuditRef(schedule_block_ids=["sched.block.compute.0"]),
+            )
+        ],
+    )
+    analysis_ir = AnalysisIR(
+        ir_version="phase-a.v1",
+        graph_id="spec13-bidirectional-stall",
+        records=[
+            AnalysisRecord(
+                record_id="analysis.record.compute.0",
+                subject_id="sched.block.compute.0",
+                metrics={
+                    "read_bytes": 20480.0,
+                    "write_bytes": 12288.0,
+                    "total_bytes": 32768.0,
+                    "estimated_cycles": 48.0,
+                    "fitted_work_cycles": 144.0,
+                    "schedule_floor_cycles": 64.0,
+                    "external_bandwidth_floor_cycles": 128.0,
+                    "fit_floor_gap_cycles": 96.0,
+                    "sync_cycles": 0.0,
+                    "bandwidth_pressure": 682.6666666666666,
+                },
+                tags=["descriptor-analysis", "compute-bound", "fit-floor:external_bandwidth"],
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.compute.0"],
+                    descriptor_ids=["desc.compute.0"],
+                ),
+            )
+        ],
+    )
+    coverage = ISACoverageReport(
+        graph_id="spec13-bidirectional-stall",
+        schedule_kind="single-core",
+        mapped_descriptor_count=1,
+        unmapped_block_count=0,
+        opcode_counts={"WDQ_GEMM": 1},
+        gap_counts={},
+        issues=[],
+    )
+
+    report = build_perf_summary_report(
+        run_id="run-spec13-bidirectional-stall",
+        descriptor_ir=descriptor_ir,
+        analysis_ir=analysis_ir,
+        coverage_report=coverage,
+        scenario=_prefill_scenario_fixture(),
+    )
+
+    assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(96.0)
+    assert report.fit_floor_source_summary.external_bandwidth_gap_cycles == pytest.approx(96.0)
+    assert report.fit_floor_source_summary.dominant_floor_source == "external_bandwidth"
+    assert report.totals["estimated_cycles"] == pytest.approx(48.0)
+    assert report.totals["fitted_work_cycles"] == pytest.approx(144.0)
+    assert report.phase_attribution["projection"].fitted_work_cycles == pytest.approx(144.0)
+
+
 def _memory_plan_fixture():
     from llm_sched.contracts.memory_plan import MemoryPlanArtifact, RegionSummary
 

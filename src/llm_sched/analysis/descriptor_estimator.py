@@ -143,7 +143,11 @@ def _fitted_work_cycle_metrics_for_descriptor(
         tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-backed-staged", 0)
         + tiling_candidate.resource_summary.storage_read_bytes_by_backing_store.get("ddr-persistent", 0)
     )
-    if external_read_bytes <= 0.0:
+    external_write_bytes = float(
+        tiling_candidate.resource_summary.storage_write_bytes_by_backing_store.get("ddr-backed-staged", 0)
+        + tiling_candidate.resource_summary.storage_write_bytes_by_backing_store.get("ddr-persistent", 0)
+    )
+    if external_read_bytes <= 0.0 and external_write_bytes <= 0.0:
         return _build_fit_floor_metrics(
             estimated_cycles=estimated_cycles,
             schedule_floor_cycles=schedule_floor,
@@ -153,12 +157,20 @@ def _fitted_work_cycle_metrics_for_descriptor(
 
     external_read_cycles = float(
         _bandwidth_cycles(external_read_bytes, capabilities.shared_dma.effective_bandwidth_gbps)
+        if external_read_bytes > 0.0
+        else 0.0
     )
-    residual_external_stall_cycles = max(0.0, external_read_cycles - estimated_cycles)
+    external_write_cycles = float(
+        _bandwidth_cycles(external_write_bytes, capabilities.shared_dma.effective_bandwidth_gbps)
+        if external_write_bytes > 0.0
+        else 0.0
+    )
+    external_bandwidth_floor_cycles = external_read_cycles + external_write_cycles
+    residual_external_stall_cycles = max(0.0, external_bandwidth_floor_cycles - estimated_cycles)
     return _build_fit_floor_metrics(
         estimated_cycles=estimated_cycles,
         schedule_floor_cycles=schedule_floor,
-        external_bandwidth_floor_cycles=external_read_cycles,
+        external_bandwidth_floor_cycles=external_bandwidth_floor_cycles,
         fitted_work_cycles=max(fitted_cycles, schedule_floor + residual_external_stall_cycles),
     )
 

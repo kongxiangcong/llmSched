@@ -25,6 +25,7 @@ class TileCandidateResourceSummary(BaseModel):
     storage_binding_ids: list[str] = Field(default_factory=list)
     storage_read_bytes_by_source_kind: dict[StorageBindingSourceKind, int] = Field(default_factory=dict)
     storage_read_bytes_by_backing_store: dict[BackingStoreKind, int] = Field(default_factory=dict)
+    storage_write_bytes_by_backing_store: dict[BackingStoreKind, int] = Field(default_factory=dict)
 
 
 class TileCandidate(BaseModel):

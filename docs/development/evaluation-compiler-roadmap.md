@@ -3478,6 +3478,26 @@ graph TD
   - the current estimator trust lane is no longer only summary-grade; fitted-cycle math itself has moved again in a narrower, schedule-aware direction
   - the next remaining `SPEC-13` blocker is richer overlap/stall math beyond this residual model, not another summary-only field
 
+## 2026-03-21 SPEC-13 Shared-DMA Bidirectional Stall Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-shared-dma-bidirectional-stall.md`
+- `SPEC-13` compute fitted-cycle math now extends the residual external-stall model to shared-DMA bidirectional pressure:
+  - `TileCandidateResourceSummary` now preserves structured `storage_write_bytes_by_backing_store`
+  - compute descriptors now fold external writes into `external_bandwidth_floor_cycles` instead of only external reads
+  - the estimator now treats shared-DMA demand as read plus write pressure before subtracting the overlap budget from `estimated_cycles`
+- this slice stays estimator-local and contract-light:
+  - no new top-level perf-report fields were added
+  - existing totals, fit-gap summaries, fit-floor summaries, and workflow artifacts now simply observe stronger fitted-cycle values
+- new closure evidence:
+  - bidirectional shared-DMA cases now serialize `external_bandwidth_floor_cycles = 128.0`, `fitted_work_cycles = 144.0`, and `fit_floor_gap_cycles = 96.0`
+  - focused `SPEC-13` deeper-cycle verification is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `27 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - current `SPEC-13` deeper-cycle work now covers both residual external reads and bidirectional shared-DMA pressure
+  - the next remaining blocker is finer-grained overlap budgeting or direction-aware stall decomposition, not missing external-write awareness
+
 ## Current Next Slice
 
 - `M3`
@@ -3490,7 +3510,8 @@ graph TD
   - treat the current `SPEC-13` fit-floor source summary slice as landed
   - treat the current `SPEC-13` compare-grade estimator summary slice as landed
   - treat the current `SPEC-13` residual external stall fitting slice as landed
-  - shift the next focused follow-on toward richer `SPEC-13` overlap/stall math now that both standalone compare closure and the first post-summary deeper-cycle slice are in place
+  - treat the current `SPEC-13` shared-DMA bidirectional stall slice as landed
+  - shift the next focused follow-on toward finer-grained overlap budgeting / direction-aware stall math now that both standalone compare closure and the current deeper-cycle slices are in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
