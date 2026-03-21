@@ -3559,6 +3559,24 @@ graph TD
   - current `SPEC-13` overlap budgeting now distinguishes compute overlap, write drain, and schedule slack absorption
   - the next remaining blocker is richer slack-allocation policy beyond this single write-absorption rule
 
+## 2026-03-21 SPEC-13 Close-Enough Closure Pass
+
+- checklist doc: `../plans/2026-03-21-spec-13-close-enough-checklist.md`
+- closure judgment:
+  - `SPEC-13` can now be treated as `close-enough / practical stop-line`
+  - current residual gaps no longer justify keeping `SPEC-13` open as the default project blocker
+- basis for closure:
+  - canonical perf artifacts now answer fitted-versus-estimated divergence, critical-path divergence, floor source, and floor direction
+  - compare-grade estimator summaries already exist on standalone compare artifacts
+  - current estimator math already covers residual external reads, bidirectional shared-DMA pressure, external write drain, and schedule-slack write absorption
+  - fresh focused/downstream regressions remain green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- residual gaps now treated as non-blocking:
+  - richer slack-allocation policy
+  - more ambitious phase-level overlap budgeting
+  - scenario-specific anomaly investigation when needed
+
 ## Current Next Slice
 
 - `M3`
@@ -3575,7 +3593,8 @@ graph TD
   - treat the current `SPEC-13` fit-floor direction summary slice as landed
   - treat the current `SPEC-13` external write drain overlap slice as landed
   - treat the current `SPEC-13` schedule slack write absorption slice as landed
-  - shift the next focused follow-on toward richer slack-allocation policy now that current deeper-cycle math, direction-aware observability, write-drain overlap, and first-step schedule slack absorption are all in place
+  - treat the current `SPEC-13` lane as practically closed for the main decision path
+  - do not reopen `SPEC-13` by default unless a new concrete estimator failure appears
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

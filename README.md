@@ -337,6 +337,7 @@ Current working interpretation:
   - `docs/plans/2026-03-21-spec-13-fit-floor-direction-summary.md`
   - `docs/plans/2026-03-21-spec-13-external-write-drain-overlap.md`
   - `docs/plans/2026-03-21-spec-13-schedule-slack-write-absorption.md`
+  - `docs/plans/2026-03-21-spec-13-close-enough-checklist.md`
   - `PerfSummaryReport` 已补上 `fit_gap_summary`、`critical_path_fit_gap_summary` 和 `fit_floor_source_summary`
   - compute fitted-cycle math 现已从 `max(schedule_floor, external_read_floor)` 推进到 residual external stall model：保留 `schedule_floor`，只叠加未被 `estimated_cycles` 吸收的 external-read stall
   - compute fitted-cycle math 现又进一步覆盖 shared-DMA bidirectional stall：external writes 与 read/write contention 也会抬升 `external_bandwidth_floor_cycles` 与 `fitted_work_cycles`
@@ -346,4 +347,5 @@ Current working interpretation:
   - `PhaseDCompareReport` 已补上 `prefill_estimator_summary` 和 `decode_estimator_summary`
   - focused `SPEC-13` deeper-cycle regression 已 fresh 通过：`python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
   - downstream `SPEC-14/15` unit/workflow/smoke regression 已 fresh 通过：`python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
-  - 当前下一刀更适合继续压更细的 slack allocation policy，而不是回去补 read/write 或 floor 可观测性
+  - `SPEC-13` 当前 closure pass 的判断是：已经达到 practical stop-line，可以按 `close-enough` 冻结
+  - 剩余内容更像 fidelity polish 或后续 estimator research，不再是应该默认继续阻塞项目收尾的 blocker
