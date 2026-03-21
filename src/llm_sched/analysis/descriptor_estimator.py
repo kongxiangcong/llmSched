@@ -14,6 +14,7 @@ from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.perf_report import (
     PerfBandwidthPressureSummary,
     PerfBottleneckIssue,
+    PerfFitGapSummary,
     PerfPhaseSummary,
     PerfSummaryReport,
     PerfVMEMPressureSummary,
@@ -391,6 +392,13 @@ def build_perf_summary_report(
         vmem_region_peak_utilization=vmem_region_peak_utilization,
         bandwidth_pressure_summary=bandwidth_pressure_summary,
         vmem_pressure_summary=vmem_pressure_summary,
+        fit_gap_summary=_build_fit_gap_summary(
+            totals=totals,
+            phase_cycles=phase_cycles,
+            phase_fitted_work_cycles=phase_fitted_work_cycles,
+            per_macro_cycles=per_macro_cycles,
+            per_macro_fitted_work_cycles=per_macro_fitted_work_cycles,
+        ),
         totals=totals,
         phase_attribution=_build_phase_attribution(
             phase_cycles,
@@ -421,6 +429,51 @@ def build_perf_summary_report(
         bottleneck_counts=dict(bottleneck_counts),
         isa_gap_counts=dict(coverage_report.gap_counts),
         issues=issues,
+    )
+
+
+def _build_fit_gap_summary(
+    *,
+    totals: dict[str, float],
+    phase_cycles: Counter[str],
+    phase_fitted_work_cycles: Counter[str],
+    per_macro_cycles: Counter[str],
+    per_macro_fitted_work_cycles: Counter[str],
+) -> PerfFitGapSummary:
+    estimated_cycles = float(totals.get("estimated_cycles", 0.0))
+    fitted_work_cycles = float(totals.get("fitted_work_cycles", 0.0))
+    critical_path_cycles = float(totals.get("critical_path_cycles", 0.0))
+    total_fit_gap_cycles = fitted_work_cycles - estimated_cycles
+
+    dominant_fit_gap_phase = ""
+    if phase_cycles or phase_fitted_work_cycles:
+        dominant_fit_gap_phase = max(
+            set(phase_cycles) | set(phase_fitted_work_cycles),
+            key=lambda phase_name: abs(
+                float(phase_fitted_work_cycles.get(phase_name, 0.0))
+                - float(phase_cycles.get(phase_name, 0.0))
+            ),
+        )
+
+    dominant_fit_gap_macro = ""
+    if per_macro_cycles or per_macro_fitted_work_cycles:
+        dominant_fit_gap_macro = max(
+            set(per_macro_cycles) | set(per_macro_fitted_work_cycles),
+            key=lambda macro_name: abs(
+                float(per_macro_fitted_work_cycles.get(macro_name, 0.0))
+                - float(per_macro_cycles.get(macro_name, 0.0))
+            ),
+        )
+
+    return PerfFitGapSummary(
+        total_fit_gap_cycles=total_fit_gap_cycles,
+        total_fit_gap_ratio=(total_fit_gap_cycles / estimated_cycles) if estimated_cycles > 0.0 else 0.0,
+        critical_path_gap_cycles=critical_path_cycles - estimated_cycles,
+        critical_path_ratio_vs_estimated=(
+            critical_path_cycles / estimated_cycles if estimated_cycles > 0.0 else 0.0
+        ),
+        dominant_fit_gap_phase=dominant_fit_gap_phase,
+        dominant_fit_gap_macro=dominant_fit_gap_macro,
     )
 
 

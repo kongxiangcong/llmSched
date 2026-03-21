@@ -68,3 +68,8 @@ Decision: `close-enough`
 - shift the dominant remaining `M3` blocker lane back to `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation
 - keep any follow-on `SPEC-16` work narrowly attached to consuming this already-closed `SPEC-14/15` compare surface
 - do not reopen the current `SPEC-14/15` compare-closure lane unless a new concrete analyst question appears that still cannot be answered from `PhaseDCompareReport`
+
+## Follow-Up Note
+
+- a first `SPEC-13` focused close-out slice is now in progress via `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
+- that slice adds summary-grade estimator trust through `PerfSummaryReport.fit_gap_summary`, while still leaving deeper cycle fitting and broader compare-grade estimator aggregation as the next remaining blocker candidates

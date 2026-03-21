@@ -51,9 +51,8 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert result.summary_report_path == run_root / "reports" / "perf_summary_report.json"
 
     analysis_ir = AnalysisIR.model_validate_json(result.analysis_ir_path.read_text(encoding="utf-8"))
-    summary_report = PerfSummaryReport.model_validate_json(
-        result.summary_report_path.read_text(encoding="utf-8")
-    )
+    summary_report_payload = result.summary_report_path.read_text(encoding="utf-8")
+    summary_report = PerfSummaryReport.model_validate_json(summary_report_payload)
     manifest = RunManifest.model_validate_json((run_root / "manifest.json").read_text(encoding="utf-8"))
     summary = RunSummary.model_validate_json((run_root / "run-summary.json").read_text(encoding="utf-8"))
 
@@ -80,6 +79,16 @@ def test_run_performance_estimation_writes_analysis_and_summary_artifacts(
     assert summary_report.totals["fitted_work_cycles"] >= summary_report.totals["estimated_cycles"]
     assert summary_report.totals["critical_path_cycles"] > 0.0
     assert summary_report.totals["critical_path_cycles"] == float(summary_report.schedule_makespan_slots)
+    assert summary_report.fit_gap_summary.total_fit_gap_cycles >= 0.0
+    assert summary_report.fit_gap_summary.dominant_fit_gap_phase in {
+        "projection",
+        "kv_io",
+        "attention",
+        "sync",
+        "other",
+        "",
+    }
+    assert '"fit_gap_summary"' in summary_report_payload
     assert summary_report.phase_attribution
     assert "other" in summary_report.phase_attribution
     assert summary_report.phase_attribution["other"].fitted_work_cycles >= 0.0

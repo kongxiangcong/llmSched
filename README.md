@@ -228,6 +228,7 @@ Current active execution plan:
 - `docs/plans/2026-03-21-m3-close-out-blocker-audit.md`
 - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
 - `docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md`
+- `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
 - 最新已落盘的 `SPEC-16` execution slices 位于：
   - `docs/plans/2026-03-20-spec-16-*.md`
   - `docs/plans/2026-03-21-spec-16-analysis-flow-candidate-inspection.md`
@@ -322,3 +323,10 @@ Current working interpretation:
 1. 先沿 `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` 和 `docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md` 收口当前 `M3` blocker 重排。
 2. 继续用 `run-phase-c-gate`、`local_smoke`、`milestone_matrix` 保持 `SPEC-08/09/10/11/12` 绿色。
 3. 下一刀优先转回 `SPEC-13` deeper cycle fitting / compare-grade estimator aggregation，而不是回头扩 recommendation-detail、重开当前 `SPEC-14/15` compare closure，或提前做 `SPEC-19` polish。
+
+- `SPEC-13` focused close-out slice 已启动：
+  - `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
+  - `PerfSummaryReport` 已补上 `fit_gap_summary`
+  - focused `SPEC-13` unit/workflow regression 已 fresh 通过：`13 passed`
+  - downstream `SPEC-14/15` unit/workflow regression 已 fresh 通过：`12 passed`
+  - broader perf smoke 已 fresh 通过：`6 passed`

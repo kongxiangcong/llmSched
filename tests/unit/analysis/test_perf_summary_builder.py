@@ -1,6 +1,7 @@
 from llm_sched.config.scenario_profile import LayerScope, ReportingConfig, ScenarioProfile
 from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
 from llm_sched.ir.descriptor_ir import AddressField, DescriptorPackingProfile, TransferFields
+import pytest
 
 
 def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
@@ -249,6 +250,12 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.vmem_pressure_summary.hottest_region_utilization == 0.6667
     assert report.vmem_pressure_summary.hottest_region_dominant_memory_class == "ACTIVATION"
     assert report.vmem_pressure_summary.hottest_region_dominant_backing_store == "vmem-local"
+    assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(16.0)
+    assert report.fit_gap_summary.total_fit_gap_ratio == pytest.approx(16.0 / 74.0)
+    assert report.fit_gap_summary.critical_path_gap_cycles == pytest.approx(54.0 - 74.0)
+    assert report.fit_gap_summary.critical_path_ratio_vs_estimated == pytest.approx(54.0 / 74.0)
+    assert report.fit_gap_summary.dominant_fit_gap_phase == "projection"
+    assert report.fit_gap_summary.dominant_fit_gap_macro == "WDQ_GEMM"
     assert report.vmem_region_capacity_bytes == {"ping": 30720, "pong": 30720, "weight": 32768}
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {

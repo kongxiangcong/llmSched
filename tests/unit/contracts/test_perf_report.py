@@ -44,6 +44,14 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 "hottest_region_dominant_memory_class": "ACTIVATION",
                 "hottest_region_dominant_backing_store": "vmem-local",
             },
+            "fit_gap_summary": {
+                "total_fit_gap_cycles": 156.0,
+                "total_fit_gap_ratio": 156.0 / 1024.0,
+                "critical_path_gap_cycles": -896.0,
+                "critical_path_ratio_vs_estimated": 128.0 / 1024.0,
+                "dominant_fit_gap_phase": "projection",
+                "dominant_fit_gap_macro": "WDQ_GEMM",
+            },
             "totals": {
                 "estimated_cycles": 1024.0,
                 "fitted_work_cycles": 1180.0,
@@ -227,6 +235,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.bandwidth_pressure_summary.dominant_read_backing_store == "ddr-backed-staged"
     assert report.vmem_pressure_summary.hottest_region == "ping"
     assert report.vmem_pressure_summary.hottest_region_dominant_memory_class == "ACTIVATION"
+    assert report.fit_gap_summary.total_fit_gap_cycles == 156.0
+    assert report.fit_gap_summary.total_fit_gap_ratio == 156.0 / 1024.0
+    assert report.fit_gap_summary.critical_path_gap_cycles == -896.0
+    assert report.fit_gap_summary.critical_path_ratio_vs_estimated == 128.0 / 1024.0
+    assert report.fit_gap_summary.dominant_fit_gap_phase == "projection"
+    assert report.fit_gap_summary.dominant_fit_gap_macro == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0

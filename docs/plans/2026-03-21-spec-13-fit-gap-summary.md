@@ -217,3 +217,26 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 git add README.md docs/development/evaluation-compiler-roadmap.md docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md
 git commit -m "docs: record spec13 fit gap summary closure"
 ```
+
+## Execution Record Update (2026-03-21)
+
+- implemented:
+  - `PerfSummaryReport` now exposes top-level `fit_gap_summary`
+  - `build_perf_summary_report(...)` now derives:
+    - `total_fit_gap_cycles`
+    - `total_fit_gap_ratio`
+    - `critical_path_gap_cycles`
+    - `critical_path_ratio_vs_estimated`
+    - `dominant_fit_gap_phase`
+    - `dominant_fit_gap_macro`
+- fresh focused verification:
+  - `python -m pytest tests/unit/contracts/test_perf_report.py -q` -> `1 passed`
+  - `python -m pytest tests/unit/analysis/test_perf_summary_builder.py -q` -> `6 passed`
+  - `python -m pytest tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `3 passed`
+  - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `13 passed`
+  - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py -q` -> `12 passed`
+- broader perf smoke reconfirmation:
+  - `python -m pytest tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `6 passed`
+- updated interpretation:
+  - this slice closes one estimator-trust gap by making fitted-versus-estimated divergence explicit in the canonical perf artifact
+  - the next remaining `SPEC-13` blocker is now deeper cycle fitting and/or stronger compare-grade estimator aggregation, not missing summary-grade fit-gap interpretation

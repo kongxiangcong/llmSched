@@ -65,6 +65,17 @@ class PerfVMEMPressureSummary(BaseModel):
     hottest_region_dominant_backing_store: str | None = None
 
 
+class PerfFitGapSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total_fit_gap_cycles: float = Field(default=0.0)
+    total_fit_gap_ratio: float = Field(default=0.0)
+    critical_path_gap_cycles: float = Field(default=0.0)
+    critical_path_ratio_vs_estimated: float = Field(default=0.0)
+    dominant_fit_gap_phase: str = ""
+    dominant_fit_gap_macro: str = ""
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -88,6 +99,7 @@ class PerfSummaryReport(BaseModel):
         default_factory=PerfBandwidthPressureSummary
     )
     vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
+    fit_gap_summary: PerfFitGapSummary = Field(default_factory=PerfFitGapSummary)
     totals: dict[str, float] = Field(default_factory=dict)
     phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
     per_macro_cycles: dict[str, float] = Field(default_factory=dict)

@@ -3379,6 +3379,29 @@ graph TD
   - the dominant remaining `M3` blocker should now shift back to `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation
   - follow-on `SPEC-16` work should stay narrowly attached to consuming the current compare artifact rather than reopening `SPEC-14/15` compare closure
 
+## 2026-03-21 SPEC-13 Fit Gap Summary Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-fit-gap-summary.md`
+- `PerfSummaryReport` now exposes top-level `fit_gap_summary`, making fitted-versus-estimated divergence explicit in the canonical estimator artifact.
+- this slice stays intentionally summary-grade:
+  - no new estimator math
+  - no reopening of descriptor-analysis record generation
+  - no new downstream compare contract yet
+- new closure evidence:
+  - `fit_gap_summary` now carries `total_fit_gap_cycles`, `total_fit_gap_ratio`, `critical_path_gap_cycles`, `critical_path_ratio_vs_estimated`, `dominant_fit_gap_phase`, and `dominant_fit_gap_macro`
+  - focused `SPEC-13` unit/workflow verification is green:
+    - `python -m pytest tests/unit/contracts/test_perf_report.py -q` -> `1 passed`
+    - `python -m pytest tests/unit/analysis/test_perf_summary_builder.py -q` -> `6 passed`
+    - `python -m pytest tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `3 passed`
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `13 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py -q` -> `12 passed`
+  - broader perf smoke reconfirmation is also green:
+    - `python -m pytest tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `6 passed`
+- interpretation:
+  - one estimator-trust gap is now closed because downstream consumers can inspect fitted-versus-estimated divergence without recomputing it outside `PerfSummaryReport`
+  - the next `SPEC-13` follow-on should focus on deeper cycle fitting or stronger compare-grade estimator aggregation rather than another summary-only trust field
+
 ## Current Next Slice
 
 - `M3`
@@ -3386,6 +3409,7 @@ graph TD
   - execute `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` as the handoff artifact for broader blocker reclassification
   - treat the current `SPEC-14/15` eval-compare closure lane as practically closed for the main decision path
   - treat the current verdict-summary plus decode `kv_len` aggregation plus decode token-latency decomposition plus prefill layer decomposition plus cross-mode compare closure slices as revalidated and landed
+  - treat the current `SPEC-13` fit-gap summary slice as landed
   - shift the next focused follow-on toward `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation now that the main standalone compare closure questions are answered without reopening raw artifacts
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
