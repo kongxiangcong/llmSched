@@ -240,3 +240,4 @@ git commit -m "docs: record spec13 fit gap summary closure"
 - updated interpretation:
   - this slice closes one estimator-trust gap by making fitted-versus-estimated divergence explicit in the canonical perf artifact
   - the next remaining `SPEC-13` blocker is now deeper cycle fitting and/or stronger compare-grade estimator aggregation, not missing summary-grade fit-gap interpretation
+  - the immediate follow-on landed in `docs/plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`, extending this trust surface with explicit critical-path-versus-estimated/fitted attribution

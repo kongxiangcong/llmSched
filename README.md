@@ -229,6 +229,7 @@ Current active execution plan:
 - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
 - `docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md`
 - `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
+- `docs/plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`
 - 最新已落盘的 `SPEC-16` execution slices 位于：
   - `docs/plans/2026-03-20-spec-16-*.md`
   - `docs/plans/2026-03-21-spec-16-analysis-flow-candidate-inspection.md`
@@ -326,7 +327,8 @@ Current working interpretation:
 
 - `SPEC-13` focused close-out slice 已启动：
   - `docs/plans/2026-03-21-spec-13-fit-gap-summary.md`
-  - `PerfSummaryReport` 已补上 `fit_gap_summary`
-  - focused `SPEC-13` unit/workflow regression 已 fresh 通过：`13 passed`
-  - downstream `SPEC-14/15` unit/workflow regression 已 fresh 通过：`12 passed`
+  - `docs/plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`
+  - `PerfSummaryReport` 已补上 `fit_gap_summary` 和 `critical_path_fit_gap_summary`
+  - focused `SPEC-13` unit/workflow/smoke regression 已 fresh 通过：`19 passed`
+  - downstream `SPEC-14/15` unit/workflow/smoke regression 已 fresh 通过：`16 passed`
   - broader perf smoke 已 fresh 通过：`6 passed`

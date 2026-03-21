@@ -3402,6 +3402,24 @@ graph TD
   - one estimator-trust gap is now closed because downstream consumers can inspect fitted-versus-estimated divergence without recomputing it outside `PerfSummaryReport`
   - the next `SPEC-13` follow-on should focus on deeper cycle fitting or stronger compare-grade estimator aggregation rather than another summary-only trust field
 
+## 2026-03-21 SPEC-13 Critical-Path Fit-Gap Decomposition Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-critical-path-fit-gap-decomposition.md`
+- `PerfSummaryReport` now also exposes `critical_path_fit_gap_summary`, making schedule-critical-path divergence explicit beside the existing fitted-versus-estimated gap summary.
+- this slice stays intentionally summary-grade:
+  - no new estimator math
+  - no new phase table or macro table contract
+  - no reopening of descriptor-analysis record generation
+- new closure evidence:
+  - `critical_path_fit_gap_summary` now carries `critical_path_minus_estimated_cycles`, `critical_path_minus_fitted_cycles`, `dominant_phase_vs_estimated`, `dominant_phase_vs_fitted`, `dominant_macro_vs_estimated`, and `dominant_macro_vs_fitted`
+  - focused `SPEC-13` unit/workflow verification is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `19 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - one more estimator-trust gap is now closed because the canonical perf artifact can explain which phase and macro sit closest to the schedule critical path without reopening raw reports
+  - the next `SPEC-13` follow-on should focus on deeper cycle-fitting math or compare-grade estimator aggregation rather than another top-level trust summary
+
 ## Current Next Slice
 
 - `M3`
@@ -3410,6 +3428,7 @@ graph TD
   - treat the current `SPEC-14/15` eval-compare closure lane as practically closed for the main decision path
   - treat the current verdict-summary plus decode `kv_len` aggregation plus decode token-latency decomposition plus prefill layer decomposition plus cross-mode compare closure slices as revalidated and landed
   - treat the current `SPEC-13` fit-gap summary slice as landed
+  - treat the current `SPEC-13` critical-path fit-gap decomposition slice as landed
   - shift the next focused follow-on toward `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation now that the main standalone compare closure questions are answered without reopening raw artifacts
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`

@@ -52,6 +52,14 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
                 "dominant_fit_gap_phase": "projection",
                 "dominant_fit_gap_macro": "WDQ_GEMM",
             },
+            "critical_path_fit_gap_summary": {
+                "critical_path_minus_estimated_cycles": -896.0,
+                "critical_path_minus_fitted_cycles": -1052.0,
+                "dominant_phase_vs_estimated": "projection",
+                "dominant_phase_vs_fitted": "projection",
+                "dominant_macro_vs_estimated": "WDQ_GEMM",
+                "dominant_macro_vs_fitted": "WDQ_GEMM",
+            },
             "totals": {
                 "estimated_cycles": 1024.0,
                 "fitted_work_cycles": 1180.0,
@@ -241,6 +249,12 @@ def test_perf_summary_report_tracks_totals_and_gaps() -> None:
     assert report.fit_gap_summary.critical_path_ratio_vs_estimated == 128.0 / 1024.0
     assert report.fit_gap_summary.dominant_fit_gap_phase == "projection"
     assert report.fit_gap_summary.dominant_fit_gap_macro == "WDQ_GEMM"
+    assert report.critical_path_fit_gap_summary.critical_path_minus_estimated_cycles == -896.0
+    assert report.critical_path_fit_gap_summary.critical_path_minus_fitted_cycles == -1052.0
+    assert report.critical_path_fit_gap_summary.dominant_phase_vs_estimated == "projection"
+    assert report.critical_path_fit_gap_summary.dominant_phase_vs_fitted == "projection"
+    assert report.critical_path_fit_gap_summary.dominant_macro_vs_estimated == "WDQ_GEMM"
+    assert report.critical_path_fit_gap_summary.dominant_macro_vs_fitted == "WDQ_GEMM"
     assert report.totals["estimated_cycles"] == 1024.0
     assert report.totals["fitted_work_cycles"] == 1180.0
     assert report.totals["critical_path_cycles"] == 128.0

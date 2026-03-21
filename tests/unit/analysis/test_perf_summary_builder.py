@@ -256,6 +256,16 @@ def test_build_perf_summary_report_aggregates_totals_and_bottlenecks() -> None:
     assert report.fit_gap_summary.critical_path_ratio_vs_estimated == pytest.approx(54.0 / 74.0)
     assert report.fit_gap_summary.dominant_fit_gap_phase == "projection"
     assert report.fit_gap_summary.dominant_fit_gap_macro == "WDQ_GEMM"
+    assert report.critical_path_fit_gap_summary.critical_path_minus_estimated_cycles == pytest.approx(
+        54.0 - 74.0
+    )
+    assert report.critical_path_fit_gap_summary.critical_path_minus_fitted_cycles == pytest.approx(
+        54.0 - 90.0
+    )
+    assert report.critical_path_fit_gap_summary.dominant_phase_vs_estimated == "projection"
+    assert report.critical_path_fit_gap_summary.dominant_phase_vs_fitted == "projection"
+    assert report.critical_path_fit_gap_summary.dominant_macro_vs_estimated == "WDQ_GEMM"
+    assert report.critical_path_fit_gap_summary.dominant_macro_vs_fitted == "WDQ_GEMM"
     assert report.vmem_region_capacity_bytes == {"ping": 30720, "pong": 30720, "weight": 32768}
     assert report.vmem_region_peak_utilization == {"ping": 0.6667, "pong": 0.4, "weight": 0.5}
     assert report.totals == {

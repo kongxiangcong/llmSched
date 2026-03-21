@@ -14,6 +14,7 @@ from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.perf_report import (
     PerfBandwidthPressureSummary,
     PerfBottleneckIssue,
+    PerfCriticalPathFitGapSummary,
     PerfFitGapSummary,
     PerfPhaseSummary,
     PerfSummaryReport,
@@ -399,6 +400,13 @@ def build_perf_summary_report(
             per_macro_cycles=per_macro_cycles,
             per_macro_fitted_work_cycles=per_macro_fitted_work_cycles,
         ),
+        critical_path_fit_gap_summary=_build_critical_path_fit_gap_summary(
+            totals=totals,
+            phase_cycles=phase_cycles,
+            phase_fitted_work_cycles=phase_fitted_work_cycles,
+            per_macro_cycles=per_macro_cycles,
+            per_macro_fitted_work_cycles=per_macro_fitted_work_cycles,
+        ),
         totals=totals,
         phase_attribution=_build_phase_attribution(
             phase_cycles,
@@ -475,6 +483,74 @@ def _build_fit_gap_summary(
         dominant_fit_gap_phase=dominant_fit_gap_phase,
         dominant_fit_gap_macro=dominant_fit_gap_macro,
     )
+
+
+def _build_critical_path_fit_gap_summary(
+    *,
+    totals: dict[str, float],
+    phase_cycles: Counter[str],
+    phase_fitted_work_cycles: Counter[str],
+    per_macro_cycles: Counter[str],
+    per_macro_fitted_work_cycles: Counter[str],
+) -> PerfCriticalPathFitGapSummary:
+    critical_path_cycles = float(totals.get("critical_path_cycles", 0.0))
+    estimated_cycles = float(totals.get("estimated_cycles", 0.0))
+    fitted_work_cycles = float(totals.get("fitted_work_cycles", 0.0))
+
+    dominant_phase_vs_estimated = ""
+    if phase_cycles:
+        dominant_phase_vs_estimated = _closest_critical_path_contributor(
+            critical_path_cycles=critical_path_cycles,
+            values_by_name=phase_cycles,
+        )
+
+    dominant_phase_vs_fitted = ""
+    if phase_fitted_work_cycles:
+        dominant_phase_vs_fitted = _closest_critical_path_contributor(
+            critical_path_cycles=critical_path_cycles,
+            values_by_name=phase_fitted_work_cycles,
+        )
+
+    dominant_macro_vs_estimated = ""
+    if per_macro_cycles:
+        dominant_macro_vs_estimated = _closest_critical_path_contributor(
+            critical_path_cycles=critical_path_cycles,
+            values_by_name=per_macro_cycles,
+        )
+
+    dominant_macro_vs_fitted = ""
+    if per_macro_fitted_work_cycles:
+        dominant_macro_vs_fitted = _closest_critical_path_contributor(
+            critical_path_cycles=critical_path_cycles,
+            values_by_name=per_macro_fitted_work_cycles,
+        )
+
+    return PerfCriticalPathFitGapSummary(
+        critical_path_minus_estimated_cycles=critical_path_cycles - estimated_cycles,
+        critical_path_minus_fitted_cycles=critical_path_cycles - fitted_work_cycles,
+        dominant_phase_vs_estimated=dominant_phase_vs_estimated,
+        dominant_phase_vs_fitted=dominant_phase_vs_fitted,
+        dominant_macro_vs_estimated=dominant_macro_vs_estimated,
+        dominant_macro_vs_fitted=dominant_macro_vs_fitted,
+    )
+
+
+def _closest_critical_path_contributor(
+    *,
+    critical_path_cycles: float,
+    values_by_name: Counter[str] | dict[str, float],
+) -> str:
+    non_zero_items = [
+        (name, float(value))
+        for name, value in values_by_name.items()
+        if float(value) > 0.0
+    ]
+    if not non_zero_items:
+        return ""
+    return min(
+        non_zero_items,
+        key=lambda item: (abs(critical_path_cycles - item[1]), -item[1], item[0]),
+    )[0]
 
 
 def _critical_path_cycles(*, schedule_makespan_slots: int, estimated_cycles: float) -> float:

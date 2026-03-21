@@ -76,6 +76,17 @@ class PerfFitGapSummary(BaseModel):
     dominant_fit_gap_macro: str = ""
 
 
+class PerfCriticalPathFitGapSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    critical_path_minus_estimated_cycles: float = Field(default=0.0)
+    critical_path_minus_fitted_cycles: float = Field(default=0.0)
+    dominant_phase_vs_estimated: str = ""
+    dominant_phase_vs_fitted: str = ""
+    dominant_macro_vs_estimated: str = ""
+    dominant_macro_vs_fitted: str = ""
+
+
 class PerfSummaryReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -100,6 +111,9 @@ class PerfSummaryReport(BaseModel):
     )
     vmem_pressure_summary: PerfVMEMPressureSummary = Field(default_factory=PerfVMEMPressureSummary)
     fit_gap_summary: PerfFitGapSummary = Field(default_factory=PerfFitGapSummary)
+    critical_path_fit_gap_summary: PerfCriticalPathFitGapSummary = Field(
+        default_factory=PerfCriticalPathFitGapSummary
+    )
     totals: dict[str, float] = Field(default_factory=dict)
     phase_attribution: dict[str, PerfPhaseSummary] = Field(default_factory=dict)
     per_macro_cycles: dict[str, float] = Field(default_factory=dict)
