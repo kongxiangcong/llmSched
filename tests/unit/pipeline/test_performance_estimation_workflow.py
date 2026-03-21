@@ -264,3 +264,97 @@ def test_run_performance_estimation_passes_schedule_memory_and_tiling_context_to
     assert captured["schedule_ir"] is not None
     assert captured["memory_plan"] is not None
     assert captured["tiling_plan"] is not None
+
+
+def test_run_performance_estimation_serializes_residual_external_stall_metrics(
+    tmp_path: Path,
+    minimal_descriptor_run_root_factory,
+) -> None:
+    from llm_sched.contracts.perf_report import PerfSummaryReport
+    from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.pipeline import run_performance_estimation
+
+    run_root = minimal_descriptor_run_root_factory(
+        target_run_root=tmp_path / "run-perf-residual-stall",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+    )
+
+    residual_analysis_ir = AnalysisIR(
+        ir_version="phase-a.v1",
+        graph_id="workflow-minimal::riscv_npu_single_core_v1::prefill_seq128",
+        records=[
+            AnalysisRecord(
+                record_id="analysis.record.residual.compute",
+                subject_id="sched.block.linear.compute",
+                metrics={
+                    "read_bytes": 20480.0,
+                    "write_bytes": 12288.0,
+                    "total_bytes": 32768.0,
+                    "estimated_cycles": 48.0,
+                    "fitted_work_cycles": 112.0,
+                    "schedule_floor_cycles": 64.0,
+                    "external_bandwidth_floor_cycles": 96.0,
+                    "fit_floor_gap_cycles": 64.0,
+                    "sync_cycles": 0.0,
+                    "bandwidth_pressure": 682.6666666666666,
+                },
+                tags=["descriptor-analysis", "compute-bound", "fit-floor:external_bandwidth"],
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.linear.compute"],
+                    descriptor_ids=["desc.linear.compute"],
+                ),
+            )
+        ],
+    )
+    residual_summary_report = PerfSummaryReport(
+        run_id="run-perf-residual-stall",
+        graph_id=residual_analysis_ir.graph_id,
+        schedule_kind="single-core",
+        totals={
+            "estimated_cycles": 48.0,
+            "fitted_work_cycles": 112.0,
+            "critical_path_cycles": 64.0,
+        },
+        fit_gap_summary={
+            "total_fit_gap_cycles": 64.0,
+            "total_fit_gap_ratio": 64.0 / 48.0,
+            "critical_path_gap_cycles": 16.0,
+            "critical_path_ratio_vs_estimated": 64.0 / 48.0,
+            "dominant_fit_gap_phase": "projection",
+            "dominant_fit_gap_macro": "WDQ_GEMM",
+        },
+        fit_floor_source_summary={
+            "schedule_floor_gap_cycles": 0.0,
+            "external_bandwidth_gap_cycles": 64.0,
+            "estimated_dominant_subject_count": 0,
+            "schedule_floor_dominant_subject_count": 0,
+            "external_bandwidth_dominant_subject_count": 1,
+            "dominant_floor_source": "external_bandwidth",
+            "dominant_floor_phase": "projection",
+            "dominant_floor_macro": "WDQ_GEMM",
+        },
+    )
+
+    with (
+        patch(
+            "llm_sched.pipeline.performance_estimation.estimate_descriptor_analysis",
+            return_value=residual_analysis_ir,
+        ),
+        patch(
+            "llm_sched.pipeline.performance_estimation.build_perf_summary_report",
+            return_value=residual_summary_report,
+        ),
+    ):
+        result = run_performance_estimation(run_root)
+
+    assert result.status == "completed"
+    analysis_payload = json.loads(result.analysis_ir_path.read_text(encoding="utf-8"))
+    summary_payload = json.loads(result.summary_report_path.read_text(encoding="utf-8"))
+
+    assert analysis_payload["records"][0]["metrics"]["fitted_work_cycles"] == pytest.approx(112.0)
+    assert analysis_payload["records"][0]["metrics"]["fit_floor_gap_cycles"] == pytest.approx(64.0)
+    assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(112.0)
+    assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(64.0)
+    assert summary_payload["fit_floor_source_summary"]["external_bandwidth_gap_cycles"] == pytest.approx(64.0)

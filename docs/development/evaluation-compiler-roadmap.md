@@ -3459,6 +3459,25 @@ graph TD
   - current estimator-trust surfaces are no longer trapped inside `PerfSummaryReport`; standalone compare artifacts can now summarize them directly
   - the next remaining `SPEC-13` blocker is now more clearly deeper cycle-fitting math, not missing compare-grade aggregation
 
+## 2026-03-21 SPEC-13 Residual External Stall Fitting Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-residual-external-stall-fitting.md`
+- `SPEC-13` now has a first post-summary deeper-cycle slice that materially changes fitted-cycle values again:
+  - compute descriptors no longer collapse fitted work cycles to `max(schedule_floor, external_read_floor)`
+  - the estimator now preserves `schedule_floor` and adds only the residual external-read stall above the existing `estimated_cycles` overlap budget
+- this slice stays estimator-local and contract-stable:
+  - no new top-level `PerfSummaryReport` fields were added
+  - the stronger fitted-cycle values instead flow through the existing `fit_gap_summary`, `fit_floor_source_summary`, totals, and workflow artifacts
+- new closure evidence:
+  - residual-stall-heavy compute cases now serialize `fitted_work_cycles = 112.0` while preserving `schedule_floor_cycles = 64.0`, `external_bandwidth_floor_cycles = 96.0`, and `fit_floor_gap_cycles = 64.0`
+  - focused `SPEC-13` deeper-cycle verification is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `22 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - the current estimator trust lane is no longer only summary-grade; fitted-cycle math itself has moved again in a narrower, schedule-aware direction
+  - the next remaining `SPEC-13` blocker is richer overlap/stall math beyond this residual model, not another summary-only field
+
 ## Current Next Slice
 
 - `M3`
@@ -3470,7 +3489,8 @@ graph TD
   - treat the current `SPEC-13` critical-path fit-gap decomposition slice as landed
   - treat the current `SPEC-13` fit-floor source summary slice as landed
   - treat the current `SPEC-13` compare-grade estimator summary slice as landed
-  - shift the next focused follow-on toward genuinely deeper `SPEC-13` cycle-fitting math now that both standalone compare closure and compare-grade estimator aggregation are in place
+  - treat the current `SPEC-13` residual external stall fitting slice as landed
+  - shift the next focused follow-on toward richer `SPEC-13` overlap/stall math now that both standalone compare closure and the first post-summary deeper-cycle slice are in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

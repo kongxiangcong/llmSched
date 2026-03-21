@@ -136,6 +136,38 @@ def test_estimate_descriptor_analysis_raises_fitted_work_cycles_for_tiled_extern
     assert "fit-floor:external_bandwidth" in compute_record.tags
 
 
+def test_estimate_descriptor_analysis_adds_residual_external_stall_above_schedule_floor() -> None:
+    from llm_sched.analysis import estimate_descriptor_analysis
+
+    schedule_ir = _schedule_ir_fixture().model_copy(
+        update={
+            "blocks": [
+                block.model_copy(update={"duration_slots": 64})
+                if block.block_id == "sched.block.linear.compute"
+                else block
+                for block in _schedule_ir_fixture().blocks
+            ]
+        }
+    )
+
+    analysis = estimate_descriptor_analysis(
+        _descriptor_ir_fixture(),
+        _coverage_report_fixture(),
+        _test_target_profile(),
+        _test_prefill_scenario(),
+        schedule_ir=schedule_ir,
+        tiling_plan=_tiling_plan_fixture(ddr_backed_staged_bytes=122880),
+    )
+
+    compute_record = next(record for record in analysis.records if record.subject_id == "sched.block.linear.compute")
+    assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["schedule_floor_cycles"] == 64.0
+    assert compute_record.metrics["external_bandwidth_floor_cycles"] == 96.0
+    assert compute_record.metrics["fitted_work_cycles"] == 112.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 64.0
+    assert "fit-floor:external_bandwidth" in compute_record.tags
+
+
 def _descriptor_ir_fixture() -> DescriptorIR:
     return DescriptorIR(
         ir_version="phase-a.v1",

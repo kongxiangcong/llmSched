@@ -218,6 +218,9 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
     - average critical-path-gap deltas
     - dominant fitted-gap phase
     - dominant critical-path-gap phase
+- downstream follow-on landed after this slice:
+  - `../plans/2026-03-21-spec-13-residual-external-stall-fitting.md`
+  - estimator math now preserves `schedule_floor` and adds only residual external-read stall, so the next remaining blocker has moved from compare-grade aggregation to richer overlap/stall fidelity
 - fresh focused verification:
   - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py -q` -> `4 passed`
   - `python -m pytest tests/unit/analysis/test_phase_d_compare_report_builder.py -q` -> `7 passed`

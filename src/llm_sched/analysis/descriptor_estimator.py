@@ -154,11 +154,12 @@ def _fitted_work_cycle_metrics_for_descriptor(
     external_read_cycles = float(
         _bandwidth_cycles(external_read_bytes, capabilities.shared_dma.effective_bandwidth_gbps)
     )
+    residual_external_stall_cycles = max(0.0, external_read_cycles - estimated_cycles)
     return _build_fit_floor_metrics(
         estimated_cycles=estimated_cycles,
         schedule_floor_cycles=schedule_floor,
         external_bandwidth_floor_cycles=external_read_cycles,
-        fitted_work_cycles=max(fitted_cycles, external_read_cycles),
+        fitted_work_cycles=max(fitted_cycles, schedule_floor + residual_external_stall_cycles),
     )
 
 
@@ -170,7 +171,7 @@ def _build_fit_floor_metrics(
     fitted_work_cycles: float,
 ) -> tuple[dict[str, float], str]:
     fit_floor_source = "estimated"
-    if fitted_work_cycles == external_bandwidth_floor_cycles and fitted_work_cycles > max(
+    if external_bandwidth_floor_cycles > estimated_cycles and fitted_work_cycles > max(
         estimated_cycles,
         schedule_floor_cycles,
     ):
