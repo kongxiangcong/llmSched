@@ -3579,6 +3579,10 @@ graph TD
 
 ## Current Next Slice
 
+- project-level closeout
+  - execute `docs/plans/2026-03-22-project-closeout-audit.md` as the final project-status audit artifact
+  - treat the current repo as `close-enough / practical stop-line` unless new concrete failing evidence appears
+  - keep remaining work classified as downstream polish, targeted follow-up, or future research rather than default project blockers
 - `M3`
   - freeze the current recommendation-detail branch as a practical stop-line
   - revalidate that `SPEC-16 / SPEC-19` closeout boundary with `docs/plans/2026-03-22-spec-16-spec-19-closeout.md`
@@ -3601,6 +3605,22 @@ graph TD
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
   - fresh 2026-03-22 visualization proof reconfirms the current static catalog/workbench surface is sufficient for project closeout
   - keep `SPEC-19` as downstream polish, not as the reason this project remains open
+
+## 2026-03-22 Project Closeout Audit
+
+- audit plan doc: `../plans/2026-03-22-project-closeout-audit.md`
+- project-level judgment:
+  - current repository state now reaches `close-enough / practical stop-line`
+  - `SPEC-13`, `SPEC-14/15`, `SPEC-16` recommendation-detail, and the current `SPEC-19` static catalog/workbench surface all remain practically closed
+  - remaining work should be treated as downstream polish, targeted follow-up, or future research instead of default blockers
+- fresh keep-green evidence:
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- closeout implication:
+  - do not keep the project open by default for richer screenshot polish, convenience interaction, or deeper estimator fidelity experiments
+  - reopen the current closeout judgment only if a new concrete failing test, smoke regression, or consumer-blocking gap appears
 
 ## 2026-03-22 SPEC-16 / SPEC-19 Closeout Reconfirmation
 

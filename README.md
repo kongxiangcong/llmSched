@@ -182,9 +182,18 @@ python -m pytest tests/smoke -m milestone_matrix -q
 - `SPEC-16 / SPEC-19` 这条 closeout 判断已在 `2026-03-22` 用 fresh visualization proof 重新确认：
   - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py -q` -> `20 passed`
   - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
+- 项目级 closeout 判断也已在 `2026-03-22` 用 broader keep-green 重新确认：
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
+  - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
 - 当前对 `SPEC-16 / SPEC-19` 更合理的解释已经进一步收敛：
   - `SPEC-16` recommendation-detail 分支继续保持冻结，除非后续 blocker audit 重新发现真实缺口
   - `SPEC-19` 当前 static catalog/workbench surface 已足够支撑项目 closeout，剩余 richer screenshot / convenience polish 不再作为默认收尾门槛
+- 当前对整个项目更合理的解释也已经收敛：
+  - 当前仓库主线已达到 `close-enough / practical stop-line`
+  - 剩余工作默认归入 downstream polish、targeted follow-up 或 future research，而不是继续把项目保持在默认未收尾状态
+  - 只有出现新的 concrete failing evidence 时，才应重新打开已冻结的 `SPEC-13/14/15/16/19` closeout judgment
 - 当前推荐的执行方式已经进一步具体化：
   - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md` 已完成本轮 closure 判定
   - recommendation-detail 这条子主线现在应保持冻结，除非后续 blocker review 重新发现真实缺口
@@ -253,6 +262,7 @@ Current active execution plan:
 - `docs/plans/2026-03-21-spec-16-spec-19-closure-audit.md`
 - `docs/plans/2026-03-21-spec-16-recommendation-detail-close-enough-checklist.md`
 - `docs/plans/2026-03-22-spec-16-spec-19-closeout.md`
+- `docs/plans/2026-03-22-project-closeout-audit.md`
 
 Canonical documentation roles:
 
