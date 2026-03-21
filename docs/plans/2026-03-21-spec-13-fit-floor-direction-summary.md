@@ -226,3 +226,6 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 - interpretation:
   - this slice closes the current direction-level observability gap without reopening deeper-cycle math
   - the next remaining estimator blocker is finer-grained overlap budgeting beyond the current read/write floor decomposition
+- downstream follow-on landed after this slice:
+  - `../plans/2026-03-21-spec-13-external-write-drain-overlap.md`
+  - overlap budgeting now distinguishes read-overlap from write-drain behavior, so the next remaining blocker has shifted from direction-level observability to finer schedule slack / overlap allocation fidelity

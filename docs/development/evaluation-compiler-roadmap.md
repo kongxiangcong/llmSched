@@ -3518,6 +3518,26 @@ graph TD
   - current estimator trust surface now has enough direction-level observability for future compare-grade consumers
   - the next remaining `SPEC-13` blocker is finer-grained overlap budgeting, not missing read/write floor decomposition
 
+## 2026-03-21 SPEC-13 External Write Drain Overlap Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-external-write-drain-overlap.md`
+- `SPEC-13` overlap budgeting now has its first explicit direction-aware math rule:
+  - external reads continue to share the compute overlap budget
+  - external writes are now treated as post-compute drain cycles instead of being absorbed by `estimated_cycles` by default
+  - write-only external pressure now raises fitted work cycles even when external-bandwidth topline is smaller than the compute estimate
+- this slice stays estimator-local:
+  - no new perf-report contract fields were added
+  - existing fit-gap, fit-floor-source, fit-floor-direction, totals, and workflow artifacts now simply observe stronger write-aware fitted-cycle values
+- new closure evidence:
+  - write-only external floor cases now serialize `fitted_work_cycles = 80.0` and `fit_floor_gap_cycles = 32.0`
+  - focused `SPEC-13` regression is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `29 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - current `SPEC-13` overlap budgeting is no longer symmetric by default; it now distinguishes read-overlap from write-drain behavior
+  - the next remaining blocker is finer-grained schedule slack / overlap allocation beyond the current read-overlap plus write-drain rule
+
 ## Current Next Slice
 
 - `M3`
@@ -3532,7 +3552,8 @@ graph TD
   - treat the current `SPEC-13` residual external stall fitting slice as landed
   - treat the current `SPEC-13` shared-DMA bidirectional stall slice as landed
   - treat the current `SPEC-13` fit-floor direction summary slice as landed
-  - shift the next focused follow-on toward finer-grained overlap budgeting now that current deeper-cycle math and direction-aware observability are both in place
+  - treat the current `SPEC-13` external write drain overlap slice as landed
+  - shift the next focused follow-on toward finer-grained schedule slack / overlap allocation now that current deeper-cycle math, direction-aware observability, and write-drain overlap budgeting are all in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

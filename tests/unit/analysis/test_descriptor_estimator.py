@@ -211,7 +211,8 @@ def test_estimate_descriptor_analysis_adds_residual_external_write_stall() -> No
     assert compute_record.metrics["external_read_floor_cycles"] == 0.0
     assert compute_record.metrics["external_write_floor_cycles"] == 32.0
     assert compute_record.metrics["external_bandwidth_floor_cycles"] == 32.0
-    assert compute_record.metrics["fitted_work_cycles"] == 48.0
+    assert compute_record.metrics["fitted_work_cycles"] == 80.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 32.0
 
 
 def test_estimate_descriptor_analysis_adds_bidirectional_shared_dma_stall_above_schedule_floor() -> None:
