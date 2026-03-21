@@ -21,6 +21,35 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_summary.candidate_better_count == 1
     assert report.decode_summary.compare_count == 1
     assert report.decode_summary.candidate_better_count == 1
+    assert report.decode_kv_len_summaries[0].kv_len == 2048
+    assert report.decode_kv_len_summaries[0].compare_count == 1
+    assert report.decode_kv_len_summaries[0].preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.decode_kv_len_summaries[0].avg_critical_path_cycles_per_token_delta == pytest.approx(
+        -640.0
+    )
+    assert report.decode_latency_decomposition_summary.compare_count == 1
+    assert report.decode_latency_decomposition_summary.dominant_phase == "projection"
+    assert report.decode_latency_decomposition_summary.phase_entries[0].phase_name == "projection"
+    assert report.decode_latency_decomposition_summary.phase_entries[0].avg_cycles_delta == pytest.approx(
+        -200.0
+    )
+    assert report.prefill_layer_decomposition_summary.compare_count == 1
+    assert report.prefill_layer_decomposition_summary.dominant_estimated_layer_id == 0
+    assert report.prefill_layer_decomposition_summary.dominant_fitted_layer_id == 0
+    assert report.prefill_layer_decomposition_summary.layer_entries[0].layer_id == 0
+    assert report.prefill_layer_decomposition_summary.layer_entries[0].avg_delta_cycles == pytest.approx(
+        -1024.0
+    )
+    assert report.cross_mode_summaries[0].alignment_verdict == "aligned-candidate-better"
+    assert report.cross_mode_summaries[0].shared_preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.cross_mode_summaries[0].prefill_primary_metric == "cycles_per_token"
+    assert report.cross_mode_summaries[0].prefill_primary_metric_delta.delta_value == pytest.approx(-8.0)
+    assert report.cross_mode_summaries[0].decode_primary_metric == "critical_path_cycles_per_token"
+    assert report.cross_mode_summaries[0].decode_primary_metric_delta.delta_value == pytest.approx(
+        -640.0
+    )
+    assert report.cross_mode_summaries[0].prefill_primary_phase == "attention"
+    assert report.cross_mode_summaries[0].decode_primary_phase == "kv_io"
     assert report.prefill_compares[0].scenario_name == "prefill_seq128"
     assert report.prefill_compares[0].verdict_summary.verdict == "candidate-better"
     assert report.prefill_compares[0].verdict_summary.preferred_target_profile_name == "riscv_npu_dual_core_v1"
@@ -42,6 +71,7 @@ def test_build_phase_d_compare_report_splits_prefill_and_decode_sections() -> No
     assert report.prefill_compares[0].attention_cycle_share.delta_value == pytest.approx(0.0833333333)
     assert report.prefill_compares[0].layer_delta_count == 2
     assert report.decode_compares[0].scenario_name == "decode_token1_kv2048"
+    assert report.decode_compares[0].kv_len == 2048
     assert report.decode_compares[0].verdict_summary.verdict == "candidate-better"
     assert report.decode_compares[0].verdict_summary.primary_metric == "critical_path_cycles_per_token"
     assert report.decode_compares[0].verdict_summary.primary_phase == "kv_io"
@@ -196,6 +226,284 @@ def test_build_phase_d_compare_report_forwards_fitted_hotspot_and_layer_compare_
     assert report.decode_compares[0].fitted_layer_deltas[0].delta_fitted_work_cycles_ratio == pytest.approx(
         -0.1160714286
     )
+
+
+def test_build_phase_d_compare_report_aggregates_prefill_layer_decomposition() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+
+    prefill_source = _sweep_report().comparisons[0]
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.prefill-layer-decomposition",
+        sweep_report=SimpleNamespace(
+            sweep_name="phase-d-foundation",
+            baseline_target_profile_name="riscv_npu_single_core_v1",
+            completed_run_count=4,
+            failed_run_count=0,
+            issues=[],
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name="prefill_seq128",
+                    mode="prefill",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "delta_cycles": -1024.0,
+                            "delta_cycle_share": -0.0833333333,
+                        },
+                        {
+                            "layer_id": 1,
+                            "delta_cycles": 0.0,
+                            "delta_cycle_share": 0.0833333333,
+                        },
+                    ],
+                    fitted_layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "delta_fitted_work_cycles": -1024.0,
+                            "delta_fitted_cycle_share": -0.0634920635,
+                        },
+                        {
+                            "layer_id": 1,
+                            "delta_fitted_work_cycles": 0.0,
+                            "delta_fitted_cycle_share": 0.0634920635,
+                        },
+                    ],
+                    node_deltas=[],
+                    prefill_compare=prefill_source.prefill_compare,
+                    decode_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name="prefill_seq256",
+                    mode="prefill",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "delta_cycles": -512.0,
+                            "delta_cycle_share": -0.04,
+                        },
+                        {
+                            "layer_id": 1,
+                            "delta_cycles": -64.0,
+                            "delta_cycle_share": 0.01,
+                        },
+                    ],
+                    fitted_layer_deltas=[
+                        {
+                            "layer_id": 0,
+                            "delta_fitted_work_cycles": -768.0,
+                            "delta_fitted_cycle_share": -0.05,
+                        },
+                        {
+                            "layer_id": 1,
+                            "delta_fitted_work_cycles": -32.0,
+                            "delta_fitted_cycle_share": 0.01,
+                        },
+                    ],
+                    node_deltas=[],
+                    prefill_compare=prefill_source.prefill_compare,
+                    decode_compare=None,
+                ),
+            ],
+        ),
+    )
+
+    summary = report.prefill_layer_decomposition_summary
+    assert summary.compare_count == 2
+    assert summary.dominant_estimated_layer_id == 0
+    assert summary.dominant_fitted_layer_id == 0
+    assert [entry.layer_id for entry in summary.layer_entries] == [0, 1]
+    assert summary.layer_entries[0].avg_delta_cycles == pytest.approx((-1024.0 + -512.0) / 2.0)
+    assert summary.layer_entries[0].avg_delta_fitted_work_cycles == pytest.approx(
+        (-1024.0 + -768.0) / 2.0
+    )
+    assert summary.layer_entries[1].avg_delta_cycles == pytest.approx((0.0 + -64.0) / 2.0)
+
+
+def test_build_phase_d_compare_report_groups_decode_rows_by_kv_len() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+
+    decode_source = _sweep_report().comparisons[1]
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.decode-kv-len",
+        sweep_report=SimpleNamespace(
+            sweep_name="phase-d-foundation",
+            baseline_target_profile_name="riscv_npu_single_core_v1",
+            completed_run_count=4,
+            failed_run_count=0,
+            issues=[],
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv1024",
+                    kv_len=1024,
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    decode_compare=decode_source.decode_compare.model_copy(
+                        update={
+                            "estimated_cycles": _scalar_delta(2400.0, 2200.0),
+                            "critical_path_cycles": _scalar_delta(2200.0, 2000.0),
+                            "critical_path_cycles_per_token": _scalar_delta(2200.0, 2000.0),
+                            "kv_related_cycle_share": _scalar_delta(0.35, 0.3),
+                        }
+                    ),
+                    prefill_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv2048",
+                    kv_len=2048,
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    decode_compare=decode_source.decode_compare.model_copy(
+                        update={
+                            "estimated_cycles": _scalar_delta(3200.0, 2800.0),
+                            "critical_path_cycles": _scalar_delta(2880.0, 2240.0),
+                            "critical_path_cycles_per_token": _scalar_delta(2880.0, 2240.0),
+                            "kv_related_cycle_share": _scalar_delta(0.28125, 0.25),
+                        }
+                    ),
+                    prefill_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv2048.alt",
+                    kv_len=2048,
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    decode_compare=decode_source.decode_compare.model_copy(
+                        update={
+                            "estimated_cycles": _scalar_delta(3600.0, 3400.0),
+                            "critical_path_cycles": _scalar_delta(3000.0, 2900.0),
+                            "critical_path_cycles_per_token": _scalar_delta(3000.0, 2900.0),
+                            "kv_related_cycle_share": _scalar_delta(0.31, 0.29),
+                        }
+                    ),
+                    prefill_compare=None,
+                ),
+            ],
+        ),
+    )
+
+    assert [summary.kv_len for summary in report.decode_kv_len_summaries] == [1024, 2048]
+    kv1024 = report.decode_kv_len_summaries[0]
+    kv2048 = report.decode_kv_len_summaries[1]
+    assert kv1024.compare_count == 1
+    assert kv1024.candidate_better_count == 1
+    assert kv1024.preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert kv1024.avg_critical_path_cycles_per_token_delta == pytest.approx(-200.0)
+    assert kv2048.compare_count == 2
+    assert kv2048.candidate_better_count == 2
+    assert kv2048.avg_critical_path_cycles_per_token_delta == pytest.approx((-640.0 + -100.0) / 2.0)
+    assert kv2048.avg_kv_related_cycle_share_delta == pytest.approx((-0.03125 + -0.02) / 2.0)
+    assert report.decode_latency_decomposition_summary.compare_count == 3
+    assert report.decode_latency_decomposition_summary.dominant_phase == "projection"
+    assert report.decode_latency_decomposition_summary.phase_entries[0].phase_name == "projection"
+    assert report.decode_latency_decomposition_summary.phase_entries[0].avg_cycles_delta == pytest.approx(
+        (-200.0 + -200.0 + -200.0) / 3.0
+    )
+    assert report.decode_latency_decomposition_summary.phase_entries[1].phase_name == "kv_io"
+
+
+def test_build_phase_d_compare_report_summarizes_cross_mode_alignment() -> None:
+    from llm_sched.analysis import build_phase_d_compare_report
+
+    sweep_report = _sweep_report()
+    prefill_source = sweep_report.comparisons[0]
+    decode_source = sweep_report.comparisons[1]
+    report = build_phase_d_compare_report(
+        report_name="phase-d-compare.cross-mode-alignment",
+        sweep_report=SimpleNamespace(
+            sweep_name="phase-d-foundation",
+            baseline_target_profile_name="riscv_npu_single_core_v1",
+            completed_run_count=4,
+            failed_run_count=0,
+            issues=[],
+            comparisons=[
+                SimpleNamespace(
+                    scenario_name="prefill_seq128",
+                    mode="prefill",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    prefill_compare=prefill_source.prefill_compare,
+                    decode_compare=None,
+                ),
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv2048",
+                    kv_len=2048,
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_dual_core_v1",
+                    profile_diff_fields=["core_mode", "num_cores"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    prefill_compare=None,
+                    decode_compare=decode_source.decode_compare,
+                ),
+                SimpleNamespace(
+                    scenario_name="decode_token1_kv4096",
+                    kv_len=4096,
+                    mode="decode",
+                    baseline_target_profile_name="riscv_npu_single_core_v1",
+                    candidate_target_profile_name="riscv_npu_alt_dual_core_v2",
+                    profile_diff_fields=["core_mode", "num_cores", "scratchpad_bytes"],
+                    layer_deltas=[],
+                    node_deltas=[],
+                    fitted_layer_deltas=[],
+                    prefill_compare=None,
+                    decode_compare=decode_source.decode_compare.model_copy(
+                        update={
+                            "critical_path_cycles": _scalar_delta(1600.0, 1920.0),
+                            "critical_path_cycles_per_token": _scalar_delta(1600.0, 1920.0),
+                        }
+                    ),
+                ),
+            ],
+        ),
+    )
+
+    assert len(report.cross_mode_summaries) == 2
+    summary_by_candidate = {
+        summary.candidate_target_profile_name: summary for summary in report.cross_mode_summaries
+    }
+    aligned_summary = summary_by_candidate["riscv_npu_dual_core_v1"]
+    assert aligned_summary.candidate_target_profile_name == "riscv_npu_dual_core_v1"
+    assert aligned_summary.prefill_compare_count == 1
+    assert aligned_summary.decode_compare_count == 1
+    assert aligned_summary.alignment_verdict == "aligned-candidate-better"
+    assert aligned_summary.shared_preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert aligned_summary.prefill_primary_metric_delta.delta_value == pytest.approx(-8.0)
+    assert aligned_summary.decode_primary_metric_delta.delta_value == pytest.approx(-640.0)
+
+    decode_only_summary = summary_by_candidate["riscv_npu_alt_dual_core_v2"]
+    assert decode_only_summary.prefill_compare_count == 0
+    assert decode_only_summary.decode_compare_count == 1
+    assert decode_only_summary.alignment_verdict == "decode-only"
+    assert decode_only_summary.shared_preferred_target_profile_name == ""
+    assert decode_only_summary.prefill_primary_metric == ""
+    assert decode_only_summary.decode_primary_metric == "critical_path_cycles_per_token"
 
 
 def test_build_phase_d_compare_report_forwards_pressure_summary_compares() -> None:
@@ -1047,6 +1355,7 @@ def _sweep_report() -> SweepDeltaReport:
                 },
                 {
                     "scenario_name": "decode_token1_kv2048",
+                    "kv_len": 2048,
                     "mode": "decode",
                     "baseline_target_profile_name": "riscv_npu_single_core_v1",
                     "candidate_target_profile_name": "riscv_npu_dual_core_v1",

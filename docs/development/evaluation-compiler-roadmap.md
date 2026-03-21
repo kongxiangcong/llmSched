@@ -3301,19 +3301,92 @@ graph TD
   - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `14 passed`
   - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
 - broader keep-green rerun status in this session:
-  - `python -m pytest tests/smoke -m local_smoke -q` -> timed out
-  - `python -m pytest tests/smoke -m milestone_matrix -q` -> timed out
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
 - interpretation:
-  - the focused eval-compare closure slice has landed on its direct regression surface
-  - do not yet treat the wider keep-green line as freshly revalidated in this session until the two broader smoke selections complete
+  - the focused eval-compare closure slice has landed and the wider keep-green line is now freshly revalidated in this session
+  - remaining `SPEC-14/15` gaps should now be judged against concrete unfinished eval surfaces such as finer decode `kv_len` / token-latency closure, not against uncertainty about this verdict-summary slice
+
+## 2026-03-21 SPEC-15 Decode `kv_len` Aggregation Checkpoint
+
+- `SPEC-15` decode compare artifacts now carry structured `kv_len` context end-to-end instead of forcing downstream consumers to infer sequence scale from `scenario_name`.
+- this slice bundled three coordinated closure upgrades:
+  - `SweepRunRecord` and `SweepComparison` now preserve structured `kv_len`
+  - `PhaseDDecodeCompareRow` now forwards `kv_len` directly into the standalone compare surface
+  - `PhaseDCompareReport` now exposes `decode_kv_len_summaries`, giving per-`kv_len` compare counts, verdict distribution, preferred target hint, and average critical-path / KV-share deltas
+- this closes one concrete `SPEC-15` blocker-supporting gap where decode compare could answer "who is better" for a single row but not "how does that answer move across `kv_len` scale" without reopening raw artifacts or parsing scenario labels.
+- fresh focused verification evidence:
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `26 passed`
+- interpretation:
+  - the `SPEC-14/15` compare loop is now stronger at both row level and scale-bucket level
+  - the most concrete remaining `SPEC-15` eval gap is now token-latency decomposition rather than missing `kv_len` aggregation
+
+## 2026-03-21 SPEC-15 Decode Token-Latency Decomposition Checkpoint
+
+- `PhaseDCompareReport` now exposes a dedicated decode token-latency decomposition summary instead of requiring analysts to infer latency movement from scattered phase rows.
+- this slice bundled two focused compare-closure upgrades:
+  - added top-level `decode_latency_decomposition_summary`
+  - decomposition now aggregates decode phase deltas across `projection` / `kv_io` / `attention` / `sync` / `other`, preserving average cycle deltas, average cycle-share deltas, and the dominant phase
+- this closes one concrete `SPEC-15` blocker-supporting gap where decode compare could already answer "who is better" and "how that answer moves across `kv_len`", but still could not directly answer "which token-latency phase is driving the change" from the standalone compare artifact.
+- fresh focused verification evidence:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `15 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `26 passed`
+- interpretation:
+  - the decode side of `SPEC-15` now has row verdicts, structured `kv_len` aggregation, and direct token-latency decomposition in the compare artifact itself
+  - the next best blocker-facing follow-on should move back toward the remaining `SPEC-14` / cross-mode compare gaps rather than reopening decode top-level summaries again
+
+## 2026-03-21 SPEC-14 Prefill Layer Decomposition Checkpoint
+
+- `PhaseDCompareReport` now exposes a dedicated prefill layer decomposition summary instead of leaving prefill layer movement trapped inside per-row `layer_deltas` and `fitted_layer_deltas`.
+- this slice bundled two focused compare-closure upgrades:
+  - added top-level `prefill_layer_decomposition_summary`
+  - the summary now aggregates prefill layer deltas across compares, preserving average estimated-cycle deltas, average cycle-share deltas, average fitted-work deltas, average fitted-cycle-share deltas, and dominant estimated/fitted layer ids
+- this closes one concrete `SPEC-14` blocker-supporting gap where prefill compare could already show layer rows inside individual scenarios, but the standalone compare artifact still could not directly answer which layer movement was dominant across the current prefill compare set.
+- fresh focused verification evidence:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `16 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `27 passed`
+- interpretation:
+  - the prefill side of `SPEC-14` now has row verdicts plus a summary-grade layer decomposition surface in the standalone compare artifact
+  - the remaining `SPEC-14/15` gaps should now be judged more against cross-mode / broader compare closure than against missing decode or prefill top-level summaries
+
+## 2026-03-21 SPEC-14/15 Cross-Mode Compare Closure Checkpoint
+
+- `PhaseDCompareReport` now exposes top-level `cross_mode_summaries`, grouping prefill/decode compare rows by shared baseline/candidate/profile-diff context.
+- this slice adds one focused cross-mode closure surface without reopening upstream report contracts:
+  - each cross-mode summary now carries `prefill_compare_count` and `decode_compare_count`
+  - each summary now records `alignment_verdict` and `shared_preferred_target_profile_name`
+  - each summary now preserves per-mode `primary_metric`, averaged `primary_metric_delta`, and `primary_phase`
+- this closes one concrete `SPEC-14/15` blocker-facing gap where standalone compare artifacts could already answer prefill-only or decode-only questions, but still could not directly answer whether both modes preferred the same target for the same profile delta.
+- fresh focused verification evidence:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `17 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `28 passed`
+- interpretation:
+  - the standalone `SPEC-14/15` compare artifact can now answer "who is better", "how that answer changes with `kv_len`", "which decode phase dominates", "which prefill layer dominates", and "whether prefill/decode agree for the same candidate target"
+  - the next best `M3` follow-on should shift from adding more top-level compare summaries toward a residual blocker audit of whatever still genuinely requires raw artifact reopening
+
+## 2026-03-21 SPEC-14/15 Residual Blocker Audit Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-14-15-residual-blocker-audit.md`
+- audit result: `close-enough`
+- decision:
+  - the current `SPEC-14/15` eval-compare closure lane no longer needs another default top-level compare-summary slice
+  - the main analyst decision path can now stay on `PhaseDCompareReport` instead of reopening raw prefill/decode artifacts
+- what still remains, but no longer belongs to this lane:
+  - scenario-specific anomaly root-cause still may drop into raw artifacts
+  - deeper estimator trust/fidelity remains `SPEC-13` work
+  - richer compare/workspace drill-down remains `SPEC-16` consumer work
+- next-lane interpretation:
+  - the dominant remaining `M3` blocker should now shift back to `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation
+  - follow-on `SPEC-16` work should stay narrowly attached to consuming the current compare artifact rather than reopening `SPEC-14/15` compare closure
 
 ## Current Next Slice
 
 - `M3`
   - freeze the current recommendation-detail branch as a practical stop-line
   - execute `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` as the handoff artifact for broader blocker reclassification
-  - keep `SPEC-14/15` eval-compare closure as the dominant remaining blocker lane
-  - finish broad keep-green reconfirmation for the new verdict-summary slice, then decide whether one more eval-compare follow-on or a narrow `SPEC-16` consumer slice is next
+  - treat the current `SPEC-14/15` eval-compare closure lane as practically closed for the main decision path
+  - treat the current verdict-summary plus decode `kv_len` aggregation plus decode token-latency decomposition plus prefill layer decomposition plus cross-mode compare closure slices as revalidated and landed
+  - shift the next focused follow-on toward `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation now that the main standalone compare closure questions are answered without reopening raw artifacts
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

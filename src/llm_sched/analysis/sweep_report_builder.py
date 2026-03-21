@@ -124,6 +124,7 @@ def build_sweep_delta_report(
             comparisons.append(
                 SweepComparison(
                     scenario_name=scenario_name,
+                    kv_len=int(getattr(candidate_run, "kv_len", getattr(baseline_run, "kv_len", 0)) or 0),
                     mode=mode,
                     baseline_target_profile_name=baseline_target_profile_name,
                     candidate_target_profile_name=candidate_run.target_profile_name,

@@ -45,6 +45,80 @@ class PhaseDCompareModeSummary(BaseModel):
     neutral_count: int = Field(ge=0, default=0)
 
 
+class PhaseDDecodeKVLenSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kv_len: int = Field(ge=0)
+    compare_count: int = Field(ge=0, default=0)
+    candidate_better_count: int = Field(ge=0, default=0)
+    baseline_better_count: int = Field(ge=0, default=0)
+    mixed_count: int = Field(ge=0, default=0)
+    neutral_count: int = Field(ge=0, default=0)
+    preferred_target_profile_name: str = ""
+    avg_critical_path_cycles_per_token_delta: float = 0.0
+    avg_kv_related_cycle_share_delta: float = 0.0
+
+
+class PhaseDDecodeLatencyPhaseEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    phase_name: Literal["projection", "kv_io", "attention", "sync", "other"]
+    avg_cycles_delta: float = 0.0
+    avg_cycle_share_delta: float = 0.0
+
+
+class PhaseDDecodeLatencyDecompositionSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    compare_count: int = Field(ge=0, default=0)
+    dominant_phase: str = ""
+    phase_entries: list[PhaseDDecodeLatencyPhaseEntry] = Field(default_factory=list)
+
+
+class PhaseDPrefillLayerDecompositionEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    layer_id: int = Field(ge=0)
+    avg_delta_cycles: float = 0.0
+    avg_delta_cycle_share: float = 0.0
+    avg_delta_fitted_work_cycles: float = 0.0
+    avg_delta_fitted_cycle_share: float = 0.0
+
+
+class PhaseDPrefillLayerDecompositionSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    compare_count: int = Field(ge=0, default=0)
+    dominant_estimated_layer_id: int | None = None
+    dominant_fitted_layer_id: int | None = None
+    layer_entries: list[PhaseDPrefillLayerDecompositionEntry] = Field(default_factory=list)
+
+
+class PhaseDCrossModeCompareSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    baseline_target_profile_name: str
+    candidate_target_profile_name: str
+    profile_diff_fields: list[str] = Field(default_factory=list)
+    prefill_compare_count: int = Field(ge=0, default=0)
+    decode_compare_count: int = Field(ge=0, default=0)
+    alignment_verdict: Literal[
+        "aligned-candidate-better",
+        "aligned-baseline-better",
+        "mixed",
+        "neutral",
+        "prefill-only",
+        "decode-only",
+    ] = "neutral"
+    shared_preferred_target_profile_name: str = ""
+    prefill_primary_metric: str = ""
+    prefill_primary_metric_delta: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    prefill_primary_phase: str = ""
+    decode_primary_metric: str = ""
+    decode_primary_metric_delta: SweepScalarDelta = Field(default_factory=_zero_scalar_delta)
+    decode_primary_phase: str = ""
+
+
 class PhaseDPrefillCompareRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -248,6 +322,7 @@ class PhaseDDecodeCompareRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     scenario_name: str
+    kv_len: int = Field(ge=0, default=0)
     baseline_target_profile_name: str
     candidate_target_profile_name: str
     baseline_schedule_kind: Literal["single-core", "dual-core"]
@@ -455,6 +530,14 @@ class PhaseDCompareReport(BaseModel):
     decode_compare_count: int = Field(ge=0)
     prefill_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
     decode_summary: PhaseDCompareModeSummary = Field(default_factory=PhaseDCompareModeSummary)
+    decode_kv_len_summaries: list[PhaseDDecodeKVLenSummary] = Field(default_factory=list)
+    decode_latency_decomposition_summary: PhaseDDecodeLatencyDecompositionSummary = Field(
+        default_factory=PhaseDDecodeLatencyDecompositionSummary
+    )
+    prefill_layer_decomposition_summary: PhaseDPrefillLayerDecompositionSummary = Field(
+        default_factory=PhaseDPrefillLayerDecompositionSummary
+    )
+    cross_mode_summaries: list[PhaseDCrossModeCompareSummary] = Field(default_factory=list)
     prefill_compares: list[PhaseDPrefillCompareRow] = Field(default_factory=list)
     decode_compares: list[PhaseDDecodeCompareRow] = Field(default_factory=list)
     issues: list[SweepIssue] = Field(default_factory=list)

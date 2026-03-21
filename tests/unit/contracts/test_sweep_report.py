@@ -49,6 +49,7 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
                     "target_profile_name": "riscv_npu_single_core_v1",
                     "target_profile_path": "profiles/targets/riscv_npu_single_core_v1.json",
                     "scenario_name": "prefill_seq128",
+                    "kv_len": 0,
                     "mode": "prefill",
                     "schedule_kind": "single-core",
                     "status": "completed",
@@ -90,6 +91,7 @@ def test_sweep_delta_report_tracks_runs_comparisons_and_issues() -> None:
             "comparisons": [
                 {
                     "scenario_name": "prefill_seq128",
+                    "kv_len": 0,
                     "mode": "prefill",
                     "baseline_target_profile_name": "riscv_npu_single_core_v1",
                     "candidate_target_profile_name": "riscv_npu_dual_core_v1",

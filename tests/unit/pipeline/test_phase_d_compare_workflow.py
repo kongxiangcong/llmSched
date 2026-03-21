@@ -26,10 +26,21 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
     assert report.prefill_summary.candidate_better_count == 1
     assert report.decode_summary.compare_count == 1
     assert report.decode_summary.candidate_better_count == 1
+    assert report.decode_kv_len_summaries[0].kv_len == 2048
+    assert report.decode_kv_len_summaries[0].preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.decode_latency_decomposition_summary.dominant_phase == "projection"
+    assert report.prefill_layer_decomposition_summary.dominant_estimated_layer_id == 0
+    assert report.cross_mode_summaries[0].alignment_verdict == "aligned-candidate-better"
+    assert report.cross_mode_summaries[0].shared_preferred_target_profile_name == "riscv_npu_dual_core_v1"
     prefill_payload = report.prefill_compares[0].model_dump(mode="json")
     decode_payload = report.decode_compares[0].model_dump(mode="json")
+    report_payload = report.model_dump(mode="json")
+    assert "kv_len" in decode_payload
     assert "verdict_summary" in prefill_payload
     assert "verdict_summary" in decode_payload
+    assert "cross_mode_summaries" in report_payload
+    assert "decode_latency_decomposition_summary" in report_payload
+    assert "prefill_layer_decomposition_summary" in report_payload
     assert "fitted_work_cycles" in prefill_payload
     assert "tokens_per_fitted_work_cycle" in prefill_payload
     assert "projection_fitted_work_cycles" in prefill_payload
@@ -150,6 +161,7 @@ def test_run_phase_d_compare_writes_report(tmp_path: Path) -> None:
         -0.0289575289
     )
     assert report.decode_compares[0].critical_path_cycles.delta_value == -640.0
+    assert report.decode_compares[0].kv_len == 2048
 
 
 def test_run_phase_d_compare_preserves_fitted_hotspot_and_layer_compare_rows(tmp_path: Path) -> None:
@@ -908,6 +920,7 @@ def _sweep_report_payload() -> dict[str, object]:
             },
             {
                 "scenario_name": "decode_token1_kv2048",
+                "kv_len": 2048,
                 "mode": "decode",
                 "baseline_target_profile_name": "riscv_npu_single_core_v1",
                 "candidate_target_profile_name": "riscv_npu_dual_core_v1",

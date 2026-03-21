@@ -178,3 +178,23 @@ Change the roadmap and README wording so the current next slice is:
   - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q`
 - focused add-on proof to define in the next slice:
   - one targeted `SPEC-14/15` compare/evaluation command or pytest selection tied directly to the chosen eval-compare closure task
+
+## Follow-Up Audit Update (2026-03-21, after `SPEC-14/15` cross-mode closure)
+
+### Result
+
+- the focused `SPEC-14/15` eval-compare closure lane now passes its practical stop-line
+- row verdicts, decode `kv_len` aggregation, decode token-latency decomposition, prefill layer decomposition, and cross-mode compare closure now collectively answer the main analyst decision path from standalone compare artifacts
+
+### Reclassified Dominant Remaining Lane
+
+- updated dominant lane: `SPEC-13` deeper cycle fitting plus compare-grade estimator aggregation
+- why it moves:
+  - the previous `SPEC-14/15` closure question is now answered with `yes`
+  - the next real uncertainty is no longer “can compare artifacts summarize eval outputs”, but “is the estimator surface itself deep and trustworthy enough for the remaining compare/recommendation loop”
+
+### What Stays Frozen
+
+- do not reopen the current `SPEC-14/15` compare-closure lane by default
+- do not reopen the frozen `SPEC-16` recommendation-detail branch
+- keep `SPEC-19` classified as downstream polish only

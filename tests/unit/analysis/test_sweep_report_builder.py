@@ -665,6 +665,7 @@ def test_build_sweep_delta_report_emits_fitted_node_and_layer_compare_rows() -> 
     assert fitted_layer_delta.delta_bytes_ratio == pytest.approx(-32768.0 / 131072.0)
     assert fitted_layer_delta.change_direction == "down"
     assert decode_comparison.decode_compare is not None
+    assert decode_comparison.kv_len == 2048
     assert decode_comparison.decode_compare.estimated_cycles.delta_value == -400.0
     assert decode_comparison.decode_compare.critical_path_cycles.delta_value == -640.0
     assert decode_comparison.decode_compare.fitted_work_cycles.delta_value == -400.0
@@ -956,6 +957,37 @@ def test_build_sweep_delta_report_surfaces_failures_and_missing_baselines() -> N
     assert issue_codes == ["run_failed", "missing_baseline"]
 
 
+def test_build_sweep_delta_report_carries_decode_kv_len_from_run_records() -> None:
+    from llm_sched.analysis import build_sweep_delta_report
+
+    report = build_sweep_delta_report(
+        "phase-d-foundation",
+        "riscv_npu_single_core_v1",
+        [
+            _completed_decode_run(
+                "riscv_npu_single_core_v1",
+                "single-core",
+                3200.0,
+                900.0,
+            ),
+            _completed_decode_run(
+                "riscv_npu_dual_core_v1",
+                "dual-core",
+                2800.0,
+                700.0,
+            ),
+        ],
+        {
+            "riscv_npu_dual_core_v1": ["core_mode", "num_cores"],
+        },
+    )
+
+    assert all(run.kv_len == 2048 for run in report.run_records)
+    decode_comparison = report.comparisons[0]
+    assert decode_comparison.mode == "decode"
+    assert decode_comparison.kv_len == 2048
+
+
 def _completed_prefill_run(
     target_profile_name: str,
     schedule_kind: str,
@@ -1228,6 +1260,7 @@ def _completed_decode_run(
     estimated_cycles: float,
     kvload_cycles: float,
     *,
+    kv_len: int = 2048,
     layer_rows: list[dict[str, float | int]] | None = None,
     node_rows: list[dict[str, object]] | None = None,
 ) -> SweepRunRecord:
@@ -1238,6 +1271,7 @@ def _completed_decode_run(
             "target_profile_name": target_profile_name,
             "target_profile_path": f"profiles/targets/{target_profile_name}.json",
             "scenario_name": "decode_token1_kv2048",
+            "kv_len": kv_len,
             "mode": "decode",
             "schedule_kind": schedule_kind,
             "status": "completed",

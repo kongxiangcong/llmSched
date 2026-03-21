@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from llm_sched.contracts.phase_d_compare_report import (
+    PhaseDCrossModeCompareSummary,
     PhaseDCompareReport,
+    PhaseDDecodeLatencyDecompositionSummary,
+    PhaseDDecodeLatencyPhaseEntry,
+    PhaseDDecodeKVLenSummary,
     PhaseDCompareModeSummary,
     PhaseDCompareVerdictSummary,
     PhaseDDecodeCompareRow,
+    PhaseDPrefillLayerDecompositionEntry,
+    PhaseDPrefillLayerDecompositionSummary,
     PhaseDPrefillCompareRow,
 )
 from llm_sched.contracts.sweep_report import SweepDeltaReport, SweepScalarDelta
@@ -72,6 +78,11 @@ def build_phase_d_compare_report(
 ) -> PhaseDCompareReport:
     prefill_compares: list[PhaseDPrefillCompareRow] = []
     decode_compares: list[PhaseDDecodeCompareRow] = []
+    prefill_source_compares = [
+        comparison
+        for comparison in sweep_report.comparisons
+        if comparison.mode == "prefill" and comparison.prefill_compare is not None
+    ]
 
     for comparison in sweep_report.comparisons:
         if comparison.mode == "prefill" and comparison.prefill_compare is not None:
@@ -152,6 +163,7 @@ def build_phase_d_compare_report(
             decode_compares.append(
                 PhaseDDecodeCompareRow(
                     scenario_name=comparison.scenario_name,
+                    kv_len=int(getattr(comparison, "kv_len", 0) or 0),
                     baseline_target_profile_name=comparison.baseline_target_profile_name,
                     candidate_target_profile_name=comparison.candidate_target_profile_name,
                     baseline_schedule_kind=comparison.decode_compare.baseline_schedule_kind,
@@ -233,6 +245,14 @@ def build_phase_d_compare_report(
         decode_compare_count=len(decode_compares),
         prefill_summary=_build_mode_summary(prefill_compares),
         decode_summary=_build_mode_summary(decode_compares),
+        decode_kv_len_summaries=_build_decode_kv_len_summaries(decode_compares),
+        decode_latency_decomposition_summary=_build_decode_latency_decomposition_summary(
+            decode_compares
+        ),
+        prefill_layer_decomposition_summary=_build_prefill_layer_decomposition_summary(
+            prefill_source_compares
+        ),
+        cross_mode_summaries=_build_cross_mode_summaries(prefill_compares, decode_compares),
         prefill_compares=prefill_compares,
         decode_compares=decode_compares,
         issues=list(sweep_report.issues),
@@ -248,6 +268,203 @@ def _build_mode_summary(compares) -> PhaseDCompareModeSummary:
         mixed_count=verdicts.count("mixed"),
         neutral_count=verdicts.count("neutral"),
     )
+
+
+def _build_decode_kv_len_summaries(
+    decode_compares: list[PhaseDDecodeCompareRow],
+) -> list[PhaseDDecodeKVLenSummary]:
+    grouped: dict[int, list[PhaseDDecodeCompareRow]] = {}
+    for row in decode_compares:
+        grouped.setdefault(int(getattr(row, "kv_len", 0) or 0), []).append(row)
+
+    summaries: list[PhaseDDecodeKVLenSummary] = []
+    for kv_len in sorted(grouped):
+        rows = grouped[kv_len]
+        verdicts = [row.verdict_summary.verdict for row in rows]
+        preferred_targets = {row.verdict_summary.preferred_target_profile_name for row in rows if row.verdict_summary.preferred_target_profile_name}
+        summaries.append(
+            PhaseDDecodeKVLenSummary(
+                kv_len=kv_len,
+                compare_count=len(rows),
+                candidate_better_count=verdicts.count("candidate-better"),
+                baseline_better_count=verdicts.count("baseline-better"),
+                mixed_count=verdicts.count("mixed"),
+                neutral_count=verdicts.count("neutral"),
+                preferred_target_profile_name=preferred_targets.pop() if len(preferred_targets) == 1 else "",
+                avg_critical_path_cycles_per_token_delta=sum(
+                    row.critical_path_cycles_per_token.delta_value for row in rows
+                )
+                / len(rows),
+                avg_kv_related_cycle_share_delta=sum(
+                    row.kv_related_cycle_share.delta_value for row in rows
+                )
+                / len(rows),
+            )
+        )
+    return summaries
+
+
+def _build_decode_latency_decomposition_summary(
+    decode_compares: list[PhaseDDecodeCompareRow],
+) -> PhaseDDecodeLatencyDecompositionSummary:
+    if not decode_compares:
+        return PhaseDDecodeLatencyDecompositionSummary()
+
+    phase_entries = [
+        PhaseDDecodeLatencyPhaseEntry(
+            phase_name=phase_name,
+            avg_cycles_delta=sum(
+                _field(row, f"{phase_name}_cycles").delta_value for row in decode_compares
+            )
+            / len(decode_compares),
+            avg_cycle_share_delta=sum(
+                _field(row, f"{phase_name}_cycle_share").delta_value for row in decode_compares
+            )
+            / len(decode_compares),
+        )
+        for phase_name in _PHASE_COMPARE_NAMES
+    ]
+    ordered_entries = sorted(
+        phase_entries,
+        key=lambda entry: (-abs(entry.avg_cycles_delta), _PHASE_COMPARE_NAMES.index(entry.phase_name)),
+    )
+    return PhaseDDecodeLatencyDecompositionSummary(
+        compare_count=len(decode_compares),
+        dominant_phase=ordered_entries[0].phase_name if ordered_entries else "",
+        phase_entries=ordered_entries,
+    )
+
+
+def _build_prefill_layer_decomposition_summary(
+    prefill_compares,
+) -> PhaseDPrefillLayerDecompositionSummary:
+    if not prefill_compares:
+        return PhaseDPrefillLayerDecompositionSummary()
+
+    grouped: dict[int, dict[str, list[float]]] = {}
+    for row in prefill_compares:
+        fitted_lookup = {
+            int(_field(layer, "layer_id")): layer for layer in getattr(row, "fitted_layer_deltas", [])
+        }
+        layer_ids = {
+            int(_field(layer, "layer_id")) for layer in getattr(row, "layer_deltas", [])
+        } | set(fitted_lookup)
+        for layer_id in layer_ids:
+            estimated_layer = next(
+                (
+                    layer
+                    for layer in getattr(row, "layer_deltas", [])
+                    if int(_field(layer, "layer_id")) == layer_id
+                ),
+                None,
+            )
+            fitted_layer = fitted_lookup.get(layer_id)
+            stats = grouped.setdefault(
+                layer_id,
+                {
+                    "delta_cycles": [],
+                    "delta_cycle_share": [],
+                    "delta_fitted_work_cycles": [],
+                    "delta_fitted_cycle_share": [],
+                },
+            )
+            stats["delta_cycles"].append(float(_field(estimated_layer, "delta_cycles", 0.0)))
+            stats["delta_cycle_share"].append(float(_field(estimated_layer, "delta_cycle_share", 0.0)))
+            stats["delta_fitted_work_cycles"].append(
+                float(_field(fitted_layer, "delta_fitted_work_cycles", 0.0))
+            )
+            stats["delta_fitted_cycle_share"].append(
+                float(_field(fitted_layer, "delta_fitted_cycle_share", 0.0))
+            )
+
+    entries = [
+        PhaseDPrefillLayerDecompositionEntry(
+            layer_id=layer_id,
+            avg_delta_cycles=sum(stats["delta_cycles"]) / len(stats["delta_cycles"]),
+            avg_delta_cycle_share=sum(stats["delta_cycle_share"]) / len(stats["delta_cycle_share"]),
+            avg_delta_fitted_work_cycles=sum(stats["delta_fitted_work_cycles"])
+            / len(stats["delta_fitted_work_cycles"]),
+            avg_delta_fitted_cycle_share=sum(stats["delta_fitted_cycle_share"])
+            / len(stats["delta_fitted_cycle_share"]),
+        )
+        for layer_id, stats in grouped.items()
+    ]
+    ordered_entries = sorted(entries, key=lambda entry: (-abs(entry.avg_delta_cycles), entry.layer_id))
+    dominant_estimated = max(entries, key=lambda entry: abs(entry.avg_delta_cycles)).layer_id if entries else None
+    dominant_fitted = (
+        max(entries, key=lambda entry: abs(entry.avg_delta_fitted_work_cycles)).layer_id
+        if entries
+        else None
+    )
+    return PhaseDPrefillLayerDecompositionSummary(
+        compare_count=len(prefill_compares),
+        dominant_estimated_layer_id=dominant_estimated,
+        dominant_fitted_layer_id=dominant_fitted,
+        layer_entries=ordered_entries,
+    )
+
+
+def _build_cross_mode_summaries(
+    prefill_compares: list[PhaseDPrefillCompareRow],
+    decode_compares: list[PhaseDDecodeCompareRow],
+) -> list[PhaseDCrossModeCompareSummary]:
+    grouped: dict[tuple[str, str, tuple[str, ...]], dict[str, list[object]]] = {}
+
+    for row in prefill_compares:
+        key = (
+            row.baseline_target_profile_name,
+            row.candidate_target_profile_name,
+            tuple(row.profile_diff_fields),
+        )
+        grouped.setdefault(key, {"prefill": [], "decode": []})["prefill"].append(row)
+
+    for row in decode_compares:
+        key = (
+            row.baseline_target_profile_name,
+            row.candidate_target_profile_name,
+            tuple(row.profile_diff_fields),
+        )
+        grouped.setdefault(key, {"prefill": [], "decode": []})["decode"].append(row)
+
+    summaries: list[PhaseDCrossModeCompareSummary] = []
+    for key in sorted(grouped, key=lambda item: (item[0], item[1], item[2])):
+        baseline_target_profile_name, candidate_target_profile_name, profile_diff_fields = key
+        bucket = grouped[key]
+        prefill_rows = bucket["prefill"]
+        decode_rows = bucket["decode"]
+        prefill_preferred = _shared_preferred_target_profile_name(prefill_rows)
+        decode_preferred = _shared_preferred_target_profile_name(decode_rows)
+        summaries.append(
+            PhaseDCrossModeCompareSummary(
+                baseline_target_profile_name=baseline_target_profile_name,
+                candidate_target_profile_name=candidate_target_profile_name,
+                profile_diff_fields=list(profile_diff_fields),
+                prefill_compare_count=len(prefill_rows),
+                decode_compare_count=len(decode_rows),
+                alignment_verdict=_cross_mode_alignment_verdict(
+                    baseline_target_profile_name=baseline_target_profile_name,
+                    candidate_target_profile_name=candidate_target_profile_name,
+                    prefill_rows=prefill_rows,
+                    decode_rows=decode_rows,
+                    prefill_preferred_target=prefill_preferred,
+                    decode_preferred_target=decode_preferred,
+                ),
+                shared_preferred_target_profile_name=(
+                    prefill_preferred if prefill_preferred and prefill_preferred == decode_preferred else ""
+                ),
+                prefill_primary_metric=_shared_primary_metric(prefill_rows),
+                prefill_primary_metric_delta=_average_scalar_delta(
+                    [row.verdict_summary.primary_metric_delta for row in prefill_rows]
+                ),
+                prefill_primary_phase=_shared_primary_phase(prefill_rows),
+                decode_primary_metric=_shared_primary_metric(decode_rows),
+                decode_primary_metric_delta=_average_scalar_delta(
+                    [row.verdict_summary.primary_metric_delta for row in decode_rows]
+                ),
+                decode_primary_phase=_shared_primary_phase(decode_rows),
+            )
+        )
+    return summaries
 
 
 def _build_prefill_verdict_summary(comparison) -> PhaseDCompareVerdictSummary:
@@ -310,6 +527,61 @@ def _preferred_target_profile_name(
     if metric.delta_value > 0.0:
         return baseline_target_profile_name
     return ""
+
+
+def _shared_preferred_target_profile_name(rows) -> str:
+    preferred_targets = {
+        row.verdict_summary.preferred_target_profile_name
+        for row in rows
+        if row.verdict_summary.preferred_target_profile_name
+    }
+    return preferred_targets.pop() if len(preferred_targets) == 1 else ""
+
+
+def _shared_primary_metric(rows) -> str:
+    metric_names = {row.verdict_summary.primary_metric for row in rows if row.verdict_summary.primary_metric}
+    return metric_names.pop() if len(metric_names) == 1 else ""
+
+
+def _shared_primary_phase(rows) -> str:
+    phase_names = {row.verdict_summary.primary_phase for row in rows if row.verdict_summary.primary_phase}
+    return phase_names.pop() if len(phase_names) == 1 else ""
+
+
+def _average_scalar_delta(deltas: list[SweepScalarDelta]) -> SweepScalarDelta:
+    if not deltas:
+        return _zero_scalar_delta()
+    return SweepScalarDelta(
+        baseline_value=sum(delta.baseline_value for delta in deltas) / len(deltas),
+        candidate_value=sum(delta.candidate_value for delta in deltas) / len(deltas),
+        delta_value=sum(delta.delta_value for delta in deltas) / len(deltas),
+        delta_ratio=sum(delta.delta_ratio for delta in deltas) / len(deltas),
+    )
+
+
+def _cross_mode_alignment_verdict(
+    *,
+    baseline_target_profile_name: str,
+    candidate_target_profile_name: str,
+    prefill_rows,
+    decode_rows,
+    prefill_preferred_target: str,
+    decode_preferred_target: str,
+) -> str:
+    if prefill_rows and not decode_rows:
+        return "prefill-only"
+    if decode_rows and not prefill_rows:
+        return "decode-only"
+    if not prefill_rows and not decode_rows:
+        return "neutral"
+    if not prefill_preferred_target and not decode_preferred_target:
+        return "neutral"
+    if prefill_preferred_target and prefill_preferred_target == decode_preferred_target:
+        if prefill_preferred_target == candidate_target_profile_name:
+            return "aligned-candidate-better"
+        if prefill_preferred_target == baseline_target_profile_name:
+            return "aligned-baseline-better"
+    return "mixed"
 
 
 def _dominant_prefill_phase(compare_summary) -> str:

@@ -220,8 +220,83 @@ If verification is green, record that:
   - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `14 passed`
   - `python -m pytest tests/unit/visualization/test_catalog_builder.py tests/unit/visualization/test_workbench_builder.py tests/unit/pipeline/test_visualization_catalog_workflow.py tests/unit/pipeline/test_visualization_workbench_workflow.py tests/smoke/test_cli_run_visualization_catalog.py tests/smoke/test_cli_run_visualization_workbench.py -q` -> `28 passed`
 - broader keep-green rerun status:
-  - `python -m pytest tests/smoke -m local_smoke -q` -> timed out in this session
-  - `python -m pytest tests/smoke -m milestone_matrix -q` -> timed out in this session
+  - `python -m pytest tests/smoke -m local_smoke -q` -> `11 passed, 70 deselected`
+  - `python -m pytest tests/smoke -m milestone_matrix -q` -> `11 passed, 70 deselected`
 - current interpretation:
-  - the focused `SPEC-14/15` eval-compare verdict slice is implemented and verified on its direct regression surface
-  - broader smoke reconfirmation still needs a separate rerun before claiming the wider keep-green line was freshly revalidated in this session
+  - the focused `SPEC-14/15` eval-compare verdict slice is implemented and now freshly revalidated across its direct regression surface plus broader keep-green smoke selections
+  - this closes the current verdict-summary slice cleanly, but does not by itself mark all remaining `SPEC-14/15` gaps as done
+
+## Execution Record Update (2026-03-21, decode `kv_len` aggregation)
+
+- implemented:
+  - `SweepRunRecord` and `SweepComparison` now preserve structured `kv_len`
+  - `PhaseDDecodeCompareRow` now forwards `kv_len`
+  - `PhaseDCompareReport` now exposes `decode_kv_len_summaries`
+  - decode `kv_len` summaries now aggregate:
+    - compare count
+    - verdict counts
+    - preferred target hint
+    - average `critical_path_cycles_per_token` delta
+    - average `kv_related_cycle_share` delta
+- fresh focused verification:
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `26 passed`
+- updated interpretation:
+  - the eval-compare closure lane now covers both row-level verdicts and structured decode scale aggregation
+  - the most concrete remaining `SPEC-15` gap has narrowed to token-latency decomposition rather than missing `kv_len` sweep aggregation
+
+## Execution Record Update (2026-03-21, decode token-latency decomposition)
+
+- implemented:
+  - `PhaseDCompareReport` now exposes `decode_latency_decomposition_summary`
+  - the summary aggregates decode phase deltas across:
+    - `projection`
+    - `kv_io`
+    - `attention`
+    - `sync`
+    - `other`
+  - the summary now carries:
+    - `compare_count`
+    - `dominant_phase`
+    - ordered phase entries with average cycle delta and average cycle-share delta
+- fresh focused verification:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `15 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `26 passed`
+- updated interpretation:
+  - the decode side of `SPEC-15` now has direct row verdicts, structured `kv_len` aggregation, and explicit token-latency decomposition inside standalone compare artifacts
+  - the next most concrete blocker-facing gap should shift back toward remaining `SPEC-14` / cross-mode compare closure rather than more decode top-level summary expansion
+
+## Execution Record Update (2026-03-21, prefill layer decomposition)
+
+- implemented:
+  - `PhaseDCompareReport` now exposes `prefill_layer_decomposition_summary`
+  - the summary aggregates prefill layer movement across compares and now carries:
+    - `compare_count`
+    - `dominant_estimated_layer_id`
+    - `dominant_fitted_layer_id`
+    - ordered layer entries with average estimated/fitted delta and share movement
+- fresh focused verification:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `16 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `27 passed`
+- updated interpretation:
+  - the prefill side of `SPEC-14` now has both row-level compare surfaces and summary-grade layer decomposition in standalone compare artifacts
+  - the next most concrete gap should shift toward cross-mode compare closure rather than more top-level prefill/decode summary additions
+
+## Execution Record Update (2026-03-21, cross-mode compare closure)
+
+- implemented:
+  - `PhaseDCompareReport` now exposes `cross_mode_summaries`
+  - each cross-mode summary groups compare rows by shared baseline/candidate/profile-diff context
+  - each summary now carries:
+    - `prefill_compare_count`
+    - `decode_compare_count`
+    - `alignment_verdict`
+    - `shared_preferred_target_profile_name`
+    - per-mode `primary_metric`
+    - averaged per-mode `primary_metric_delta`
+    - per-mode `primary_phase`
+- fresh focused verification:
+  - `python -m pytest tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `17 passed`
+  - `python -m pytest tests/unit/contracts/test_sweep_report.py tests/unit/contracts/test_phase_d_compare_report.py tests/unit/analysis/test_sweep_report_builder.py tests/unit/analysis/test_phase_d_compare_report_builder.py tests/unit/pipeline/test_phase_d_compare_workflow.py tests/smoke/test_cli_run_phase_d_compare.py -q` -> `28 passed`
+- updated interpretation:
+  - the standalone compare artifact can now answer cross-mode agreement for the same target-profile delta instead of forcing analysts back into separate prefill/decode reports
+  - the next most concrete gap should shift from adding more top-level compare summaries toward auditing whether any residual blocker still requires raw artifact reopening

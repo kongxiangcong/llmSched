@@ -75,6 +75,7 @@ class SweepRunRecord(BaseModel):
     target_profile_name: str
     target_profile_path: str
     scenario_name: str
+    kv_len: int = Field(ge=0, default=0)
     mode: Literal["prefill", "decode"]
     schedule_kind: Literal["single-core", "dual-core"]
     status: Literal["completed", "failed"]
@@ -596,6 +597,7 @@ class SweepComparison(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     scenario_name: str
+    kv_len: int = Field(ge=0, default=0)
     mode: Literal["prefill", "decode"]
     baseline_target_profile_name: str
     candidate_target_profile_name: str

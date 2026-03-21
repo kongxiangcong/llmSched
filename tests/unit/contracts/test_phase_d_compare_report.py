@@ -28,6 +28,88 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
                 "mixed_count": 0,
                 "neutral_count": 0,
             },
+            "decode_kv_len_summaries": [
+                {
+                    "kv_len": 2048,
+                    "compare_count": 1,
+                    "candidate_better_count": 1,
+                    "baseline_better_count": 0,
+                    "mixed_count": 0,
+                    "neutral_count": 0,
+                    "preferred_target_profile_name": "riscv_npu_dual_core_v1",
+                    "avg_critical_path_cycles_per_token_delta": -640.0,
+                    "avg_kv_related_cycle_share_delta": -0.03125,
+                }
+            ],
+            "decode_latency_decomposition_summary": {
+                "compare_count": 1,
+                "dominant_phase": "projection",
+                "phase_entries": [
+                    {
+                        "phase_name": "projection",
+                        "avg_cycles_delta": -200.0,
+                        "avg_cycle_share_delta": -0.0276785714,
+                    },
+                    {
+                        "phase_name": "kv_io",
+                        "avg_cycles_delta": -200.0,
+                        "avg_cycle_share_delta": -0.03125,
+                    },
+                    {
+                        "phase_name": "attention",
+                        "avg_cycles_delta": 80.0,
+                        "avg_cycle_share_delta": 0.0651785714,
+                    },
+                ],
+            },
+            "prefill_layer_decomposition_summary": {
+                "compare_count": 1,
+                "dominant_estimated_layer_id": 0,
+                "dominant_fitted_layer_id": 0,
+                "layer_entries": [
+                    {
+                        "layer_id": 0,
+                        "avg_delta_cycles": -1024.0,
+                        "avg_delta_cycle_share": -0.0833333333,
+                        "avg_delta_fitted_work_cycles": -1024.0,
+                        "avg_delta_fitted_cycle_share": -0.0634920635,
+                    },
+                    {
+                        "layer_id": 1,
+                        "avg_delta_cycles": 0.0,
+                        "avg_delta_cycle_share": 0.0833333333,
+                        "avg_delta_fitted_work_cycles": 0.0,
+                        "avg_delta_fitted_cycle_share": 0.0,
+                    },
+                ],
+            },
+            "cross_mode_summaries": [
+                {
+                    "baseline_target_profile_name": "riscv_npu_single_core_v1",
+                    "candidate_target_profile_name": "riscv_npu_dual_core_v1",
+                    "profile_diff_fields": ["core_mode", "num_cores"],
+                    "prefill_compare_count": 1,
+                    "decode_compare_count": 1,
+                    "alignment_verdict": "aligned-candidate-better",
+                    "shared_preferred_target_profile_name": "riscv_npu_dual_core_v1",
+                    "prefill_primary_metric": "cycles_per_token",
+                    "prefill_primary_metric_delta": {
+                        "baseline_value": 32.0,
+                        "candidate_value": 24.0,
+                        "delta_value": -8.0,
+                        "delta_ratio": -0.25,
+                    },
+                    "prefill_primary_phase": "attention",
+                    "decode_primary_metric": "critical_path_cycles_per_token",
+                    "decode_primary_metric_delta": {
+                        "baseline_value": 2240.0,
+                        "candidate_value": 1600.0,
+                        "delta_value": -640.0,
+                        "delta_ratio": -0.2857142857,
+                    },
+                    "decode_primary_phase": "kv_io",
+                }
+            ],
             "prefill_compares": [
                 {
                     "scenario_name": "prefill_seq128",
@@ -296,6 +378,7 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
             "decode_compares": [
                 {
                     "scenario_name": "decode_token1_kv2048",
+                    "kv_len": 2048,
                     "baseline_target_profile_name": "riscv_npu_single_core_v1",
                     "candidate_target_profile_name": "riscv_npu_dual_core_v1",
                     "baseline_schedule_kind": "single-core",
@@ -569,10 +652,24 @@ def test_phase_d_compare_report_contract_accepts_prefill_and_decode_sections() -
     assert report.prefill_summary.candidate_better_count == 1
     assert report.decode_summary.compare_count == 1
     assert report.decode_summary.mixed_count == 0
+    assert report.decode_kv_len_summaries[0].kv_len == 2048
+    assert report.decode_kv_len_summaries[0].preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.decode_latency_decomposition_summary.compare_count == 1
+    assert report.decode_latency_decomposition_summary.dominant_phase == "projection"
+    assert report.decode_latency_decomposition_summary.phase_entries[0].phase_name == "projection"
+    assert report.prefill_layer_decomposition_summary.compare_count == 1
+    assert report.prefill_layer_decomposition_summary.dominant_estimated_layer_id == 0
+    assert report.prefill_layer_decomposition_summary.dominant_fitted_layer_id == 0
+    assert report.prefill_layer_decomposition_summary.layer_entries[0].layer_id == 0
+    assert report.cross_mode_summaries[0].alignment_verdict == "aligned-candidate-better"
+    assert report.cross_mode_summaries[0].shared_preferred_target_profile_name == "riscv_npu_dual_core_v1"
+    assert report.cross_mode_summaries[0].prefill_primary_metric == "cycles_per_token"
+    assert report.cross_mode_summaries[0].decode_primary_metric == "critical_path_cycles_per_token"
     assert report.prefill_compares[0].verdict_summary.verdict == "candidate-better"
     assert report.prefill_compares[0].verdict_summary.primary_metric == "cycles_per_token"
     assert report.prefill_compares[0].verdict_summary.primary_phase == "attention"
     assert report.prefill_compares[0].verdict_summary.dominant_layer_id == 0
+    assert report.decode_compares[0].kv_len == 2048
     assert report.decode_compares[0].verdict_summary.primary_metric == "critical_path_cycles_per_token"
     assert report.decode_compares[0].verdict_summary.dominant_node_id == "nig.node.kvload.0"
     assert report.prefill_compares[0].estimated_cycles.delta_value == -1024.0

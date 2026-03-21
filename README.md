@@ -227,6 +227,7 @@ Current active execution plan:
 - roadmap 的 `Current Next Slice`
 - `docs/plans/2026-03-21-m3-close-out-blocker-audit.md`
 - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
+- `docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md`
 - 最新已落盘的 `SPEC-16` execution slices 位于：
   - `docs/plans/2026-03-20-spec-16-*.md`
   - `docs/plans/2026-03-21-spec-16-analysis-flow-candidate-inspection.md`
@@ -298,14 +299,26 @@ Current working interpretation:
   - 推荐把下一条主执行线收敛到 `SPEC-14/15` eval-compare closure，并让后续 `SPEC-16` 只做最小必要消费面
 - 这条主执行线现在已经落成 focused plan：
   - `docs/plans/2026-03-21-spec-14-15-eval-compare-closure.md`
-  - 当前建议先增强 `PhaseDCompareReport` 的 summary-grade verdict / mode summary，而不是先扩 UI
+  - 当前建议继续沿 compare artifact 收口，先补强 `PhaseDCompareReport`，而不是先扩 UI
 - 这条 focused slice 的当前执行结果是：
   - `PhaseDCompareReport` 已补上 row-level `verdict_summary` 和 top-level `prefill_summary` / `decode_summary`
+  - `SweepRunRecord` / `SweepComparison` / `PhaseDDecodeCompareRow` 已补上 structured `kv_len`
+  - `PhaseDCompareReport` 已补上 `decode_kv_len_summaries`
+  - `PhaseDCompareReport` 已补上 `decode_latency_decomposition_summary`
+  - `PhaseDCompareReport` 已补上 `prefill_layer_decomposition_summary`
+  - `PhaseDCompareReport` 已补上 `cross_mode_summaries`
   - focused compare regression 已 fresh 通过：`14 passed`
   - visualization keep-green 已 fresh 通过：`28 passed`
-  - 但 `local_smoke` / `milestone_matrix` 本轮重跑超时，还不能声称更宽的 keep-green 已在这一轮被重新确认
+  - `local_smoke` 已 fresh 通过：`11 passed, 70 deselected`
+  - `milestone_matrix` 已 fresh 通过：`11 passed, 70 deselected`
+  - decode `kv_len` aggregation regression 已 fresh 通过：`26 passed`
+  - decode token-latency decomposition regression 已 fresh 通过：`26 passed`
+  - prefill layer decomposition regression 已 fresh 通过：`27 passed`
+  - cross-mode compare closure regression 已 fresh 通过：`28 passed`
+  - `SPEC-14/15` residual blocker audit 已落盘：`docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md`
+  - 这说明 `SPEC-14/15` 当前已具备 decode 侧的 `kv_len` / token-latency 收口、prefill 侧的 layer decomposition，以及 standalone compare artifact 内的 cross-mode closure；这条 compare-closure 子主线现在可以按 practical stop-line 冻结
 - 当前执行顺序应保持：
 
-1. 先沿 `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` 推进 `SPEC-14/15` eval-compare closure 这条主执行线的收口设计。
+1. 先沿 `docs/plans/2026-03-21-m3-close-out-blocker-audit.md` 和 `docs/plans/2026-03-21-spec-14-15-residual-blocker-audit.md` 收口当前 `M3` blocker 重排。
 2. 继续用 `run-phase-c-gate`、`local_smoke`、`milestone_matrix` 保持 `SPEC-08/09/10/11/12` 绿色。
-3. 仅在上述 compare surface 稳定后，再继续 `SPEC-19` 的下游产品化 polish。
+3. 下一刀优先转回 `SPEC-13` deeper cycle fitting / compare-grade estimator aggregation，而不是回头扩 recommendation-detail、重开当前 `SPEC-14/15` compare closure，或提前做 `SPEC-19` polish。
