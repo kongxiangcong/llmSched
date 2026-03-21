@@ -171,8 +171,9 @@ def _fitted_work_cycle_metrics_for_descriptor(
         else 0.0
     )
     external_bandwidth_floor_cycles = external_read_cycles + external_write_cycles
+    schedule_slack_cycles = max(0.0, schedule_floor - estimated_cycles)
     residual_external_read_stall_cycles = max(0.0, external_read_cycles - estimated_cycles)
-    residual_external_write_stall_cycles = external_write_cycles
+    residual_external_write_stall_cycles = max(0.0, external_write_cycles - schedule_slack_cycles)
     return _build_fit_floor_metrics(
         estimated_cycles=estimated_cycles,
         schedule_floor_cycles=schedule_floor,

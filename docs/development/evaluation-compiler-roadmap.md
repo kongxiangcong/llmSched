@@ -3538,6 +3538,27 @@ graph TD
   - current `SPEC-13` overlap budgeting is no longer symmetric by default; it now distinguishes read-overlap from write-drain behavior
   - the next remaining blocker is finer-grained schedule slack / overlap allocation beyond the current read-overlap plus write-drain rule
 
+## 2026-03-21 SPEC-13 Schedule Slack Write Absorption Checkpoint
+
+- plan doc: `../plans/2026-03-21-spec-13-schedule-slack-write-absorption.md`
+- `SPEC-13` overlap budgeting now introduces the first explicit schedule-slack allocation rule:
+  - `schedule_floor - estimated_cycles` is treated as slack budget
+  - that slack is applied to absorb part of external write drain before it inflates `fitted_work_cycles`
+  - external reads keep the existing overlap budget semantics from the prior slice
+- this slice stays estimator-local:
+  - no new metrics or report contracts
+  - existing fit-gap and fit-floor summaries now simply observe less pessimistic write-heavy fitted-cycle toplines when schedule slack exists
+- new closure evidence:
+  - schedule-slack-aware write cases now preserve `fitted_work_cycles = 80.0` instead of charging the full write drain on top of the schedule floor
+  - mixed read/write cases now preserve `fitted_work_cycles = 128.0` instead of `144.0`
+  - focused `SPEC-13` regression is green:
+    - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
+  - downstream `SPEC-14/15` unit/workflow consumers remain green:
+    - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
+- interpretation:
+  - current `SPEC-13` overlap budgeting now distinguishes compute overlap, write drain, and schedule slack absorption
+  - the next remaining blocker is richer slack-allocation policy beyond this single write-absorption rule
+
 ## Current Next Slice
 
 - `M3`
@@ -3553,7 +3574,8 @@ graph TD
   - treat the current `SPEC-13` shared-DMA bidirectional stall slice as landed
   - treat the current `SPEC-13` fit-floor direction summary slice as landed
   - treat the current `SPEC-13` external write drain overlap slice as landed
-  - shift the next focused follow-on toward finer-grained schedule slack / overlap allocation now that current deeper-cycle math, direction-aware observability, and write-drain overlap budgeting are all in place
+  - treat the current `SPEC-13` schedule slack write absorption slice as landed
+  - shift the next focused follow-on toward richer slack-allocation policy now that current deeper-cycle math, direction-aware observability, write-drain overlap, and first-step schedule slack absorption are all in place
   - keep any follow-on `SPEC-16` work narrowly attached to exposing that stronger eval-compare loop instead of reopening recommendation-detail expansion
 - `SPEC-19`
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place

@@ -1,42 +1,49 @@
-# SPEC-13 External Write Drain Overlap Implementation Plan
+# SPEC-13 Schedule Slack Write Absorption Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Refine `SPEC-13` overlap budgeting by treating external writes as post-compute drain cycles instead of letting `estimated_cycles` absorb them by default.
+**Goal:** Improve `SPEC-13` overlap budgeting by letting schedule slack absorb part of external write drain before it inflates fitted work cycles.
 
-**Architecture:** Keep the change estimator-local. Preserve the current residual external-read overlap model, but split the overlap budget by direction: inbound external reads may consume the compute overlap budget, while outbound external writes are modeled as non-overlapped drain appended after compute. Reuse the current direction-aware floor metrics and summaries rather than adding new contracts.
+**Architecture:** Keep the change estimator-local and narrowly scoped to compute descriptors. Reuse the current direction-aware overlap model, but introduce one extra budget term: `schedule_slack_cycles = max(0.0, schedule_floor_cycles - estimated_cycles)`. Apply that slack only to external write drain, so current read-overlap semantics stay unchanged while write-only or mixed read/write cases become less pessimistic when the schedule already contains idle headroom.
 
 **Tech Stack:** `llm_sched.analysis.descriptor_estimator`, existing perf-report contracts, pytest unit/workflow/smoke regression, Markdown roadmap/README updates
 
 ---
 
-### Task 1: Lock the new external-write-drain behavior with failing estimator tests
+### Task 1: Lock the schedule-slack write-absorption behavior with failing estimator tests
 
 **Files:**
 - Modify: `tests/unit/analysis/test_descriptor_estimator.py`
 
 **Step 1: Write the failing tests**
 
-Update the existing write-aware tests so they require:
+Add two focused scenarios:
 
 ```python
-def test_estimate_descriptor_analysis_adds_residual_external_write_stall() -> None:
+def test_estimate_descriptor_analysis_uses_schedule_slack_to_absorb_external_write_drain() -> None:
     ...
     assert compute_record.metrics["estimated_cycles"] == 48.0
+    assert compute_record.metrics["schedule_floor_cycles"] == 64.0
     assert compute_record.metrics["external_write_floor_cycles"] == 32.0
     assert compute_record.metrics["fitted_work_cycles"] == 80.0
     assert compute_record.metrics["fit_floor_gap_cycles"] == 32.0
 
-def test_estimate_descriptor_analysis_adds_bidirectional_shared_dma_stall_above_schedule_floor() -> None:
+def test_estimate_descriptor_analysis_keeps_bidirectional_stall_when_write_drain_exceeds_schedule_slack() -> None:
     ...
     assert compute_record.metrics["estimated_cycles"] == 48.0
     assert compute_record.metrics["schedule_floor_cycles"] == 64.0
     assert compute_record.metrics["external_read_floor_cycles"] == 96.0
     assert compute_record.metrics["external_write_floor_cycles"] == 32.0
-    assert compute_record.metrics["fitted_work_cycles"] == 144.0
+    assert compute_record.metrics["fitted_work_cycles"] == 128.0
+    assert compute_record.metrics["fit_floor_gap_cycles"] == 80.0
 ```
 
-The write-only case is the real math change: external writes now add a full 32-cycle drain on top of the 48-cycle compute estimate.
+Math for the second case:
+
+- schedule slack = `64 - 48 = 16`
+- residual external read stall = `96 - 48 = 48`
+- absorbed write drain = `max(0, 32 - 16) = 16`
+- fitted cycles = `64 + 48 + 16 = 128`
 
 **Step 2: Run test to verify it fails**
 
@@ -46,20 +53,26 @@ Run:
 python -m pytest tests/unit/analysis/test_descriptor_estimator.py -q
 ```
 
-Expected: FAIL because the current estimator still lets the overlap budget absorb write-only pressure.
+Expected: FAIL because the current estimator still charges the full write drain even when schedule slack exists.
 
-### Task 2: Implement external-write drain overlap budgeting
+### Task 2: Implement schedule-slack write absorption
 
 **Files:**
 - Modify: `src/llm_sched/analysis/descriptor_estimator.py`
 
 **Step 1: Write minimal implementation**
 
-Inside `_fitted_work_cycle_metrics_for_descriptor(...)`, keep the current read residual logic but split by direction:
+Inside `_fitted_work_cycle_metrics_for_descriptor(...)`, after computing `schedule_floor`, `estimated_cycles`, `external_read_cycles`, and `external_write_cycles`, add:
 
 ```python
+schedule_slack_cycles = max(0.0, schedule_floor_cycles - estimated_cycles)
 residual_external_read_stall_cycles = max(0.0, external_read_cycles - estimated_cycles)
-residual_external_write_stall_cycles = external_write_cycles
+residual_external_write_stall_cycles = max(0.0, external_write_cycles - schedule_slack_cycles)
+```
+
+and keep:
+
+```python
 fitted_work_cycles = max(
     base_fitted_cycles,
     schedule_floor_cycles
@@ -70,9 +83,9 @@ fitted_work_cycles = max(
 
 Keep the scope narrow:
 
-- no new metrics beyond the already-landed direction-aware floor fields
+- no new metrics or report fields
 - no change to non-compute descriptors
-- no new top-level summary contract in this slice
+- no change to current read-overlap logic
 
 **Step 2: Run test to verify it passes**
 
@@ -84,7 +97,7 @@ python -m pytest tests/unit/analysis/test_descriptor_estimator.py -q
 
 Expected: PASS.
 
-### Task 3: Prove the stronger write-drain fit survives perf summary/workflow serialization
+### Task 3: Prove the updated overlap budgeting survives perf summary/workflow serialization
 
 **Files:**
 - Modify: `tests/unit/analysis/test_perf_summary_builder.py`
@@ -92,15 +105,21 @@ Expected: PASS.
 
 **Step 1: Write the failing tests**
 
-Update the write-aware summary/workflow assertions so a write-only external floor case now preserves:
+Update the write-aware summary/workflow fixtures so schedule-slack-aware cases now preserve:
 
 ```python
 assert report.totals["fitted_work_cycles"] == pytest.approx(80.0)
 assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(32.0)
-assert report.fit_floor_direction_summary.external_write_gap_cycles == pytest.approx(32.0)
 ```
 
-and serialized workflow JSON carries the same stronger topline.
+for the slack-absorbed write-only case, and:
+
+```python
+assert report.totals["fitted_work_cycles"] == pytest.approx(128.0)
+assert report.fit_gap_summary.total_fit_gap_cycles == pytest.approx(80.0)
+```
+
+for the mixed read/write case.
 
 **Step 2: Run tests to verify they fail**
 
@@ -110,11 +129,11 @@ Run:
 python -m pytest tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py -q
 ```
 
-Expected: FAIL until the updated overlap budgeting reaches summary/workflow artifacts.
+Expected: FAIL until the refined overlap budgeting reaches summary/workflow artifacts.
 
 **Step 3: Write minimal implementation**
 
-Only update fixture metrics and expected toplines where the estimator output actually changed. Avoid adding any new report field in this slice.
+Only update fixture metrics and expected toplines where the estimator output actually changed. Do not add any new contract in this slice.
 
 **Step 4: Run tests to verify they pass**
 
@@ -167,15 +186,15 @@ Expected: PASS.
 **Files:**
 - Modify: `README.md`
 - Modify: `docs/development/evaluation-compiler-roadmap.md`
-- Modify: `docs/plans/2026-03-21-spec-13-fit-floor-direction-summary.md`
+- Modify: `docs/plans/2026-03-21-spec-13-external-write-drain-overlap.md`
 
 **Step 1: Update docs**
 
 Record that:
 
-- `SPEC-13` overlap budgeting now treats external writes as write-drain cycles instead of assuming they overlap compute
-- this is the first direction-aware overlap-budget math slice, not just another observability field
-- the next remaining blocker, if any, is finer-grained schedule slack / overlap allocation beyond the current read-overlap plus write-drain rule
+- schedule slack now absorbs part of external write drain
+- this is the first schedule-slack-aware overlap allocation slice in current `SPEC-13`
+- the next remaining blocker, if any, is richer slack allocation policy beyond the current write-absorption rule
 
 **Step 2: Verify docs mention the actual fresh commands**
 
@@ -184,16 +203,13 @@ Copy the exact passing commands and counts from Task 4 into roadmap/README wordi
 ## Execution Record Update (2026-03-21)
 
 - implemented:
-  - overlap budgeting now lets `estimated_cycles` absorb external reads but not external writes
-  - write-only external pressure now raises `fitted_work_cycles` and `fit_floor_gap_cycles` through a dedicated write-drain rule
-  - existing fit-gap and fit-floor summaries now observe stronger write-aware fitted-cycle toplines without any new report field
+  - overlap budgeting now derives `schedule_slack_cycles = max(0.0, schedule_floor - estimated_cycles)`
+  - that slack is applied to absorb part of external write drain before it inflates `fitted_work_cycles`
+  - current read-overlap semantics remain unchanged
 - fresh verification:
-  - `python -m pytest tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `15 passed`
-  - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `29 passed`
+  - `python -m pytest tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py -q` -> `17 passed`
+  - `python -m pytest tests/unit/analysis/test_descriptor_estimator.py tests/unit/contracts/test_perf_report.py tests/unit/analysis/test_perf_summary_builder.py tests/unit/pipeline/test_performance_estimation_workflow.py tests/smoke/test_phase_d_perf_foundation_matrix.py tests/smoke/test_cli_run_performance_estimation.py -q` -> `32 passed`
   - `python -m pytest tests/unit/analysis/test_prefill_report_builder.py tests/unit/analysis/test_decode_report_builder.py tests/unit/pipeline/test_prefill_evaluation_workflow.py tests/unit/pipeline/test_decode_evaluation_workflow.py tests/smoke/test_phase_d_prefill_foundation_matrix.py tests/smoke/test_phase_d_decode_foundation_matrix.py -q` -> `16 passed`
 - interpretation:
-  - this is the first explicit direction-aware overlap-budget math slice inside current `SPEC-13`
-  - the next remaining estimator blocker is finer-grained schedule slack / overlap allocation beyond the current read-overlap plus write-drain rule
-- downstream follow-on landed after this slice:
-  - `../plans/2026-03-21-spec-13-schedule-slack-write-absorption.md`
-  - schedule slack now absorbs part of external write drain, so the next remaining blocker has tightened further from write-drain modeling to richer slack-allocation policy
+  - this is the first schedule-slack-aware overlap allocation slice in current `SPEC-13`
+  - the next remaining estimator blocker is richer slack-allocation policy beyond the current single-rule write absorption

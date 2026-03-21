@@ -398,10 +398,12 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
                     "write_bytes": 12288.0,
                     "total_bytes": 32768.0,
                     "estimated_cycles": 48.0,
-                    "fitted_work_cycles": 144.0,
+                    "fitted_work_cycles": 128.0,
                     "schedule_floor_cycles": 64.0,
+                    "external_read_floor_cycles": 96.0,
+                    "external_write_floor_cycles": 32.0,
                     "external_bandwidth_floor_cycles": 128.0,
-                    "fit_floor_gap_cycles": 96.0,
+                    "fit_floor_gap_cycles": 80.0,
                     "sync_cycles": 0.0,
                     "bandwidth_pressure": 682.6666666666666,
                 },
@@ -419,12 +421,12 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
         schedule_kind="single-core",
         totals={
             "estimated_cycles": 48.0,
-            "fitted_work_cycles": 144.0,
+            "fitted_work_cycles": 128.0,
             "critical_path_cycles": 64.0,
         },
         fit_gap_summary={
-            "total_fit_gap_cycles": 96.0,
-            "total_fit_gap_ratio": 96.0 / 48.0,
+            "total_fit_gap_cycles": 80.0,
+            "total_fit_gap_ratio": 80.0 / 48.0,
             "critical_path_gap_cycles": 16.0,
             "critical_path_ratio_vs_estimated": 64.0 / 48.0,
             "dominant_fit_gap_phase": "projection",
@@ -432,7 +434,7 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
         },
         fit_floor_source_summary={
             "schedule_floor_gap_cycles": 0.0,
-            "external_bandwidth_gap_cycles": 96.0,
+            "external_bandwidth_gap_cycles": 80.0,
             "estimated_dominant_subject_count": 0,
             "schedule_floor_dominant_subject_count": 0,
             "external_bandwidth_dominant_subject_count": 1,
@@ -465,12 +467,12 @@ def test_run_performance_estimation_serializes_bidirectional_shared_dma_stall_me
     analysis_payload = json.loads(result.analysis_ir_path.read_text(encoding="utf-8"))
     summary_payload = json.loads(result.summary_report_path.read_text(encoding="utf-8"))
 
-    assert analysis_payload["records"][0]["metrics"]["fitted_work_cycles"] == pytest.approx(144.0)
-    assert analysis_payload["records"][0]["metrics"]["fit_floor_gap_cycles"] == pytest.approx(96.0)
+    assert analysis_payload["records"][0]["metrics"]["fitted_work_cycles"] == pytest.approx(128.0)
+    assert analysis_payload["records"][0]["metrics"]["fit_floor_gap_cycles"] == pytest.approx(80.0)
     assert analysis_payload["records"][0]["metrics"]["external_bandwidth_floor_cycles"] == pytest.approx(128.0)
-    assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(144.0)
-    assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(96.0)
-    assert summary_payload["fit_floor_source_summary"]["external_bandwidth_gap_cycles"] == pytest.approx(96.0)
+    assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(128.0)
+    assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(80.0)
+    assert summary_payload["fit_floor_source_summary"]["external_bandwidth_gap_cycles"] == pytest.approx(80.0)
     assert summary_payload["fit_floor_direction_summary"]["external_read_gap_cycles"] == pytest.approx(96.0)
     assert summary_payload["fit_floor_direction_summary"]["external_write_gap_cycles"] == pytest.approx(32.0)
 
@@ -576,4 +578,107 @@ def test_run_performance_estimation_serializes_external_write_drain_metrics(
     assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(80.0)
     assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(32.0)
     assert summary_payload["fit_floor_direction_summary"]["external_read_gap_cycles"] == pytest.approx(0.0)
+    assert summary_payload["fit_floor_direction_summary"]["external_write_gap_cycles"] == pytest.approx(32.0)
+
+
+def test_run_performance_estimation_serializes_schedule_slack_absorbed_write_drain_metrics(
+    tmp_path: Path,
+    minimal_descriptor_run_root_factory,
+) -> None:
+    from llm_sched.contracts.perf_report import PerfSummaryReport
+    from llm_sched.ir.analysis_ir import AnalysisIR, AnalysisRecord
+    from llm_sched.ir.common import AuditRef
+    from llm_sched.pipeline import run_performance_estimation
+
+    run_root = minimal_descriptor_run_root_factory(
+        target_run_root=tmp_path / "run-perf-write-slack",
+        target_relative_path="profiles/targets/riscv_npu_single_core_v1.json",
+        scenario_relative_path="profiles/scenarios/prefill_seq128.json",
+    )
+
+    write_slack_analysis_ir = AnalysisIR(
+        ir_version="phase-a.v1",
+        graph_id="workflow-minimal::riscv_npu_single_core_v1::prefill_seq128",
+        records=[
+            AnalysisRecord(
+                record_id="analysis.record.write.slack.compute",
+                subject_id="sched.block.linear.compute",
+                metrics={
+                    "read_bytes": 20480.0,
+                    "write_bytes": 12288.0,
+                    "total_bytes": 32768.0,
+                    "estimated_cycles": 48.0,
+                    "fitted_work_cycles": 80.0,
+                    "schedule_floor_cycles": 64.0,
+                    "external_read_floor_cycles": 0.0,
+                    "external_write_floor_cycles": 32.0,
+                    "external_bandwidth_floor_cycles": 32.0,
+                    "fit_floor_gap_cycles": 32.0,
+                    "sync_cycles": 0.0,
+                    "bandwidth_pressure": 682.6666666666666,
+                },
+                tags=["descriptor-analysis", "compute-bound", "fit-floor:external_bandwidth"],
+                audit_ref=AuditRef(
+                    schedule_block_ids=["sched.block.linear.compute"],
+                    descriptor_ids=["desc.linear.compute"],
+                ),
+            )
+        ],
+    )
+    write_slack_summary_report = PerfSummaryReport(
+        run_id="run-perf-write-slack",
+        graph_id=write_slack_analysis_ir.graph_id,
+        schedule_kind="single-core",
+        totals={
+            "estimated_cycles": 48.0,
+            "fitted_work_cycles": 80.0,
+            "critical_path_cycles": 64.0,
+        },
+        fit_gap_summary={
+            "total_fit_gap_cycles": 32.0,
+            "total_fit_gap_ratio": 32.0 / 48.0,
+            "critical_path_gap_cycles": 16.0,
+            "critical_path_ratio_vs_estimated": 64.0 / 48.0,
+            "dominant_fit_gap_phase": "projection",
+            "dominant_fit_gap_macro": "WDQ_GEMM",
+        },
+        fit_floor_source_summary={
+            "schedule_floor_gap_cycles": 0.0,
+            "external_bandwidth_gap_cycles": 32.0,
+            "estimated_dominant_subject_count": 0,
+            "schedule_floor_dominant_subject_count": 0,
+            "external_bandwidth_dominant_subject_count": 1,
+            "dominant_floor_source": "external_bandwidth",
+            "dominant_floor_phase": "projection",
+            "dominant_floor_macro": "WDQ_GEMM",
+        },
+        fit_floor_direction_summary={
+            "external_read_gap_cycles": 0.0,
+            "external_write_gap_cycles": 32.0,
+            "dominant_external_direction": "write",
+            "dominant_external_phase": "projection",
+            "dominant_external_macro": "WDQ_GEMM",
+        },
+    )
+
+    with (
+        patch(
+            "llm_sched.pipeline.performance_estimation.estimate_descriptor_analysis",
+            return_value=write_slack_analysis_ir,
+        ),
+        patch(
+            "llm_sched.pipeline.performance_estimation.build_perf_summary_report",
+            return_value=write_slack_summary_report,
+        ),
+    ):
+        result = run_performance_estimation(run_root)
+
+    assert result.status == "completed"
+    analysis_payload = json.loads(result.analysis_ir_path.read_text(encoding="utf-8"))
+    summary_payload = json.loads(result.summary_report_path.read_text(encoding="utf-8"))
+
+    assert analysis_payload["records"][0]["metrics"]["schedule_floor_cycles"] == pytest.approx(64.0)
+    assert analysis_payload["records"][0]["metrics"]["fitted_work_cycles"] == pytest.approx(80.0)
+    assert summary_payload["totals"]["fitted_work_cycles"] == pytest.approx(80.0)
+    assert summary_payload["fit_gap_summary"]["total_fit_gap_cycles"] == pytest.approx(32.0)
     assert summary_payload["fit_floor_direction_summary"]["external_write_gap_cycles"] == pytest.approx(32.0)
