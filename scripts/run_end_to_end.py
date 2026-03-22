@@ -36,6 +36,127 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _format_progress_event(event: dict[str, object]) -> str | None:
+    event_name = str(event.get("event", ""))
+    if event_name == "session_started":
+        return (
+            f"[progress] session started: total stages={event['total_stage_count']}, "
+            f"{event['run_case_count']} run(s), {event['sweep_count']} sweep(s), "
+            f"output={event['session_root']}"
+        )
+    if event_name == "run_started":
+        return (
+            f"[progress] run {event['index']}/{event['total']} queued at stage "
+            f"{event['stage_index']}/{event['total_stage_count']}: "
+            f"{event['run_id']} ({event['eval_mode']}, {event['schedule_kind']})"
+        )
+    if event_name == "run_completed":
+        suffix = ""
+        if event.get("failed_command_label"):
+            suffix = f", failed_command={event['failed_command_label']}"
+        return (
+            f"[progress] run {event['index']}/{event['total']} completed by stage "
+            f"{event['stage_index']}/{event['total_stage_count']}: "
+            f"{event['run_id']} status={event['status']}{suffix}"
+        )
+    if event_name == "run_stage_started":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(run step {event['stage_index']}/{event['stage_count']}) started: "
+            f"{event['run_id']} -> {event['stage_label']}"
+        )
+    if event_name == "run_stage_completed":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(run step {event['stage_index']}/{event['stage_count']}) completed: {event['run_id']} -> "
+            f"{event['stage_label']} returncode={event['returncode']}"
+        )
+    if event_name == "sweep_started":
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(sweep {event['index']}/{event['total']}) started: {event['sweep_name']}"
+        )
+    if event_name == "sweep_completed":
+        suffix = ""
+        if event.get("reason"):
+            suffix = f", reason={event['reason']}"
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(sweep {event['index']}/{event['total']}) completed: "
+            f"{event['sweep_name']} status={event['status']}{suffix}"
+        )
+    if event_name == "sweep_stage_started":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(sweep step {event['stage_index']}/{event['stage_count']}) started: "
+            f"{event['sweep_name']} -> {event['stage_label']}"
+        )
+    if event_name == "sweep_stage_completed":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(sweep step {event['stage_index']}/{event['stage_count']}) completed: {event['sweep_name']} -> "
+            f"{event['stage_label']} returncode={event['returncode']}"
+        )
+    if event_name == "visualization_started":
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(visualization {event['index']}/{event['total']}) started: {event['run_id']}"
+        )
+    if event_name == "visualization_completed":
+        suffix = ""
+        if event.get("failed_command_label"):
+            suffix = f", failed_command={event['failed_command_label']}"
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(visualization {event['index']}/{event['total']}) completed: "
+            f"{event['run_id']} status={event['status']}{suffix}"
+        )
+    if event_name == "visualization_stage_started":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(visualization step {event['stage_index']}/{event['stage_count']}) started: "
+            f"{event['run_id']} -> {event['stage_label']}"
+        )
+    if event_name == "visualization_stage_completed":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(visualization step {event['stage_index']}/{event['stage_count']}) completed: {event['run_id']} -> "
+            f"{event['stage_label']} returncode={event['returncode']}"
+        )
+    if event_name == "catalog_started":
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(catalog) started: {event['run_root_count']} run root(s), "
+            f"output={event['catalog_root']}"
+        )
+    if event_name == "catalog_completed":
+        suffix = ""
+        if event.get("reason"):
+            suffix = f", reason={event['reason']}"
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(catalog) completed: status={event['status']}{suffix}"
+        )
+    if event_name == "catalog_stage_started":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(catalog step {event['stage_index']}/{event['stage_count']}) started: {event['stage_label']}"
+        )
+    if event_name == "catalog_stage_completed":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(catalog step {event['stage_index']}/{event['stage_count']}) completed: "
+            f"{event['stage_label']} returncode={event['returncode']}"
+        )
+    if event_name == "session_completed":
+        return (
+            f"[progress] session completed: successful_runs={event['successful_run_count']}, "
+            f"failed_runs={event['failed_run_count']}, completed_sweeps={event['completed_sweep_count']}, "
+            f"catalog={event['catalog_status']}, summary={event['summary_path']}"
+        )
+    return None
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(repo_root / "src"))
@@ -96,7 +217,12 @@ def main() -> int:
         core_mode=args.core_mode,
         eval_mode=args.eval_mode,
     )
-    result = run_end_to_end_session(plan)
+    result = run_end_to_end_session(
+        plan,
+        progress_callback=lambda event: (
+            print(message) if (message := _format_progress_event(event)) is not None else None
+        ),
+    )
 
     summary = {
         "session_root": str(result.plan.session_root),

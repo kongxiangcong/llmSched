@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
+from typing import Callable
 
 
 CoreMode = Literal["single-core", "dual-core"]
@@ -221,10 +222,60 @@ def find_missing_python_modules(*, required_modules: tuple[str, ...]) -> tuple[s
     return tuple(module_name for module_name in required_modules if find_spec(module_name) is None)
 
 
-def run_end_to_end_session(plan: EndToEndPlan) -> EndToEndSessionResult:
+ProgressCallback = Callable[[dict[str, object]], None]
+
+
+def run_end_to_end_session(
+    plan: EndToEndPlan,
+    *,
+    progress_callback: ProgressCallback | None = None,
+) -> EndToEndSessionResult:
+    total_stage_count = _estimate_total_stage_count(plan)
+    _emit_progress(
+        progress_callback,
+        event="session_started",
+        session_root=str(plan.session_root),
+        run_case_count=len(plan.run_cases),
+        sweep_count=len(plan.sweep_specs),
+        total_stage_count=total_stage_count,
+    )
     plan.session_root.mkdir(parents=True, exist_ok=True)
 
-    run_results = [_execute_run_case(plan.repo_root, plan.model_path, run_case) for run_case in plan.run_cases]
+    run_results: list[RunExecutionResult] = []
+    completed_stage_count = 0
+    for index, run_case in enumerate(plan.run_cases, start=1):
+        _emit_progress(
+            progress_callback,
+            event="run_started",
+            index=index,
+            total=len(plan.run_cases),
+            run_id=run_case.run_id,
+            schedule_kind=run_case.schedule_kind,
+            eval_mode=run_case.eval_mode,
+            stage_index=completed_stage_count + 1,
+            total_stage_count=total_stage_count,
+        )
+        run_result = _execute_run_case(
+            plan.repo_root,
+            plan.model_path,
+            run_case,
+            progress_callback=progress_callback,
+            stage_offset=completed_stage_count,
+            total_stage_count=total_stage_count,
+        )
+        run_results.append(run_result)
+        completed_stage_count += _run_stage_command_count()
+        _emit_progress(
+            progress_callback,
+            event="run_completed",
+            index=index,
+            total=len(plan.run_cases),
+            run_id=run_case.run_id,
+            status=run_result.status,
+            failed_command_label=run_result.failed_command_label,
+            stage_index=completed_stage_count,
+            total_stage_count=total_stage_count,
+        )
     successful_eval_modes = {
         result.run_case.eval_mode
         for result in run_results
@@ -232,18 +283,59 @@ def run_end_to_end_session(plan: EndToEndPlan) -> EndToEndSessionResult:
     }
 
     sweep_results: list[SweepExecutionResult] = []
-    for sweep_spec in plan.sweep_specs:
+    for index, sweep_spec in enumerate(plan.sweep_specs, start=1):
+        overall_stage_index = completed_stage_count + 1
         if _eval_mode_for_sweep(sweep_spec) not in successful_eval_modes:
-            sweep_results.append(
-                SweepExecutionResult(
-                    sweep_spec=sweep_spec,
-                    status="skipped",
-                    command_results=[],
-                    reason="matching run cases did not complete successfully",
-                )
+            skipped_result = SweepExecutionResult(
+                sweep_spec=sweep_spec,
+                status="skipped",
+                command_results=[],
+                reason="matching run cases did not complete successfully",
             )
+            sweep_results.append(skipped_result)
+            _emit_progress(
+                progress_callback,
+                event="sweep_completed",
+                index=index,
+                total=len(plan.sweep_specs),
+                sweep_name=sweep_spec.sweep_name,
+                status=skipped_result.status,
+                reason=skipped_result.reason,
+                stage_index=overall_stage_index,
+                total_stage_count=total_stage_count,
+            )
+            completed_stage_count += _sweep_stage_command_count()
             continue
-        sweep_results.append(_execute_sweep(plan.repo_root, plan.model_path, sweep_spec))
+        _emit_progress(
+            progress_callback,
+            event="sweep_started",
+            index=index,
+            total=len(plan.sweep_specs),
+            sweep_name=sweep_spec.sweep_name,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
+        )
+        sweep_result = _execute_sweep(
+            plan.repo_root,
+            plan.model_path,
+            sweep_spec,
+            progress_callback=progress_callback,
+            stage_offset=completed_stage_count,
+            total_stage_count=total_stage_count,
+        )
+        sweep_results.append(sweep_result)
+        completed_stage_count += _sweep_stage_command_count()
+        _emit_progress(
+            progress_callback,
+            event="sweep_completed",
+            index=index,
+            total=len(plan.sweep_specs),
+            sweep_name=sweep_spec.sweep_name,
+            status=sweep_result.status,
+            reason=sweep_result.reason,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
+        )
 
     sweep_root_by_eval_mode = {
         _eval_mode_for_sweep(result.sweep_spec): result.sweep_spec.sweep_root
@@ -253,30 +345,93 @@ def run_end_to_end_session(plan: EndToEndPlan) -> EndToEndSessionResult:
 
     successful_run_roots: list[Path] = []
     updated_run_results: list[RunExecutionResult] = []
-    for result in run_results:
+    for index, result in enumerate(run_results, start=1):
         if result.status != "completed":
             updated_run_results.append(result)
             continue
         sweep_root = sweep_root_by_eval_mode.get(result.run_case.eval_mode)
-        packaging_result = _execute_visualization(plan.repo_root, result.run_case.run_root, sweep_root=sweep_root)
+        overall_stage_index = completed_stage_count + 1
+        _emit_progress(
+            progress_callback,
+            event="visualization_started",
+            index=index,
+            total=len(run_results),
+            run_id=result.run_case.run_id,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
+        )
+        packaging_result = _execute_visualization(
+            plan.repo_root,
+            result.run_case.run_root,
+            sweep_root=sweep_root,
+            progress_callback=progress_callback,
+            run_id=result.run_case.run_id,
+            stage_offset=completed_stage_count,
+            total_stage_count=total_stage_count,
+        )
         merged_results = [*result.command_results, *packaging_result.command_results]
-        updated_run_results.append(
-            RunExecutionResult(
-                run_case=result.run_case,
-                status=packaging_result.status,
-                command_results=merged_results,
-                failed_command_label=packaging_result.failed_command_label,
-            )
+        updated_result = RunExecutionResult(
+            run_case=result.run_case,
+            status=packaging_result.status,
+            command_results=merged_results,
+            failed_command_label=packaging_result.failed_command_label,
+        )
+        updated_run_results.append(updated_result)
+        completed_stage_count += _visualization_stage_command_count()
+        _emit_progress(
+            progress_callback,
+            event="visualization_completed",
+            index=index,
+            total=len(run_results),
+            run_id=result.run_case.run_id,
+            status=updated_result.status,
+            failed_command_label=updated_result.failed_command_label,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
         )
         if packaging_result.status == "completed":
             successful_run_roots.append(result.run_case.run_root)
 
-    catalog_result = _execute_catalog(plan.repo_root, plan.catalog_root, successful_run_roots)
+    catalog_stage_index = completed_stage_count + 1
+    _emit_progress(
+        progress_callback,
+        event="catalog_started",
+        catalog_root=str(plan.catalog_root),
+        run_root_count=len(successful_run_roots),
+        stage_index=catalog_stage_index,
+        total_stage_count=total_stage_count,
+    )
+    catalog_result = _execute_catalog(
+        plan.repo_root,
+        plan.catalog_root,
+        successful_run_roots,
+        progress_callback=progress_callback,
+        stage_offset=completed_stage_count,
+        total_stage_count=total_stage_count,
+    )
+    completed_stage_count += _catalog_stage_command_count()
+    _emit_progress(
+        progress_callback,
+        event="catalog_completed",
+        status=catalog_result.status,
+        reason=catalog_result.reason,
+        stage_index=catalog_stage_index,
+        total_stage_count=total_stage_count,
+    )
     summary_path = _write_session_summary(
         plan,
         updated_run_results,
         sweep_results,
         catalog_result,
+    )
+    _emit_progress(
+        progress_callback,
+        event="session_completed",
+        summary_path=str(summary_path),
+        successful_run_count=sum(1 for result in updated_run_results if result.status == "completed"),
+        failed_run_count=sum(1 for result in updated_run_results if result.status != "completed"),
+        completed_sweep_count=sum(1 for result in sweep_results if result.status == "completed"),
+        catalog_status=catalog_result.status,
     )
     return EndToEndSessionResult(
         plan=plan,
@@ -287,8 +442,26 @@ def run_end_to_end_session(plan: EndToEndPlan) -> EndToEndSessionResult:
     )
 
 
-def _execute_run_case(repo_root: Path, model_path: Path, run_case: RunCase) -> RunExecutionResult:
+def _execute_run_case(
+    repo_root: Path,
+    model_path: Path,
+    run_case: RunCase,
+    *,
+    progress_callback: ProgressCallback | None = None,
+    stage_offset: int = 0,
+    total_stage_count: int | None = None,
+) -> RunExecutionResult:
     commands = [
+        (
+            "validate-profile",
+            (
+                "validate-profile",
+                "--target-profile",
+                str(run_case.target_profile_path),
+                "--scenario-profile",
+                str(run_case.scenario_profile_path),
+            ),
+        ),
         (
             "init-run",
             (
@@ -305,6 +478,7 @@ def _execute_run_case(repo_root: Path, model_path: Path, run_case: RunCase) -> R
         ),
         ("frontend-analysis", ("run-frontend-analysis", "--run-root", str(run_case.run_root))),
         ("memory-planning", ("run-memory-planning", "--run-root", str(run_case.run_root))),
+        ("memory-planner-closure", ("run-memory-planner-closure", "--run-root", str(run_case.run_root))),
         ("tile-planning", ("run-tile-planning", "--run-root", str(run_case.run_root))),
         (
             "scheduling",
@@ -327,11 +501,33 @@ def _execute_run_case(repo_root: Path, model_path: Path, run_case: RunCase) -> R
             ),
         ),
     ]
+    stage_count = len(commands)
 
     command_results: list[CommandResult] = []
-    for label, command in commands:
+    for stage_index, (label, command) in enumerate(commands, start=1):
+        _emit_progress(
+            progress_callback,
+            event="run_stage_started",
+            run_id=run_case.run_id,
+            stage_label=label,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         result = _run_cli(repo_root, command, log_root=run_case.run_root / "logs", label=label)
         command_results.append(result)
+        _emit_progress(
+            progress_callback,
+            event="run_stage_completed",
+            run_id=run_case.run_id,
+            stage_label=label,
+            returncode=result.returncode,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         if result.returncode != 0:
             return RunExecutionResult(
                 run_case=run_case,
@@ -359,6 +555,10 @@ def _execute_visualization(
     run_root: Path,
     *,
     sweep_root: Path | None,
+    progress_callback: ProgressCallback | None = None,
+    run_id: str | None = None,
+    stage_offset: int = 0,
+    total_stage_count: int | None = None,
 ) -> _VisualizationResult:
     packaging_command: tuple[str, ...]
     if sweep_root is None:
@@ -376,9 +576,31 @@ def _execute_visualization(
         ("visualization-workbench", ("run-visualization-workbench", "--run-root", str(run_root))),
     ]
     command_results: list[CommandResult] = []
-    for label, command in commands:
+    stage_count = len(commands)
+    for stage_index, (label, command) in enumerate(commands, start=1):
+        _emit_progress(
+            progress_callback,
+            event="visualization_stage_started",
+            run_id=run_id or run_root.name,
+            stage_label=label,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         result = _run_cli(repo_root, command, log_root=run_root / "logs", label=label)
         command_results.append(result)
+        _emit_progress(
+            progress_callback,
+            event="visualization_stage_completed",
+            run_id=run_id or run_root.name,
+            stage_label=label,
+            returncode=result.returncode,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         if result.returncode != 0:
             return _VisualizationResult(
                 status="failed",
@@ -388,7 +610,15 @@ def _execute_visualization(
     return _VisualizationResult(status="completed", command_results=command_results)
 
 
-def _execute_sweep(repo_root: Path, model_path: Path, sweep_spec: SweepSpecConfig) -> SweepExecutionResult:
+def _execute_sweep(
+    repo_root: Path,
+    model_path: Path,
+    sweep_spec: SweepSpecConfig,
+    *,
+    progress_callback: ProgressCallback | None = None,
+    stage_offset: int = 0,
+    total_stage_count: int | None = None,
+) -> SweepExecutionResult:
     sweep_spec.sweep_root.mkdir(parents=True, exist_ok=True)
     spec_path = sweep_spec.sweep_root / "sweep-spec.json"
     spec_path.write_text(
@@ -422,9 +652,31 @@ def _execute_sweep(repo_root: Path, model_path: Path, sweep_spec: SweepSpecConfi
         ),
     ]
     command_results: list[CommandResult] = []
-    for label, command in commands:
+    stage_count = len(commands)
+    for stage_index, (label, command) in enumerate(commands, start=1):
+        _emit_progress(
+            progress_callback,
+            event="sweep_stage_started",
+            sweep_name=sweep_spec.sweep_name,
+            stage_label=label,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         result = _run_cli(repo_root, command, log_root=sweep_spec.sweep_root / "logs", label=label)
         command_results.append(result)
+        _emit_progress(
+            progress_callback,
+            event="sweep_stage_completed",
+            sweep_name=sweep_spec.sweep_name,
+            stage_label=label,
+            returncode=result.returncode,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
         if result.returncode != 0:
             return SweepExecutionResult(
                 sweep_spec=sweep_spec,
@@ -439,7 +691,15 @@ def _execute_sweep(repo_root: Path, model_path: Path, sweep_spec: SweepSpecConfi
     )
 
 
-def _execute_catalog(repo_root: Path, catalog_root: Path, run_roots: list[Path]) -> CatalogExecutionResult:
+def _execute_catalog(
+    repo_root: Path,
+    catalog_root: Path,
+    run_roots: list[Path],
+    *,
+    progress_callback: ProgressCallback | None = None,
+    stage_offset: int = 0,
+    total_stage_count: int | None = None,
+) -> CatalogExecutionResult:
     if not run_roots:
         return CatalogExecutionResult(
             status="skipped",
@@ -449,7 +709,26 @@ def _execute_catalog(repo_root: Path, catalog_root: Path, run_roots: list[Path])
     command: list[str] = ["run-visualization-catalog", "--catalog-root", str(catalog_root)]
     for run_root in run_roots:
         command.extend(["--run-root", str(run_root)])
+    _emit_progress(
+        progress_callback,
+        event="catalog_stage_started",
+        stage_label="visualization-catalog",
+        stage_index=1,
+        stage_count=1,
+        overall_stage_index=stage_offset + 1,
+        total_stage_count=total_stage_count,
+    )
     result = _run_cli(repo_root, tuple(command), log_root=catalog_root / "logs", label="visualization-catalog")
+    _emit_progress(
+        progress_callback,
+        event="catalog_stage_completed",
+        stage_label="visualization-catalog",
+        returncode=result.returncode,
+        stage_index=1,
+        stage_count=1,
+        overall_stage_index=stage_offset + 1,
+        total_stage_count=total_stage_count,
+    )
     status: Literal["completed", "failed"] = "completed" if result.returncode == 0 else "failed"
     return CatalogExecutionResult(status=status, command_results=[result], reason=None if status == "completed" else "visualization catalog failed")
 
@@ -483,6 +762,39 @@ def _run_cli(repo_root: Path, command: tuple[str, ...], *, log_root: Path, label
 
 def _eval_mode_for_sweep(sweep_spec: SweepSpecConfig) -> EvalMode:
     return "prefill" if sweep_spec.sweep_name.startswith("prefill-") else "decode"
+
+
+def _estimate_total_stage_count(plan: EndToEndPlan) -> int:
+    return (
+        len(plan.run_cases) * _run_stage_command_count()
+        + len(plan.sweep_specs) * _sweep_stage_command_count()
+        + len(plan.run_cases) * _visualization_stage_command_count()
+        + _catalog_stage_command_count()
+    )
+
+
+def _run_stage_command_count() -> int:
+    return 10
+
+
+def _sweep_stage_command_count() -> int:
+    return 2
+
+
+def _visualization_stage_command_count() -> int:
+    return 2
+
+
+def _catalog_stage_command_count() -> int:
+    return 1
+
+
+def _emit_progress(
+    progress_callback: ProgressCallback | None,
+    **event: object,
+) -> None:
+    if progress_callback is not None:
+        progress_callback(event)
 
 
 def _core_mode_label_for_run_name(core_modes: tuple[CoreMode, ...]) -> str:
