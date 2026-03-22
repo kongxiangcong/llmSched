@@ -161,6 +161,9 @@ def run_diagnosis_analysis(run_root: str | Path) -> DiagnosisAnalysisResult:
             layout.run_root,
             manifest,
             artifact_index,
+            model_structure_report,
+            operator_representation_report,
+            support_matrix_report,
             schedule_diagnostics_report,
         )
         if performance_diagnostics_report is not None:
@@ -466,9 +469,17 @@ def _build_performance_diagnostics_report(
     run_root: Path,
     manifest: RunManifest,
     artifact_index: dict[str, str],
+    model_structure_report: ModelStructureReport | None,
+    operator_representation_report: OperatorRepresentationReport | None,
+    support_matrix_report: SupportMatrixReport | None,
     schedule_diagnostics_report: ScheduleDiagnosticsReport | None,
 ) -> PerformanceDiagnosticsReport | None:
-    if schedule_diagnostics_report is None:
+    if (
+        model_structure_report is None
+        or operator_representation_report is None
+        or support_matrix_report is None
+        or schedule_diagnostics_report is None
+    ):
         return None
 
     perf_summary_report_path = run_root / Path(
@@ -502,7 +513,10 @@ def _build_performance_diagnostics_report(
     return build_performance_diagnostics_report(
         run_id=manifest.run_id,
         perf_summary_report=perf_summary_report,
+        model_structure_report=model_structure_report,
+        operator_representation_report=operator_representation_report,
         schedule_diagnostics_report=schedule_diagnostics_report,
+        support_matrix_report=support_matrix_report,
         prefill_report=prefill_report,
         decode_report=decode_report,
     )
