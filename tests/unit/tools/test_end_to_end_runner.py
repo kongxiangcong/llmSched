@@ -78,6 +78,46 @@ def test_build_session_root_uses_runs_directory() -> None:
     assert session_root == repo_root / ".runs" / "manual-demo"
 
 
+def test_build_default_run_name_uses_eval_core_model_and_timestamp() -> None:
+    from datetime import datetime
+
+    from llm_sched.tools.end_to_end_runner import build_default_run_name
+
+    repo_root = Path("D:/workspace/llmSched")
+    model_path = repo_root / "models" / "gemma3_1b" / "model_q4f16.onnx"
+
+    run_name = build_default_run_name(
+        repo_root=repo_root,
+        model_path=model_path,
+        core_mode="single",
+        eval_mode="prefill",
+        timestamp=datetime(2026, 3, 22, 13, 21, 56),
+    )
+
+    assert run_name == "prefill_single_gemma3_1b_20260322_132156"
+
+
+def test_build_session_root_uses_generated_default_name_when_run_name_is_missing() -> None:
+    from datetime import datetime
+
+    from llm_sched.tools.end_to_end_runner import build_session_root
+
+    repo_root = Path("D:/workspace/llmSched")
+    model_path = repo_root / "models" / "gemma3_1b" / "model_q4f16.onnx"
+
+    session_root = build_session_root(
+        repo_root=repo_root,
+        output_root=repo_root / ".runs",
+        run_name=None,
+        model_path=model_path,
+        core_mode="single-core",
+        eval_mode="decode",
+        timestamp=datetime(2026, 3, 22, 13, 21, 56),
+    )
+
+    assert session_root == repo_root / ".runs" / "decode_single_gemma3_1b_20260322_132156"
+
+
 def test_find_missing_python_modules_reports_unavailable_runtime_dependencies() -> None:
     from llm_sched.tools.end_to_end_runner import find_missing_python_modules
 

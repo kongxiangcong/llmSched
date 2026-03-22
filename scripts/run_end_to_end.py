@@ -85,6 +85,9 @@ def main() -> int:
         repo_root=repo_root,
         output_root=output_root,
         run_name=args.run_name,
+        model_path=model_path,
+        core_mode=args.core_mode,
+        eval_mode=args.eval_mode,
     )
     plan = build_end_to_end_plan(
         repo_root=repo_root,

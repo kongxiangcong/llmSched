@@ -120,12 +120,47 @@ def resolve_selected_eval_modes(selection: str) -> tuple[EvalMode, ...]:
     raise ValueError(f"unsupported eval mode: {selection}")
 
 
-def build_session_root(repo_root: Path, output_root: Path, run_name: str | None = None) -> Path:
+def build_default_run_name(
+    *,
+    repo_root: Path,
+    model_path: Path,
+    core_mode: str,
+    eval_mode: str,
+    timestamp: datetime | None = None,
+) -> str:
+    resolved_core_modes = resolve_selected_core_modes(core_mode)
+    resolved_eval_modes = resolve_selected_eval_modes(eval_mode)
+    core_label = _core_mode_label_for_run_name(resolved_core_modes)
+    eval_label = "-".join(resolved_eval_modes)
+    model_label = _model_label_for_run_name(repo_root=repo_root, model_path=model_path)
+    current_timestamp = timestamp or datetime.now()
+    timestamp_label = current_timestamp.strftime("%Y%m%d_%H%M%S")
+    return f"{eval_label}_{core_label}_{model_label}_{timestamp_label}"
+
+
+def build_session_root(
+    repo_root: Path,
+    output_root: Path,
+    run_name: str | None = None,
+    *,
+    model_path: Path | None = None,
+    core_mode: str | None = None,
+    eval_mode: str | None = None,
+    timestamp: datetime | None = None,
+) -> Path:
     root = output_root if output_root.is_absolute() else repo_root / output_root
     if run_name:
         return root / run_name
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return root / f"e2e-{timestamp}"
+    if model_path is not None and core_mode is not None and eval_mode is not None:
+        return root / build_default_run_name(
+            repo_root=repo_root,
+            model_path=model_path,
+            core_mode=core_mode,
+            eval_mode=eval_mode,
+            timestamp=timestamp,
+        )
+    fallback_timestamp = (timestamp or datetime.now()).strftime("%Y%m%d-%H%M%S")
+    return root / f"e2e-{fallback_timestamp}"
 
 
 def build_end_to_end_plan(
@@ -448,6 +483,37 @@ def _run_cli(repo_root: Path, command: tuple[str, ...], *, log_root: Path, label
 
 def _eval_mode_for_sweep(sweep_spec: SweepSpecConfig) -> EvalMode:
     return "prefill" if sweep_spec.sweep_name.startswith("prefill-") else "decode"
+
+
+def _core_mode_label_for_run_name(core_modes: tuple[CoreMode, ...]) -> str:
+    if core_modes == ("single-core",):
+        return "single"
+    if core_modes == ("dual-core",):
+        return "dual"
+    if core_modes == ("single-core", "dual-core"):
+        return "both"
+    return "-".join(core_modes)
+
+
+def _model_label_for_run_name(*, repo_root: Path, model_path: Path) -> str:
+    resolved_model_path = model_path.resolve()
+    candidate_parts: tuple[str, ...]
+    try:
+        relative_model_path = resolved_model_path.relative_to(repo_root.resolve())
+        candidate_parts = relative_model_path.parts
+    except ValueError:
+        candidate_parts = resolved_model_path.parts
+
+    if len(candidate_parts) >= 2:
+        return _slugify_text_for_run_name(candidate_parts[-2])
+    if candidate_parts:
+        return _slugify_text_for_run_name(Path(candidate_parts[-1]).stem)
+    return "model"
+
+
+def _slugify_text_for_run_name(value: str) -> str:
+    cleaned = "".join(character if character.isalnum() else "_" for character in value).strip("_")
+    return cleaned or "model"
 
 
 def _write_session_summary(

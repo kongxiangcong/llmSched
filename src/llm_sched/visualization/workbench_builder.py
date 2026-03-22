@@ -67,7 +67,7 @@ def build_visualization_workbench(
     )
 
     files = {
-        _normalize(workbench_root_path / "index.html"): _build_index_html(artifact),
+        _normalize(workbench_root_path / "index.html"): _build_index_html(artifact, bundle),
         _normalize(workbench_root_path / "assets" / "app.js"): _build_app_js(bundle_relative_path),
         _normalize(workbench_root_path / "assets" / "styles.css"): _build_styles_css(),
         _normalize(workbench_root_path / "workbench_manifest.json"): json.dumps(
@@ -85,12 +85,16 @@ def _build_title(bundle: VisualizationBundle) -> str:
     return f"{graph_prefix} {mode} / {schedule}"
 
 
-def _build_index_html(artifact: VisualizationWorkbenchArtifact) -> str:
+def _build_index_html(
+    artifact: VisualizationWorkbenchArtifact,
+    bundle: VisualizationBundle,
+) -> str:
     nav_buttons = "\n".join(
         f'          <button class="panel-tab" data-panel="{panel}">{_label_for_panel(panel)}</button>'
         for panel in artifact.available_panels
     )
     sections = "\n".join(_build_panel_shell(panel) for panel in artifact.available_panels)
+    embedded_bundle_json = _serialize_bundle_for_inline_script(bundle)
     return f"""<!doctype html>
 <html lang="en">
   <head>
@@ -124,6 +128,7 @@ def _build_index_html(artifact: VisualizationWorkbenchArtifact) -> str:
 {sections}
       </main>
     </div>
+    <script id="visualization-bundle-data" type="application/json">{embedded_bundle_json}</script>
     <script src="./assets/app.js"></script>
   </body>
 </html>
@@ -1905,6 +1910,30 @@ function updateTimeline(bundle) {
   renderIntoShell(bundle, "timeline");
 }
 
+function readEmbeddedBundle() {
+  const bundleScript = document.querySelector("#visualization-bundle-data");
+  if (!bundleScript) {
+    return null;
+  }
+  const rawBundle = bundleScript.textContent || "";
+  if (!rawBundle.trim()) {
+    return null;
+  }
+  return JSON.parse(rawBundle);
+}
+
+async function loadBundle() {
+  const embeddedBundle = readEmbeddedBundle();
+  if (embeddedBundle) {
+    return embeddedBundle;
+  }
+  const response = await fetch(BUNDLE_PATH);
+  if (!response.ok) {
+    throw new Error(`Failed to load bundle: ${response.status}`);
+  }
+  return response.json();
+}
+
 async function copyCurrentViewLink() {
   const url = buildCurrentViewUrl();
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2018,11 +2047,7 @@ function bindWorkbenchActions(bundle) {
 }
 
 async function main() {
-  const response = await fetch(BUNDLE_PATH);
-  if (!response.ok) {
-    throw new Error(`Failed to load bundle: ${response.status}`);
-  }
-  const bundle = await response.json();
+  const bundle = await loadBundle();
   const available = new Set(bundle.view_index.available_views || []);
   const panelMap = {
     summary: true,
@@ -2541,3 +2566,7 @@ def _build_panel_shell(panel: str) -> str:
 
 def _normalize(path: Path) -> str:
     return str(path).replace("\\", "/")
+
+
+def _serialize_bundle_for_inline_script(bundle: VisualizationBundle) -> str:
+    return json.dumps(bundle.model_dump(mode="json"), separators=(",", ":")).replace("<", "\\u003c")

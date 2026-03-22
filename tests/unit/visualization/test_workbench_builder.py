@@ -34,7 +34,14 @@ def test_build_visualization_workbench_generates_static_assets_with_sweep_panel(
     assert "download-panel-svg-button" in files["workbench/index.html"]
     assert "workbench-action-status" in files["workbench/index.html"]
     assert "back-to-catalog-link" in files["workbench/index.html"]
+    assert 'id="visualization-bundle-data"' in files["workbench/index.html"]
+    assert '"bundle_id":"viz.run-prefill-001"' in files["workbench/index.html"]
     assert "../reports/visualization_bundle.json" in files["workbench/assets/app.js"]
+    assert "function readEmbeddedBundle" in files["workbench/assets/app.js"]
+    assert "function loadBundle" in files["workbench/assets/app.js"]
+    assert 'document.querySelector("#visualization-bundle-data")' in files["workbench/assets/app.js"]
+    assert "const embeddedBundle = readEmbeddedBundle();" in files["workbench/assets/app.js"]
+    assert "const response = await fetch(BUNDLE_PATH);" in files["workbench/assets/app.js"]
     assert "function serializeUiState" in files["workbench/assets/app.js"]
     assert "function buildCurrentViewUrl" in files["workbench/assets/app.js"]
     assert "function updateCatalogReturnLink" in files["workbench/assets/app.js"]
@@ -251,6 +258,22 @@ def test_build_visualization_workbench_supports_coverage_focus_deep_links() -> N
     assert "function scrollCoverageFocusIntoView" in files["workbench/assets/app.js"]
     assert 'data-coverage-focus-target="packed-descriptor"' in files["workbench/assets/app.js"]
     assert "is-focused" in files["workbench/assets/styles.css"]
+
+
+def test_build_visualization_workbench_escapes_embedded_bundle_script_boundaries() -> None:
+    from llm_sched.visualization import build_visualization_workbench
+
+    bundle = _bundle(include_sweep=False)
+    bundle.graph_view.nodes[0].label = "</script><div>unsafe</div>"
+
+    _artifact, files = build_visualization_workbench(
+        bundle,
+        bundle_relative_path="../reports/visualization_bundle.json",
+        workbench_root=Path("workbench"),
+    )
+
+    assert "</script><div>unsafe</div>" not in files["workbench/index.html"]
+    assert "\\u003c/script>\\u003cdiv>unsafe\\u003c/div>" in files["workbench/index.html"]
 
 
 def _bundle(*, include_sweep: bool) -> object:
