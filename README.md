@@ -5,8 +5,9 @@ RISC-V + NPU architecture-evaluation compiler for Gemma3-like workloads.
 当前主线阶段：
 - `M1` 已完成
 - `M2` 已完成
-- 当前重点仍然是 `Phase D / M3`，也就是继续收口 `SPEC-13/14/15/16`
-- `SPEC-19` 继续做产品化 hardening，但应建立在当前稳定的 `SPEC-16` compare/workspace/workbench surface 之上
+- 当前仓库主线已达到 `close-enough / practical stop-line`
+- `SPEC-13`、当前 `SPEC-14/15` 评估链路、当前 `SPEC-16` recommendation-detail surface、当前 `SPEC-19` catalog/workbench surface 均按 practical closeout 跟踪
+- `Phase D/E = in_progress` 现在更准确地表示仍有 downstream polish / targeted follow-up，而不是主线端到端能力未闭环
 - `Phase C` 当前维持 keep-green，不再作为默认主线 blocker
 
 核心 CLI 流水线：
@@ -32,6 +33,38 @@ python -m llm_sched.cli.main run-visualization-catalog --catalog-root ... --run-
 python -m llm_sched.cli.main run-phase-c-acceptance --report-root ... --workspace-root ...
 python -m llm_sched.cli.main run-phase-c-gate --report-root ... --workspace-root ...
 ```
+
+## End-to-End Run
+
+推荐直接用 [run_end_to_end.py](/D:/workspace/llmSched/scripts/run_end_to_end.py) 跑完整主线。它会串起 `init-run -> frontend -> planning -> scheduling -> descriptor -> performance -> prefill/decode evaluation -> visualization -> optional sweep compare -> catalog`，并把输出统一放到 `.runs/<run-name>/`。
+
+推荐命令：
+
+```powershell
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode both --eval-mode both --run-name full-e2e-demo
+```
+
+支持的输入：
+
+- `--core-mode`: `single` / `single-core` / `dual` / `dual-core` / `both`
+- `--eval-mode`: `prefill` / `decode` / `both`
+
+常用示例：
+
+```powershell
+# single-core + decode
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode single-core --eval-mode decode --run-name decode-single
+
+# dual-core + prefill
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode dual-core --eval-mode prefill --run-name prefill-dual
+```
+
+最新完整验证：
+
+- `.runs/full-e2e-demo/`
+- 4 runs completed
+- 2 sweeps completed
+- final catalog generated
 
 ## Development Verification
 

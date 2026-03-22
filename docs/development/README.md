@@ -7,7 +7,9 @@
 - `evaluation-compiler-spec-pack.md`
   - 顶层 spec 包，定义系统目标、分层原则和完整 SPEC 清单。
 - `evaluation-compiler-roadmap.md`
-  - 依赖关系、阶段划分、里程碑和推进顺序。
+  - 当前 roadmap 与收口判断的主参考，包括 2026-03-22 project closeout audit 和 `close-enough / practical stop-line` 结论。
+- `project-status-summary-2026-03-22.md`
+  - 当前项目状态、Phase A-E 落地能力、收口判断和下一步建议的简明 handoff 摘要。
 - `test-strategy-and-run-modes.md`
   - 当前测试分层、默认回归模式、`local_smoke / milestone_matrix` 的使用方式，以及慢测试优化检查点。
 - `mainline-test-recommendations.md`
@@ -163,11 +165,44 @@
 当前 CLI 边界：
 
 - `init-run` 只做 run 初始化，不执行编译分析。
-- `run-frontend-analysis` 是当前唯一的端到端前端主线入口。
-- `run-memory-planning` 是当前 Phase C 的第一个独立入口，现已带 phase-bucket lifetime reuse、DDR-backed binding 和 source-class-aware fit reasoning，但还不是 schedule-aware planner。
-- `run-performance-estimation` 已经打通 descriptor-driven perf foundation，但还不是完整的 prefill/decode 评估流水线。
-- `run-prefill-evaluation` 已经打通 prefill top-level foundation，但 decode 和跨运行对比还未开始。
-- `run-decode-evaluation` 已经打通 decode top-level foundation，但 sweep/delta comparison 和 UI 还未开始。
+- `run-frontend-analysis` 是当前 frontend 端到端主线入口。
+- `run-memory-planning` 是稳定的 Phase C 独立入口，已包含 lifetime reuse、DDR-backed binding 和 fit reasoning hardening。
+- `run-tile-planning`、`run-single-core-scheduling`、`run-dual-core-scheduling`、`run-descriptor-generation` 已构成完整的 Phase C 主线。
+- `run-performance-estimation`、`run-prefill-evaluation`、`run-decode-evaluation` 已构成完整的 Phase D 评估主线。
+- `run-sweep-analysis` 与 `run-phase-d-compare` 已提供 prefill / decode 的单核对双核 compare 路径。
+- `run-visualization-packaging`、`run-visualization-workbench`、`run-visualization-catalog` 已构成稳定的静态可视化输出路径。
+
+## End-to-End Runner
+
+- script: `scripts/run_end_to_end.py`
+- purpose: 用一条命令串起从 `init-run` 到 evaluation、visualization、optional sweep compare、final catalog 的完整仓库主线
+- output root: `.runs/<run-name>/`
+
+推荐命令：
+
+```powershell
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode both --eval-mode both --run-name full-e2e-demo
+```
+
+支持的输入：
+
+- `--core-mode`: `single` / `single-core` / `dual` / `dual-core` / `both`
+- `--eval-mode`: `prefill` / `decode` / `both`
+
+常用示例：
+
+```powershell
+# single-core + decode
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode single-core --eval-mode decode --run-name decode-single
+
+# dual-core + prefill
+& "C:\Users\72449\AppData\Roaming\Python\Python314\Scripts\uv.exe" run --python .venv\Scripts\python.exe python scripts\run_end_to_end.py --model-path models\gemma3_1b\model_q4f16.onnx --core-mode dual-core --eval-mode prefill --run-name prefill-dual
+```
+
+最新完整验证：
+
+- session: `.runs/full-e2e-demo/`
+- result: 4 runs completed, 2 sweeps completed, final catalog generated
 
 ## 2026-03-19 Real-Model Checkpoint
 
@@ -186,6 +221,14 @@
   - `Phase C = done`
   - `Phase D/E = in_progress`
 - 当前主线已重新回到 `M3` 收口与 `SPEC-19` hardening。
+
+## 2026-03-22 Closeout Status Refresh
+
+- 当前状态跟踪应以 `evaluation-compiler-roadmap.md` 和 `project-status-summary-2026-03-22.md` 为准。
+- 当前仓库已经达到 `close-enough / practical stop-line`，默认不再把项目视为“仍缺少核心主线能力”。
+- `Phase B`、`Phase C` 维持 `done`。
+- `Phase D/E = in_progress` 现在更准确的含义是“仍有 polish 和按需 follow-up”，而不是“端到端主链路未闭环”。
+- `SPEC-13`、当前 `SPEC-14/15` 评估链路、当前 `SPEC-16` recommendation-detail surface、当前 `SPEC-19` catalog/workbench surface 都应视为 practical closeout，除非出现新的 failing evidence。
 
 ## 2026-03-20 SPEC-13 Pressure Summary Checkpoint
 
