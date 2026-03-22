@@ -3605,6 +3605,60 @@ graph TD
   - workspace drill-down and workspace-local link/JSON/SVG export are now in place
   - fresh 2026-03-22 visualization proof reconfirms the current static catalog/workbench surface is sufficient for project closeout
   - keep `SPEC-19` as downstream polish, not as the reason this project remains open
+- post-closeout follow-on: architecture diagnosis track
+  - freeze the current branch as the `2026-03-22` baseline node for the existing evaluation-compiler mainline
+  - do not reopen `SPEC-13/14/15/16/19` by default as part of that follow-on
+  - treat all new diagnosis work as an additive layer above the frozen baseline
+  - use `docs/architecture-diagnosis/2026-03-22-architecture-diagnosis-design.md` as the canonical design doc for that follow-on
+  - use `docs/architecture-diagnosis/2026-03-22-architecture-diagnosis-todo-roadmap.md` as the canonical execution roadmap for that follow-on
+  - recommended next execution order:
+    1. `DIAG-01/02/03/04` structural diagnosis foundation
+    2. `DIAG-05/06` schedule/performance diagnosis foundation
+    3. `DIAG-07/08/09` roofline, assessment, and diagnosis workbench
+
+## 2026-03-22 Architecture Diagnosis Follow-On Freeze
+
+- follow-on design docs:
+  - `docs/architecture-diagnosis/2026-03-22-architecture-diagnosis-design.md`
+  - `docs/architecture-diagnosis/2026-03-22-architecture-diagnosis-todo-roadmap.md`
+- follow-on judgment:
+  - the current repository remains frozen as a practical baseline node for the existing evaluation-compiler track
+  - the next development cycle should begin from the new architecture-diagnosis design, not by continuing ad hoc expansion of the existing summary/workbench surfaces
+  - the correct interpretation of the next cycle is “build a diagnosis artifact layer above the baseline,” not “reopen the baseline closeout by default”
+- baseline preservation rule:
+  - new diagnosis work must preserve the current `close-enough / practical stop-line` interpretation unless concrete regressions appear
+  - existing Phase A-E artifact roles remain canonical upstream inputs for the new diagnosis layer
+  - richer summary/UI additions that bypass diagnosis reports are not the default follow-on path
+
+## 2026-03-22 Architecture Diagnosis Proof Update
+
+- additive diagnosis layer status:
+  - the architecture-diagnosis track now has contract/build/workflow proof from `DIAG-01` through diagnosis workbench packaging
+  - this layer remains additive above the frozen Phase A-E baseline and does not reopen the current closeout judgment by default
+- diagnosis CLI surface now present:
+  - `run-diagnosis-analysis --run-root ...`
+  - `run-diagnosis-packaging --run-root ...`
+  - `run-diagnosis-workbench --run-root ...`
+- diagnosis artifacts now proved on a prepared run root:
+  - `reports/diagnosis/model_structure_report.json`
+  - `reports/diagnosis/operator_representation_report.json`
+  - `reports/diagnosis/resource_demand_report.json`
+  - `reports/diagnosis/support_matrix_report.json`
+  - `reports/diagnosis/schedule_diagnostics_report.json`
+  - `reports/diagnosis/performance_diagnostics_report.json`
+  - `reports/diagnosis/roofline_report.json`
+  - `reports/diagnosis/architecture_assessment_report.json`
+  - `reports/diagnosis_bundle.json`
+  - `diagnosis_workbench/index.html`
+  - `diagnosis_workbench/workbench_manifest.json`
+- fresh architecture-diagnosis proof evidence:
+  - `python -m pytest tests/unit/contracts/test_model_structure_report.py tests/unit/contracts/test_operator_representation_report.py tests/unit/contracts/test_resource_demand_report.py tests/unit/contracts/test_support_matrix_report.py tests/unit/contracts/test_schedule_diagnostics_report.py tests/unit/contracts/test_performance_diagnostics_report.py tests/unit/contracts/test_roofline_report.py tests/unit/contracts/test_architecture_assessment_report.py tests/unit/contracts/test_diagnosis_bundle.py tests/unit/contracts/test_diagnosis_workbench.py tests/unit/pipeline/test_diagnosis_analysis_workflow.py tests/unit/pipeline/test_diagnosis_packaging_workflow.py tests/unit/pipeline/test_diagnosis_workbench_workflow.py tests/unit/visualization/test_diagnosis_workbench_builder.py tests/smoke/test_cli_run_diagnosis_analysis.py tests/smoke/test_cli_run_diagnosis_workbench.py tests/smoke/test_phase_f_architecture_diagnosis_matrix.py -q`
+  - result: `44 passed`
+  - focused smoke proof also landed as `tests/smoke/test_phase_f_architecture_diagnosis_matrix.py`
+- interpretation:
+  - diagnosis is now the canonical follow-on track above the frozen baseline
+  - any future diagnosis iteration should continue to flow through diagnosis reports -> diagnosis bundle -> diagnosis workbench instead of bypassing that evidence chain
+  - the canonical diagnosis roadmap is now fully checked off and internally consistent with the current proof state
 
 ## 2026-03-22 Project Closeout Audit
 

@@ -131,6 +131,7 @@ def test_find_missing_python_modules_reports_unavailable_runtime_dependencies() 
 def test_run_end_to_end_session_emits_progress_events(monkeypatch, tmp_path) -> None:
     from llm_sched.tools.end_to_end_runner import CatalogExecutionResult
     from llm_sched.tools.end_to_end_runner import CommandResult
+    from llm_sched.tools.end_to_end_runner import DiagnosisExecutionResult
     from llm_sched.tools.end_to_end_runner import RunExecutionResult
     from llm_sched.tools.end_to_end_runner import SweepExecutionResult
     from llm_sched.tools.end_to_end_runner import SweepSpecConfig
@@ -216,6 +217,20 @@ def test_run_end_to_end_session_emits_progress_events(monkeypatch, tmp_path) -> 
             command_results=[_command_result(f"viz-{run_root.name}")],
         )
 
+    def fake_execute_diagnosis(
+        repo_root_arg,
+        run_root,
+        *,
+        progress_callback=None,
+        run_id=None,
+        stage_offset=0,
+        total_stage_count=None,
+    ):
+        return DiagnosisExecutionResult(
+            status="completed",
+            command_results=[_command_result(f"diag-{run_root.name}")],
+        )
+
     def fake_execute_catalog(
         repo_root_arg,
         catalog_root,
@@ -233,6 +248,7 @@ def test_run_end_to_end_session_emits_progress_events(monkeypatch, tmp_path) -> 
 
     monkeypatch.setattr("llm_sched.tools.end_to_end_runner._execute_run_case", fake_execute_run_case)
     monkeypatch.setattr("llm_sched.tools.end_to_end_runner._execute_sweep", fake_execute_sweep)
+    monkeypatch.setattr("llm_sched.tools.end_to_end_runner._execute_diagnosis", fake_execute_diagnosis)
     monkeypatch.setattr("llm_sched.tools.end_to_end_runner._execute_visualization", fake_execute_visualization)
     monkeypatch.setattr("llm_sched.tools.end_to_end_runner._execute_catalog", fake_execute_catalog)
 
@@ -248,6 +264,10 @@ def test_run_end_to_end_session_emits_progress_events(monkeypatch, tmp_path) -> 
         "run_completed",
         "sweep_started",
         "sweep_completed",
+        "diagnosis_started",
+        "diagnosis_completed",
+        "diagnosis_started",
+        "diagnosis_completed",
         "visualization_started",
         "visualization_completed",
         "visualization_started",
@@ -258,7 +278,7 @@ def test_run_end_to_end_session_emits_progress_events(monkeypatch, tmp_path) -> 
     ]
     assert events[0]["run_case_count"] == 2
     assert events[0]["sweep_count"] == 1
-    assert events[0]["total_stage_count"] == 27
+    assert events[0]["total_stage_count"] == 33
     assert events[-1]["successful_run_count"] == 2
     assert events[-1]["completed_sweep_count"] == 1
 
@@ -400,6 +420,48 @@ def test_execute_decode_run_case_uses_full_decode_chain(monkeypatch, tmp_path) -
     assert seen_commands[-1][1][0] == "run-decode-evaluation"
 
 
+def test_execute_diagnosis_runs_full_diagnosis_chain(monkeypatch, tmp_path) -> None:
+    from llm_sched.tools.end_to_end_runner import _execute_diagnosis
+
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    run_root = repo_root / ".runs" / "demo" / "runs" / "decode-single-core"
+
+    seen_commands: list[tuple[str, tuple[str, ...]]] = []
+
+    def fake_run_cli(repo_root_arg, command, *, log_root, label):
+        from llm_sched.tools.end_to_end_runner import CommandResult
+
+        seen_commands.append((label, command))
+        return CommandResult(
+            label=label,
+            command=command,
+            returncode=0,
+            stdout_log_path=log_root / f"{label}.stdout.log",
+            stderr_log_path=log_root / f"{label}.stderr.log",
+        )
+
+    monkeypatch.setattr("llm_sched.tools.end_to_end_runner._run_cli", fake_run_cli)
+
+    result = _execute_diagnosis(
+        repo_root,
+        run_root,
+        run_id="decode-single-core",
+    )
+
+    assert result.status == "completed"
+    assert [label for label, _ in seen_commands] == [
+        "diagnosis-analysis",
+        "diagnosis-packaging",
+        "diagnosis-workbench",
+    ]
+    assert [command[0] for _, command in seen_commands] == [
+        "run-diagnosis-analysis",
+        "run-diagnosis-packaging",
+        "run-diagnosis-workbench",
+    ]
+
+
 def test_estimate_total_stage_count_for_single_decode_session_includes_full_chain() -> None:
     from llm_sched.tools.end_to_end_runner import _estimate_total_stage_count
     from llm_sched.tools.end_to_end_runner import build_end_to_end_plan
@@ -415,4 +477,4 @@ def test_estimate_total_stage_count_for_single_decode_session_includes_full_chai
         eval_mode="decode",
     )
 
-    assert _estimate_total_stage_count(plan) == 13
+    assert _estimate_total_stage_count(plan) == 16

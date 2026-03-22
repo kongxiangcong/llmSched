@@ -84,6 +84,13 @@ class SweepExecutionResult:
 
 
 @dataclass(frozen=True)
+class DiagnosisExecutionResult:
+    status: Literal["completed", "failed"]
+    command_results: list[CommandResult]
+    failed_command_label: str | None = None
+
+
+@dataclass(frozen=True)
 class CatalogExecutionResult:
     status: Literal["completed", "failed", "skipped"]
     command_results: list[CommandResult]
@@ -343,9 +350,53 @@ def run_end_to_end_session(
         if result.status == "completed"
     }
 
+    diagnosis_run_results: list[RunExecutionResult] = []
+    for index, result in enumerate(run_results, start=1):
+        if result.status != "completed":
+            diagnosis_run_results.append(result)
+            continue
+        overall_stage_index = completed_stage_count + 1
+        _emit_progress(
+            progress_callback,
+            event="diagnosis_started",
+            index=index,
+            total=len(run_results),
+            run_id=result.run_case.run_id,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
+        )
+        diagnosis_result = _execute_diagnosis(
+            plan.repo_root,
+            result.run_case.run_root,
+            progress_callback=progress_callback,
+            run_id=result.run_case.run_id,
+            stage_offset=completed_stage_count,
+            total_stage_count=total_stage_count,
+        )
+        merged_results = [*result.command_results, *diagnosis_result.command_results]
+        updated_result = RunExecutionResult(
+            run_case=result.run_case,
+            status=diagnosis_result.status,
+            command_results=merged_results,
+            failed_command_label=diagnosis_result.failed_command_label,
+        )
+        diagnosis_run_results.append(updated_result)
+        completed_stage_count += _diagnosis_stage_command_count()
+        _emit_progress(
+            progress_callback,
+            event="diagnosis_completed",
+            index=index,
+            total=len(run_results),
+            run_id=result.run_case.run_id,
+            status=updated_result.status,
+            failed_command_label=updated_result.failed_command_label,
+            stage_index=overall_stage_index,
+            total_stage_count=total_stage_count,
+        )
+
     successful_run_roots: list[Path] = []
     updated_run_results: list[RunExecutionResult] = []
-    for index, result in enumerate(run_results, start=1):
+    for index, result in enumerate(diagnosis_run_results, start=1):
         if result.status != "completed":
             updated_run_results.append(result)
             continue
@@ -548,6 +599,55 @@ class _VisualizationResult:
     status: Literal["completed", "failed"]
     command_results: list[CommandResult]
     failed_command_label: str | None = None
+
+
+def _execute_diagnosis(
+    repo_root: Path,
+    run_root: Path,
+    *,
+    progress_callback: ProgressCallback | None = None,
+    run_id: str | None = None,
+    stage_offset: int = 0,
+    total_stage_count: int | None = None,
+) -> DiagnosisExecutionResult:
+    commands = [
+        ("diagnosis-analysis", ("run-diagnosis-analysis", "--run-root", str(run_root))),
+        ("diagnosis-packaging", ("run-diagnosis-packaging", "--run-root", str(run_root))),
+        ("diagnosis-workbench", ("run-diagnosis-workbench", "--run-root", str(run_root))),
+    ]
+    command_results: list[CommandResult] = []
+    stage_count = len(commands)
+    for stage_index, (label, command) in enumerate(commands, start=1):
+        _emit_progress(
+            progress_callback,
+            event="diagnosis_stage_started",
+            run_id=run_id or run_root.name,
+            stage_label=label,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
+        result = _run_cli(repo_root, command, log_root=run_root / "logs", label=label)
+        command_results.append(result)
+        _emit_progress(
+            progress_callback,
+            event="diagnosis_stage_completed",
+            run_id=run_id or run_root.name,
+            stage_label=label,
+            returncode=result.returncode,
+            stage_index=stage_index,
+            stage_count=stage_count,
+            overall_stage_index=stage_offset + stage_index,
+            total_stage_count=total_stage_count,
+        )
+        if result.returncode != 0:
+            return DiagnosisExecutionResult(
+                status="failed",
+                command_results=command_results,
+                failed_command_label=label,
+            )
+    return DiagnosisExecutionResult(status="completed", command_results=command_results)
 
 
 def _execute_visualization(
@@ -768,6 +868,7 @@ def _estimate_total_stage_count(plan: EndToEndPlan) -> int:
     return (
         len(plan.run_cases) * _run_stage_command_count()
         + len(plan.sweep_specs) * _sweep_stage_command_count()
+        + len(plan.run_cases) * _diagnosis_stage_command_count()
         + len(plan.run_cases) * _visualization_stage_command_count()
         + _catalog_stage_command_count()
     )
@@ -779,6 +880,10 @@ def _run_stage_command_count() -> int:
 
 def _sweep_stage_command_count() -> int:
     return 2
+
+
+def _diagnosis_stage_command_count() -> int:
+    return 3
 
 
 def _visualization_stage_command_count() -> int:

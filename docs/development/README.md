@@ -8,6 +8,10 @@
   - 顶层 spec 包，定义系统目标、分层原则和完整 SPEC 清单。
 - `evaluation-compiler-roadmap.md`
   - 当前 roadmap 与收口判断的主参考，包括 2026-03-22 project closeout audit 和 `close-enough / practical stop-line` 结论。
+- `../architecture-diagnosis/2026-03-22-architecture-diagnosis-design.md`
+  - 冻结 baseline 之上的 architecture diagnosis 设计主文档；定义 diagnosis reports -> diagnosis bundle -> diagnosis workbench 的增量主线。
+- `../architecture-diagnosis/2026-03-22-architecture-diagnosis-todo-roadmap.md`
+  - architecture diagnosis 执行 roadmap；当前 checklist 已全部完成，completion criteria 已与 proof 状态同步。
 - `project-status-summary-2026-03-22.md`
   - 当前项目状态、Phase A-E 落地能力、收口判断和下一步建议的简明 handoff 摘要。
 - `test-strategy-and-run-modes.md`
@@ -161,6 +165,12 @@
   - 基于已有 perf summary、coverage report 和 `memory_plan.json` 执行 `SPEC-14` prefill top-level evaluation。
 - `llm-sched run-decode-evaluation --run-root ...`
   - 基于已有 perf summary、coverage report 和 `memory_plan.json` 执行 `SPEC-15` decode top-level evaluation。
+- `llm-sched run-diagnosis-analysis --run-root ...`
+  - 在冻结 baseline 之上生成 `reports/diagnosis/` 下的 diagnosis reports。
+- `llm-sched run-diagnosis-packaging --run-root ...`
+  - 将 diagnosis reports 打包为 `reports/diagnosis_bundle.json`。
+- `llm-sched run-diagnosis-workbench --run-root ...`
+  - 基于 `diagnosis_bundle.json` 生成静态 `diagnosis_workbench/`。
 
 当前 CLI 边界：
 
@@ -171,6 +181,29 @@
 - `run-performance-estimation`、`run-prefill-evaluation`、`run-decode-evaluation` 已构成完整的 Phase D 评估主线。
 - `run-sweep-analysis` 与 `run-phase-d-compare` 已提供 prefill / decode 的单核对双核 compare 路径。
 - `run-visualization-packaging`、`run-visualization-workbench`、`run-visualization-catalog` 已构成稳定的静态可视化输出路径。
+- `run-diagnosis-analysis`、`run-diagnosis-packaging`、`run-diagnosis-workbench` 已构成冻结 baseline 之上的 architecture diagnosis 增量路径。
+
+## 2026-03-22 Architecture Diagnosis Status
+
+- diagnosis track 解释边界：
+  - diagnosis 是冻结 `2026-03-22` baseline 之上的 additive layer
+  - 默认不 reopening `SPEC-13/14/15/16/19`
+  - 默认不跳过 diagnosis reports 直接做 summary/UI
+- 当前已证明的 diagnosis artifacts：
+  - `reports/diagnosis/model_structure_report.json`
+  - `reports/diagnosis/operator_representation_report.json`
+  - `reports/diagnosis/resource_demand_report.json`
+  - `reports/diagnosis/support_matrix_report.json`
+  - `reports/diagnosis/schedule_diagnostics_report.json`
+  - `reports/diagnosis/performance_diagnostics_report.json`
+  - `reports/diagnosis/roofline_report.json`
+  - `reports/diagnosis/architecture_assessment_report.json`
+  - `reports/diagnosis_bundle.json`
+  - `diagnosis_workbench/index.html`
+  - `diagnosis_workbench/workbench_manifest.json`
+- 代表性 diagnosis proof：
+  - `python -m pytest tests/unit/contracts/test_model_structure_report.py tests/unit/contracts/test_operator_representation_report.py tests/unit/contracts/test_resource_demand_report.py tests/unit/contracts/test_support_matrix_report.py tests/unit/contracts/test_schedule_diagnostics_report.py tests/unit/contracts/test_performance_diagnostics_report.py tests/unit/contracts/test_roofline_report.py tests/unit/contracts/test_architecture_assessment_report.py tests/unit/contracts/test_diagnosis_bundle.py tests/unit/contracts/test_diagnosis_workbench.py tests/unit/pipeline/test_diagnosis_analysis_workflow.py tests/unit/pipeline/test_diagnosis_packaging_workflow.py tests/unit/pipeline/test_diagnosis_workbench_workflow.py tests/unit/visualization/test_diagnosis_workbench_builder.py tests/smoke/test_cli_run_diagnosis_analysis.py tests/smoke/test_cli_run_diagnosis_workbench.py tests/smoke/test_phase_f_architecture_diagnosis_matrix.py -q`
+  - result: `44 passed`
 
 ## End-to-End Runner
 

@@ -17,6 +17,9 @@ from llm_sched.contracts.phase_c_acceptance_report import PhaseCAcceptanceReport
 from llm_sched.contracts.run_summary import RunSummary
 from llm_sched.pipeline import run_descriptor_generation as execute_descriptor_generation
 from llm_sched.pipeline import run_decode_evaluation as execute_decode_evaluation
+from llm_sched.pipeline import run_diagnosis_analysis as execute_diagnosis_analysis
+from llm_sched.pipeline import run_diagnosis_packaging as execute_diagnosis_packaging
+from llm_sched.pipeline import run_diagnosis_workbench as execute_diagnosis_workbench
 from llm_sched.pipeline import run_frontend_analysis as execute_frontend_analysis
 from llm_sched.pipeline import run_dual_core_scheduling as execute_dual_core_scheduling
 from llm_sched.pipeline import run_memory_planner_closure as execute_memory_planner_closure
@@ -313,6 +316,53 @@ def run_decode_evaluation(
 
     typer.echo(f"Decode evaluation completed at {run_root}")
     typer.echo("Artifacts updated under reports/, including decode_evaluation_report.json.")
+
+
+@app.command("run-diagnosis-analysis")
+def run_diagnosis_analysis(
+    run_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+) -> None:
+    """Reserve the canonical diagnosis output directory for a run root."""
+    result = execute_diagnosis_analysis(run_root)
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "diagnosis analysis failed"
+        typer.echo(f"Diagnosis analysis: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"Diagnosis analysis completed at {run_root}")
+    typer.echo("Artifacts updated under reports/diagnosis/.")
+
+
+@app.command("run-diagnosis-packaging")
+def run_diagnosis_packaging(
+    run_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+) -> None:
+    """Package diagnosis reports into a diagnosis bundle for one run root."""
+    result = execute_diagnosis_packaging(run_root)
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "diagnosis packaging failed"
+        typer.echo(f"Diagnosis packaging: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"Diagnosis packaging completed at {run_root}")
+    typer.echo("Artifacts updated under reports/, including diagnosis_bundle.json.")
+
+
+@app.command("run-diagnosis-workbench")
+def run_diagnosis_workbench(
+    run_root: Path = typer.Option(..., dir_okay=True, file_okay=False),
+) -> None:
+    """Package a static diagnosis workbench for one run root."""
+    result = execute_diagnosis_workbench(run_root)
+    if result.status != "completed":
+        message = result.diagnostics[0].message if result.diagnostics else "diagnosis workbench failed"
+        typer.echo(f"Diagnosis workbench: ERROR ({message})")
+        raise typer.Exit(code=EXIT_VALIDATION_ERROR)
+
+    typer.echo(f"Diagnosis workbench completed at {run_root}")
+    typer.echo(
+        "Artifacts updated under diagnosis_workbench/, including index.html and workbench_manifest.json."
+    )
 
 
 @app.command("run-sweep-analysis")

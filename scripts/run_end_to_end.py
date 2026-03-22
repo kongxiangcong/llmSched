@@ -97,6 +97,32 @@ def _format_progress_event(event: dict[str, object]) -> str | None:
             f"(sweep step {event['stage_index']}/{event['stage_count']}) completed: {event['sweep_name']} -> "
             f"{event['stage_label']} returncode={event['returncode']}"
         )
+    if event_name == "diagnosis_started":
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(diagnosis {event['index']}/{event['total']}) started: {event['run_id']}"
+        )
+    if event_name == "diagnosis_completed":
+        suffix = ""
+        if event.get("failed_command_label"):
+            suffix = f", failed_command={event['failed_command_label']}"
+        return (
+            f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "
+            f"(diagnosis {event['index']}/{event['total']}) completed: "
+            f"{event['run_id']} status={event['status']}{suffix}"
+        )
+    if event_name == "diagnosis_stage_started":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(diagnosis step {event['stage_index']}/{event['stage_count']}) started: "
+            f"{event['run_id']} -> {event['stage_label']}"
+        )
+    if event_name == "diagnosis_stage_completed":
+        return (
+            f"[progress] stage {event['overall_stage_index']}/{event['total_stage_count']} "
+            f"(diagnosis step {event['stage_index']}/{event['stage_count']}) completed: {event['run_id']} -> "
+            f"{event['stage_label']} returncode={event['returncode']}"
+        )
     if event_name == "visualization_started":
         return (
             f"[progress] stage {event['stage_index']}/{event['total_stage_count']} "

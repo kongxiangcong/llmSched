@@ -8,6 +8,18 @@ from llm_sched.pipeline.decode_evaluation import (
     DecodeEvaluationResult,
     run_decode_evaluation,
 )
+from llm_sched.pipeline.diagnosis_analysis import (
+    DiagnosisAnalysisResult,
+    run_diagnosis_analysis,
+)
+from llm_sched.pipeline.diagnosis_packaging import (
+    DiagnosisPackagingResult,
+    run_diagnosis_packaging,
+)
+from llm_sched.pipeline.diagnosis_workbench import (
+    DiagnosisWorkbenchResult,
+    run_diagnosis_workbench,
+)
 from llm_sched.pipeline.dual_core_scheduling import (
     DualCoreSchedulingResult,
     run_dual_core_scheduling,
@@ -56,6 +68,9 @@ from llm_sched.pipeline.visualization_workbench import (
 __all__ = [
     "DescriptorGenerationResult",
     "DecodeEvaluationResult",
+    "DiagnosisAnalysisResult",
+    "DiagnosisPackagingResult",
+    "DiagnosisWorkbenchResult",
     "DualCoreSchedulingResult",
     "FrontendAnalysisResult",
     "MemoryPlannerClosureResult",
@@ -72,6 +87,9 @@ __all__ = [
     "VisualizationWorkbenchResult",
     "run_descriptor_generation",
     "run_decode_evaluation",
+    "run_diagnosis_analysis",
+    "run_diagnosis_packaging",
+    "run_diagnosis_workbench",
     "run_dual_core_scheduling",
     "run_frontend_analysis",
     "run_memory_planner_closure",
