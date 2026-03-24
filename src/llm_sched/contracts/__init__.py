@@ -20,6 +20,22 @@ from llm_sched.contracts.decode_report import (
     DecodeLatencySummary,
     DecodeMacroHotspot,
 )
+from llm_sched.contracts.diagnosis_chain_summary import (
+    DiagnosisChainStageSummary,
+    DiagnosisChainSummary,
+)
+from llm_sched.contracts.diagnosis_dataset_schema import (
+    DIAGNOSIS_DATASET_SCHEMA_REGISTRY,
+    DiagnosisDatasetTableCategory,
+    DiagnosisFieldSchema,
+    DiagnosisTableSchema,
+    SourceLayer,
+    get_diagnosis_row_model,
+    get_diagnosis_table_schema,
+    list_diagnosis_table_schemas,
+    validate_diagnosis_dataset_row,
+    validate_diagnosis_dataset_rows,
+)
 from llm_sched.contracts.isa_coverage_report import ISACoverageIssue, ISACoverageReport
 from llm_sched.contracts.memory_plan import (
     AddressBindingDiagnostic,
@@ -117,6 +133,18 @@ from llm_sched.contracts.workload_decomposition_report import (
 )
 
 __all__ = [
+    "DiagnosisChainSummary",
+    "DiagnosisChainStageSummary",
+    "DIAGNOSIS_DATASET_SCHEMA_REGISTRY",
+    "DiagnosisDatasetTableCategory",
+    "DiagnosisFieldSchema",
+    "DiagnosisTableSchema",
+    "SourceLayer",
+    "get_diagnosis_row_model",
+    "get_diagnosis_table_schema",
+    "list_diagnosis_table_schemas",
+    "validate_diagnosis_dataset_row",
+    "validate_diagnosis_dataset_rows",
     "FrontendImportReport",
     "FrontendImportWarning",
     "FrontendLegalityReport",

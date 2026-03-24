@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.config.target_profile import TargetProfile
 from llm_sched.contracts.performance_diagnostics_report import (
     LayerHotspotEntry,
@@ -27,11 +28,21 @@ from llm_sched.contracts.roofline_report import (
 
 def build_roofline_report(
     *,
-    run_id: str,
-    target_profile: TargetProfile,
-    resource_demand_report: ResourceDemandReport,
-    performance_diagnostics_report: PerformanceDiagnosticsReport,
+    run_id: str | None = None,
+    target_profile: TargetProfile | None = None,
+    resource_demand_report: ResourceDemandReport | None = None,
+    performance_diagnostics_report: PerformanceDiagnosticsReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> RooflineReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        target_profile = ctx.target_profile
+    if any(value is None for value in (run_id, target_profile, resource_demand_report, performance_diagnostics_report)):
+        raise ValueError("build_roofline_report requires either ctx plus reports or explicit inputs")
+    assert target_profile is not None
+    assert resource_demand_report is not None
+    assert performance_diagnostics_report is not None
+    assert run_id is not None
     if resource_demand_report.graph_id != performance_diagnostics_report.graph_id:
         raise ValueError("graph_id mismatch between resource demand and performance diagnostics reports")
     if resource_demand_report.scenario_name != performance_diagnostics_report.scenario_name:
@@ -300,3 +311,21 @@ def _headroom_ratio(bound_limit: float, achieved_ops_per_cycle: float) -> float:
 
 def _gbps_to_bytes_per_cycle(gbps: float) -> float:
     return gbps / 8.0
+
+
+def _extract_roofline_points_by_layer_rows(report: RooflineReport) -> list[dict[str, object]]:
+    bandwidth_by_id = {
+        ceiling.ceiling_id: ceiling.bandwidth_bytes_per_cycle for ceiling in report.bandwidth_ceilings
+    }
+    return [
+        {
+            "layer_id": row.layer_id,
+            "arithmetic_intensity": row.arithmetic_intensity,
+            "achieved_throughput": row.achieved_ops_per_cycle,
+            "peak_compute": report.compute_ceiling.peak_ops_per_cycle,
+            "peak_bandwidth": bandwidth_by_id.get(row.active_bandwidth_ceiling_id, 0.0),
+            "bound_kind": row.dominant_bound,
+            "headroom_ratio": row.headroom_ratio,
+        }
+        for row in report.layer_points
+    ]

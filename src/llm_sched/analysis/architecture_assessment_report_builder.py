@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
+from llm_sched.analysis.performance_diagnostics_report_builder import _extract_perf_by_structure_rows
+from llm_sched.analysis.resource_demand_report_builder import _extract_structure_demand_rows
+from llm_sched.analysis.schedule_diagnostics_report_builder import _extract_schedule_block_rows
+from llm_sched.analysis.support_matrix_report_builder import _extract_structure_support_rows
+from llm_sched.analysis.realization_gap_builder import build_realization_gap_rows
+from llm_sched.analysis.timeline_loss_builder import build_timeline_loss_detail_rows, build_timeline_loss_summary_rows
 from llm_sched.contracts.architecture_assessment_report import (
     ArchitectureAssessmentReport,
     BottleneckFinding,
     ConfidenceSummary,
     OverallAssessment,
+    RealizationGapFinding,
     RecommendationEntry,
     SupportGapFinding,
     TimelineLossFinding,
@@ -20,13 +28,24 @@ from llm_sched.contracts.support_matrix_report import SupportMatrixReport
 
 def build_architecture_assessment_report(
     *,
-    run_id: str,
-    resource_demand_report: ResourceDemandReport,
-    support_matrix_report: SupportMatrixReport,
-    schedule_diagnostics_report: ScheduleDiagnosticsReport,
-    performance_diagnostics_report: PerformanceDiagnosticsReport,
-    roofline_report: RooflineReport,
+    run_id: str | None = None,
+    resource_demand_report: ResourceDemandReport | None = None,
+    support_matrix_report: SupportMatrixReport | None = None,
+    schedule_diagnostics_report: ScheduleDiagnosticsReport | None = None,
+    performance_diagnostics_report: PerformanceDiagnosticsReport | None = None,
+    roofline_report: RooflineReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> ArchitectureAssessmentReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+    if any(value is None for value in (run_id, resource_demand_report, support_matrix_report, schedule_diagnostics_report, performance_diagnostics_report, roofline_report)):
+        raise ValueError("build_architecture_assessment_report requires either ctx plus reports or explicit inputs")
+    assert resource_demand_report is not None
+    assert support_matrix_report is not None
+    assert schedule_diagnostics_report is not None
+    assert performance_diagnostics_report is not None
+    assert roofline_report is not None
+    assert run_id is not None
     graph_id = resource_demand_report.graph_id
     scenario_name = resource_demand_report.scenario_name
     _validate_shared_identity(
@@ -41,6 +60,26 @@ def build_architecture_assessment_report(
     top_bottlenecks = _build_top_bottlenecks(performance_diagnostics_report)
     top_support_gaps = _build_top_support_gaps(support_matrix_report)
     top_timeline_losses = _build_top_timeline_losses(schedule_diagnostics_report)
+    realization_gap_rows = _build_realization_gap_rows_for_assessment(
+        ctx=ctx,
+        resource_demand_report=resource_demand_report,
+        support_matrix_report=support_matrix_report,
+        schedule_diagnostics_report=schedule_diagnostics_report,
+        performance_diagnostics_report=performance_diagnostics_report,
+    )
+    top_realization_gaps = _build_top_realization_gaps(realization_gap_rows)
+    if not top_realization_gaps and top_support_gaps:
+        top_realization_gaps = [
+            RealizationGapFinding(
+                structure_id=top_support_gaps[0].subject_id,
+                structure_kind="",
+                layer_id=None,
+                gap_kind="support_gap",
+                gap_score=1.0 if top_support_gaps[0].support_status == "unsupported" else 0.6,
+                gap_confidence="medium",
+                message=top_support_gaps[0].message,
+            )
+        ]
     recommendations = _build_recommendations(
         roofline_report=roofline_report,
         top_support_gaps=top_support_gaps,
@@ -64,6 +103,15 @@ def build_architecture_assessment_report(
         top_bottlenecks=top_bottlenecks,
         top_support_gaps=top_support_gaps,
         top_timeline_losses=top_timeline_losses,
+        top_realization_gaps=top_realization_gaps,
+        key_metrics=_build_key_metrics(
+            resource_demand_report=resource_demand_report,
+            support_matrix_report=support_matrix_report,
+            schedule_diagnostics_report=schedule_diagnostics_report,
+            performance_diagnostics_report=performance_diagnostics_report,
+            roofline_report=roofline_report,
+            realization_gap_rows=realization_gap_rows,
+        ),
         recommendations=recommendations,
         confidence_summary=confidence_summary,
     )
@@ -313,3 +361,147 @@ def _build_overall_assessment(
         assessment_basis=assessment_basis,
         primary_recommendation=primary_recommendation,
     )
+
+
+def _extract_assessment_summary_rows(report: ArchitectureAssessmentReport) -> list[dict[str, object]]:
+    overall = report.overall_assessment
+    rows = [
+        {"metric": "verdict", "value": overall.verdict, "interpretation": overall.summary},
+        {"metric": "dominant_bound", "value": overall.dominant_bound, "interpretation": overall.assessment_basis},
+        {"metric": "dominant_bottleneck", "value": overall.dominant_bottleneck, "interpretation": overall.primary_recommendation},
+        {"metric": "confidence", "value": report.confidence_summary.confidence_level, "interpretation": "; ".join(report.confidence_summary.warning_messages)},
+    ]
+    if report.top_timeline_losses:
+        rows.append(
+            {
+                "metric": "top_timeline_loss_kind",
+                "value": report.top_timeline_losses[0].loss_kind,
+                "interpretation": report.top_timeline_losses[0].message,
+            }
+        )
+    if report.top_support_gaps:
+        rows.append(
+            {
+                "metric": "top_support_gap_reason",
+                "value": report.top_support_gaps[0].reason_code,
+                "interpretation": report.top_support_gaps[0].message,
+            }
+        )
+    return rows
+
+
+def _extract_recommendation_rows(report: ArchitectureAssessmentReport) -> list[dict[str, object]]:
+    return [
+        {
+            "priority": row.priority,
+            "category": row.category,
+            "title": row.title,
+            "action": row.action,
+            "rationale": row.rationale,
+        }
+        for row in report.recommendations
+    ]
+
+
+
+def _build_realization_gap_rows_for_assessment(
+    *,
+    ctx: DiagnosisContext | None,
+    resource_demand_report: ResourceDemandReport,
+    support_matrix_report: SupportMatrixReport,
+    schedule_diagnostics_report: ScheduleDiagnosticsReport,
+    performance_diagnostics_report: PerformanceDiagnosticsReport,
+) -> list[dict[str, object]]:
+    subject_block_rows = [] if ctx is None else [
+        {"normalized_node_id": node_id, "block_id": block_id}
+        for node_id, block_ids in ctx.block_ids_by_normalized_node_id.items()
+        for block_id in block_ids
+    ]
+    return build_realization_gap_rows(
+        structure_demand_rows=_extract_structure_demand_rows(resource_demand_report),
+        structure_support_rows=_extract_structure_support_rows(support_matrix_report),
+        schedule_block_rows=_extract_schedule_block_rows(schedule_diagnostics_report),
+        perf_by_structure_rows=_extract_perf_by_structure_rows(performance_diagnostics_report),
+        subject_block_rows=subject_block_rows,
+    )
+
+
+def _build_top_realization_gaps(realization_gap_rows: list[dict[str, object]]) -> list[RealizationGapFinding]:
+    ranked = sorted(
+        realization_gap_rows,
+        key=lambda row: (-float(row.get("gap_score", 0.0)), str(row.get("structure_id", ""))),
+    )[:3]
+    return [
+        RealizationGapFinding(
+            structure_id=str(row["structure_id"]),
+            structure_kind=str(row.get("structure_kind", "")),
+            layer_id=(None if row.get("layer_id") is None or int(row.get("layer_id", 0)) < 0 else int(row["layer_id"])),
+            gap_kind=str(row.get("gap_kind", "")),
+            gap_score=float(row.get("gap_score", 0.0)),
+            gap_confidence=str(row.get("gap_confidence", "medium")),
+            message=f"{row.get('structure_id')} shows {row.get('gap_kind')} with score {float(row.get('gap_score', 0.0)):.2f}.",
+        )
+        for row in ranked
+    ]
+
+
+def _build_key_metrics(
+    *,
+    resource_demand_report: ResourceDemandReport,
+    support_matrix_report: SupportMatrixReport,
+    schedule_diagnostics_report: ScheduleDiagnosticsReport,
+    performance_diagnostics_report: PerformanceDiagnosticsReport,
+    roofline_report: RooflineReport,
+    realization_gap_rows: list[dict[str, object]],
+) -> dict[str, dict[str, str | int | float]]:
+    timeline_summary_rows = build_timeline_loss_summary_rows(
+        build_timeline_loss_detail_rows(schedule_diagnostics_report),
+        makespan_slots=schedule_diagnostics_report.resource_contention_summary.makespan_slots,
+    )
+    total_structures = len(support_matrix_report.structure_support_summary)
+    native_structures = sum(1 for row in support_matrix_report.structure_support_summary if row.support_status == "native")
+    fallback_structures = sum(1 for row in support_matrix_report.structure_support_summary if row.support_status == "fallback")
+    unsupported_structures = sum(1 for row in support_matrix_report.structure_support_summary if row.support_status == "unsupported")
+    top_gap = realization_gap_rows[0] if realization_gap_rows else None
+    top_timeline = timeline_summary_rows[0] if timeline_summary_rows else None
+    return {
+        "demand": {
+            "total_compute_ops": resource_demand_report.totals.compute_ops,
+            "total_read_bytes": resource_demand_report.totals.read_bytes,
+            "total_write_bytes": resource_demand_report.totals.write_bytes,
+        },
+        "support": {
+            "native_structure_pct": (native_structures / total_structures) if total_structures else 0.0,
+            "fallback_structure_pct": (fallback_structures / total_structures) if total_structures else 0.0,
+            "unsupported_structure_pct": (unsupported_structures / total_structures) if total_structures else 0.0,
+            "blocking_gap_count": len(support_matrix_report.critical_gaps),
+        },
+        "execution": {
+            "critical_path_cycles": performance_diagnostics_report.critical_path_summary.critical_path_cycles,
+            "estimated_total_cycles": performance_diagnostics_report.critical_path_summary.estimated_cycles,
+            "makespan_slots": schedule_diagnostics_report.resource_contention_summary.makespan_slots,
+            "avg_core_utilization": (
+                sum(lane.utilization_ratio for lane in schedule_diagnostics_report.core_lanes) / len(schedule_diagnostics_report.core_lanes)
+                if schedule_diagnostics_report.core_lanes
+                else 0.0
+            ),
+        },
+        "bottleneck": {
+            "dominant_bound": roofline_report.dominant_bound_summary.dominant_bound,
+            "dominant_bottleneck": performance_diagnostics_report.bottleneck_classification.dominant_bottleneck,
+            "peak_bandwidth_pressure": performance_diagnostics_report.bandwidth_diagnostics.peak_bandwidth_pressure,
+        },
+        "timeline": {
+            "top_loss_kind": "" if top_timeline is None else top_timeline["loss_kind"],
+            "recoverable_slots_total": 0.0 if top_timeline is None else float(top_timeline["recoverable_slots_total"]),
+        },
+        "gap": {
+            "top_gap_kind": "" if top_gap is None else str(top_gap.get("gap_kind", "")),
+            "mean_gap_score": (
+                sum(float(row.get("gap_score", 0.0)) for row in realization_gap_rows) / len(realization_gap_rows)
+                if realization_gap_rows
+                else 0.0
+            ),
+            "mean_gap_confidence": "" if top_gap is None else str(top_gap.get("gap_confidence", "")),
+        },
+    }

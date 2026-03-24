@@ -12,6 +12,11 @@ from llm_sched.config.loader import load_scenario_profile, load_target_profile
 from llm_sched.contracts.manifest import RunManifest
 from llm_sched.contracts.run_summary import RunSummary
 from llm_sched.contracts.sweep_report import SweepDeltaReport
+from tests_diagnosis_baseline import (
+    get_diagnosis_baseline_case,
+    get_diagnosis_baseline_root,
+    load_diagnosis_baseline_index_from_root,
+)
 
 
 SMOKE_STAGES = (
@@ -48,6 +53,28 @@ def run_cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 @pytest.fixture(scope="session")
 def smoke_repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(scope="session")
+def diagnosis_baseline_root(smoke_repo_root: Path) -> Path:
+    return get_diagnosis_baseline_root(smoke_repo_root)
+
+
+@pytest.fixture(scope="session")
+def diagnosis_baseline_index(diagnosis_baseline_root: Path) -> dict[str, object]:
+    return load_diagnosis_baseline_index_from_root(diagnosis_baseline_root)
+
+
+@pytest.fixture(scope="session")
+def diagnosis_baseline_case_loader(
+    diagnosis_baseline_root: Path,
+    diagnosis_baseline_index: dict[str, object],
+):
+    def load_case(case_id: str) -> tuple[Path, dict[str, object]]:
+        case_entry = get_diagnosis_baseline_case(diagnosis_baseline_index, case_id)
+        return diagnosis_baseline_root / case_id, case_entry
+
+    return load_case
 
 
 @pytest.fixture(scope="session")

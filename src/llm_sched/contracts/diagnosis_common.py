@@ -17,6 +17,8 @@ class DiagnosisOutputLayout(BaseModel):
     run_root: Path
     reports_dir: Path
     diagnosis_reports_dir: Path
+    trace_reports_dir: Path
+    dataset_dir: Path
 
 
 def build_diagnosis_output_layout(run_root: Path, reports_dir: Path) -> DiagnosisOutputLayout:
@@ -24,5 +26,7 @@ def build_diagnosis_output_layout(run_root: Path, reports_dir: Path) -> Diagnosi
         run_root=run_root,
         reports_dir=reports_dir,
         diagnosis_reports_dir=reports_dir / "diagnosis",
+        trace_reports_dir=reports_dir / "diagnosis" / "trace",
+        dataset_dir=reports_dir / "diagnosis" / "dataset",
     )
 

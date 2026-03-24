@@ -61,6 +61,8 @@ def test_build_architecture_assessment_report_synthesizes_bottlenecks_gaps_timel
     assert report.top_bottlenecks[0].subject_id == "nig.node.q_proj.0"
     assert report.top_support_gaps[0].subject_id == "structure.layer0.attention_block"
     assert report.top_timeline_losses[0].subject_id == "sched.block.q_proj.compute"
+    assert report.top_realization_gaps
+    assert report.key_metrics["execution"]["critical_path_cycles"] >= 0
     assert report.recommendations[0].category == "model"
     assert report.recommendations[0].action.lower().startswith("remove")
     assert report.recommendations[1].category == "compiler"

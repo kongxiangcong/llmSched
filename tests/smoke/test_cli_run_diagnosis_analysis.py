@@ -46,7 +46,10 @@ def test_run_diagnosis_analysis_writes_reserved_output_directory(
     assert "Diagnosis analysis completed" in result.stdout
 
     manifest = json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))
-    assert (run_root / "reports" / "diagnosis").is_dir()
+    diagnosis_dir = run_root / "reports" / "diagnosis"
+    assert diagnosis_dir.is_dir()
+    assert (diagnosis_dir / "trace").is_dir()
+    assert (diagnosis_dir / "dataset").is_dir()
     assert manifest["artifact_index"]["diagnosis_reports_dir"] == "reports/diagnosis"
 
 

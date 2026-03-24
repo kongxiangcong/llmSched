@@ -4,6 +4,11 @@ from llm_sched.analysis.architecture_assessment_report_builder import (
     build_architecture_assessment_report,
 )
 from llm_sched.analysis.diagnosis_bundle_builder import build_diagnosis_bundle
+from llm_sched.analysis.diagnosis_context import (
+    DiagnosisContext,
+    build_diagnosis_context,
+)
+from llm_sched.analysis.diagnosis_dataset_writer import write_diagnosis_dataset
 from llm_sched.analysis.memory_planner_closure_builder import build_memory_planner_closure_report
 from llm_sched.analysis.model_structure_report_builder import build_model_structure_report
 from llm_sched.analysis.operator_representation_report_builder import (
@@ -31,6 +36,9 @@ from llm_sched.analysis.sweep_report_builder import build_sweep_delta_report
 from llm_sched.analysis.visualization_bundle_builder import build_visualization_bundle
 
 __all__ = [
+    "write_diagnosis_dataset",
+    "build_diagnosis_context",
+    "DiagnosisContext",
     "build_architecture_assessment_report",
     "build_diagnosis_bundle",
     "build_memory_planner_closure_report",

@@ -1,0 +1,162 @@
+{
+  "workbench_id": "diagnosis-workbench.__BASELINE_RUN_ID__",
+  "metadata": {
+    "run_id": "__BASELINE_RUN_ID__",
+    "graph_id": "main_graph",
+    "scenario_name": "prefill_seq128",
+    "report_kind": "prefill",
+    "schedule_kind": "dual-core",
+    "title": "Main_Graph Prefill Diagnosis / Dual Core"
+  },
+  "entry_html_path": "diagnosis_workbench/index.html",
+  "bundle_path": "../reports/diagnosis_bundle.json",
+  "default_panel": "summary",
+  "available_panels": [
+    "summary",
+    "model-structure",
+    "operator-representation",
+    "support-matrix",
+    "resource-demand",
+    "schedule",
+    "timeline",
+    "performance",
+    "roofline",
+    "assessment"
+  ],
+  "deep_links": {
+    "summary": "#/summary",
+    "model-structure": "#/model-structure",
+    "operator-representation": "#/operator-representation",
+    "support-matrix": "#/support-matrix",
+    "resource-demand": "#/resource-demand",
+    "schedule": "#/schedule",
+    "timeline": "#/timeline",
+    "performance": "#/performance",
+    "roofline": "#/roofline",
+    "assessment": "#/assessment"
+  },
+  "panel_exports": {
+    "summary": [
+      {
+        "path": "diagnosis_workbench/exports/summary.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/summary.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "model-structure": [
+      {
+        "path": "diagnosis_workbench/exports/model-structure.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/model-structure.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "operator-representation": [
+      {
+        "path": "diagnosis_workbench/exports/operator-representation.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/operator-representation.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "support-matrix": [
+      {
+        "path": "diagnosis_workbench/exports/support-matrix.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/support-matrix.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "resource-demand": [
+      {
+        "path": "diagnosis_workbench/exports/resource-demand.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/resource-demand.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "schedule": [
+      {
+        "path": "diagnosis_workbench/exports/schedule.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/schedule.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "timeline": [
+      {
+        "path": "diagnosis_workbench/exports/timeline.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/timeline.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "performance": [
+      {
+        "path": "diagnosis_workbench/exports/performance.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/performance.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "roofline": [
+      {
+        "path": "diagnosis_workbench/exports/roofline.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/roofline.svg",
+        "media_type": "image/svg+xml"
+      }
+    ],
+    "assessment": [
+      {
+        "path": "diagnosis_workbench/exports/assessment.json",
+        "media_type": "application/json"
+      },
+      {
+        "path": "diagnosis_workbench/exports/assessment.svg",
+        "media_type": "image/svg+xml"
+      }
+    ]
+  },
+  "asset_files": [
+    {
+      "path": "diagnosis_workbench/index.html",
+      "media_type": "text/html",
+      "role": "entry_html"
+    },
+    {
+      "path": "diagnosis_workbench/assets/app.js",
+      "media_type": "application/javascript",
+      "role": "script"
+    },
+    {
+      "path": "diagnosis_workbench/assets/styles.css",
+      "media_type": "text/css",
+      "role": "style"
+    },
+    {
+      "path": "diagnosis_workbench/workbench_manifest.json",
+      "media_type": "application/json",
+      "role": "manifest"
+    }
+  ]
+}

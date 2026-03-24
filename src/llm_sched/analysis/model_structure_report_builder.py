@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.frontend_binding_report import FrontendBindingReport
 from llm_sched.contracts.frontend_import_report import FrontendImportReport
 from llm_sched.contracts.model_structure_report import (
@@ -23,12 +24,26 @@ _LAYER_PATTERN = re.compile(r"layers\.(\d+)")
 
 def build_model_structure_report(
     *,
-    run_id: str,
-    scenario_name: str,
-    canonical_graph_ir: GraphIR,
-    import_report: FrontendImportReport,
-    binding_report: FrontendBindingReport,
+    run_id: str | None = None,
+    scenario_name: str | None = None,
+    canonical_graph_ir: GraphIR | None = None,
+    import_report: FrontendImportReport | None = None,
+    binding_report: FrontendBindingReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> ModelStructureReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        scenario_name = ctx.scenario_name
+        canonical_graph_ir = ctx.canonical_graph_ir
+        import_report = ctx.frontend_import_report
+        binding_report = ctx.frontend_binding_report
+    if any(value is None for value in (run_id, scenario_name, canonical_graph_ir, import_report, binding_report)):
+        raise ValueError("build_model_structure_report requires either ctx or explicit inputs")
+    assert canonical_graph_ir is not None
+    assert import_report is not None
+    assert binding_report is not None
+    assert run_id is not None
+    assert scenario_name is not None
     if import_report.graph_id != canonical_graph_ir.graph_id:
         raise ValueError("graph_id mismatch between canonical graph IR and frontend import report")
 
@@ -190,3 +205,48 @@ def _layer_sort_key(layer_id: int | None) -> tuple[int, int]:
     if layer_id is None:
         return (-1, -1)
     return (0, layer_id)
+
+
+def _extract_structure_inventory_rows(report: ModelStructureReport) -> list[dict[str, object]]:
+    return [
+        {
+            "structure_id": structure.structure_id,
+            "structure_kind": structure.structure_kind,
+            "layer_id": -1 if structure.layer_id is None else structure.layer_id,
+            "node_count": len(structure.node_ids),
+            "input_shape": _format_shape(structure.input_ports[0].shape if structure.input_ports else []),
+            "output_shape": _format_shape(structure.output_ports[0].shape if structure.output_ports else []),
+            "dtype": _infer_structure_dtype(structure),
+            "parameter_count": 0,
+            "parameter_bytes": 0,
+        }
+        for structure in report.structures
+    ]
+
+
+def _extract_model_summary_rows(report: ModelStructureReport) -> list[dict[str, object]]:
+    rows = [
+        {"metric": "total_layers", "value": report.model_summary.total_layers},
+        {"metric": "total_structures", "value": report.model_summary.total_structures},
+        {"metric": "total_nodes", "value": report.model_summary.total_nodes},
+    ]
+    rows.extend(
+        {
+            "metric": f"structure_kind_counts.{structure_kind}",
+            "value": count,
+        }
+        for structure_kind, count in sorted(report.model_summary.structure_type_counts.items())
+    )
+    return rows
+
+
+def _format_shape(shape: list[int]) -> str:
+    return "x".join(str(dim) for dim in shape)
+
+
+def _infer_structure_dtype(structure: ModelStructureEntry) -> str:
+    if structure.output_ports and structure.output_ports[0].dtype is not None:
+        return structure.output_ports[0].dtype
+    if structure.input_ports and structure.input_ports[0].dtype is not None:
+        return structure.input_ports[0].dtype
+    return ""

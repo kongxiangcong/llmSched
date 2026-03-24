@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.schedule_diagnostics_report import (
     CoreLaneOccupancy,
     IdleSpanEntry,
@@ -21,14 +22,24 @@ _GLOBAL_CONTENTION_RESOURCES = {"DMA", "Core Link"}
 
 def build_schedule_diagnostics_report(
     *,
-    run_id: str,
-    scenario_name: str,
-    schedule_ir: ScheduleIR,
-    descriptor_ir: DescriptorIR,
+    run_id: str | None = None,
+    scenario_name: str | None = None,
+    schedule_ir: ScheduleIR | None = None,
+    descriptor_ir: DescriptorIR | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> ScheduleDiagnosticsReport:
-    descriptor_by_block_id = {
-        descriptor.schedule_block_id: descriptor for descriptor in descriptor_ir.descriptors
-    }
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        scenario_name = ctx.scenario_name
+        schedule_ir = ctx.schedule_ir
+        descriptor_ir = ctx.descriptor_ir
+    if any(value is None for value in (run_id, scenario_name, schedule_ir, descriptor_ir)):
+        raise ValueError("build_schedule_diagnostics_report requires either ctx or explicit inputs")
+    assert schedule_ir is not None
+    assert descriptor_ir is not None
+    assert run_id is not None
+    assert scenario_name is not None
+    descriptor_by_block_id = (ctx.descriptor_by_block_id if ctx is not None else {descriptor.schedule_block_id: descriptor for descriptor in descriptor_ir.descriptors})
     core_ids = _schedule_core_ids(schedule_ir)
     block_end_by_id = {
         block.block_id: max(0, block.issue_slot) + max(0, block.duration_slots)
@@ -347,3 +358,36 @@ def _merged_interval_length(intervals: list[tuple[int, int]]) -> int:
         merged_start, merged_end = start, end
     total += max(0, merged_end - merged_start)
     return total
+
+
+def _extract_schedule_block_rows(report: ScheduleDiagnosticsReport) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for block in report.blocks:
+        for core_id in (block.core_ids or [-1]):
+            rows.append(
+                {
+                    "block_id": block.block_id,
+                    "normalized_node_id": block.node_id,
+                    "macro_op": block.macro_op,
+                    "schedule_stage": block.stage,
+                    "core_id": core_id,
+                    "start_slot": block.start_slot,
+                    "end_slot": block.end_slot,
+                    "duration_slots": block.duration_slots,
+                    "stall_reason": block.stall_reason,
+                }
+            )
+    return rows
+
+
+def _extract_core_utilization_rows(report: ScheduleDiagnosticsReport) -> list[dict[str, object]]:
+    return [
+        {
+            "core_id": lane.core_id,
+            "occupied_slots": lane.occupied_slots,
+            "makespan_slots": lane.makespan_slots,
+            "utilization_ratio": lane.utilization_ratio,
+            "block_count": len(lane.block_ids),
+        }
+        for lane in report.core_lanes
+    ]

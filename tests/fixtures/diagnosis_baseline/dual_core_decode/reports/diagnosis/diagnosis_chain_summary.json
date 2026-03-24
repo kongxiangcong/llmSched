@@ -1,0 +1,93 @@
+{
+  "run_id": "__BASELINE_RUN_ID__",
+  "graph_id": "main_graph",
+  "scenario_name": "decode_token1_kv2048",
+  "schedule_kind": "dual-core",
+  "report_kind": "decode",
+  "stage_chain": [
+    {
+      "stage": "model_structure",
+      "headline": "27 layers, 83 structures",
+      "key_facts": {
+        "total_layers": 27,
+        "total_structures": 83,
+        "total_nodes": 1658
+      }
+    },
+    {
+      "stage": "operator_representation",
+      "headline": "883 mapped nodes across 9 macro groups",
+      "key_facts": {
+        "node_mapping_count": 883,
+        "macro_group_count": 9,
+        "fallback_entry_count": 436
+      }
+    },
+    {
+      "stage": "resource_demand",
+      "headline": "total compute=152108419 ops, bytes=223946528",
+      "key_facts": {
+        "total_compute_ops": 152108419.0,
+        "total_read_bytes": 223673828.0,
+        "total_write_bytes": 272700.0
+      }
+    },
+    {
+      "stage": "support_matrix",
+      "headline": "82 structures evaluated for support",
+      "key_facts": {
+        "critical_gap_count": 1458,
+        "reason_kind_count": 4
+      }
+    },
+    {
+      "stage": "schedule",
+      "headline": "4024 blocks, makespan 203938 slots",
+      "key_facts": {
+        "block_count": 4024,
+        "makespan_slots": 203938,
+        "contention_ratio": 0.0008679108356461278
+      }
+    },
+    {
+      "stage": "performance",
+      "headline": "dominant bottleneck bandwidth_bound",
+      "key_facts": {
+        "critical_path_cycles": 203938.0,
+        "node_hotspot_count": 883
+      }
+    },
+    {
+      "stage": "realization_gap",
+      "headline": "top gap support_gap score=0.80",
+      "key_facts": {
+        "row_count": 82,
+        "top_gap_kind": "support_gap"
+      }
+    },
+    {
+      "stage": "roofline",
+      "headline": "dominant bound bandwidth",
+      "key_facts": {
+        "compute_ceiling": 32768.0,
+        "layer_point_count": 27
+      }
+    },
+    {
+      "stage": "timeline",
+      "headline": "top timeline loss dependency_serialization share=1.63",
+      "key_facts": {
+        "loss_kind_count": 2,
+        "top_loss_kind": "dependency_serialization"
+      }
+    },
+    {
+      "stage": "assessment",
+      "headline": "The current target cannot execute the model as intended because blocking support gaps remain on the hottest path.",
+      "key_facts": {
+        "verdict": "unsupported",
+        "recommendation_count": 4
+      }
+    }
+  ]
+}

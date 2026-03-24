@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.frontend_analysis_report import FrontendLegalityReport
 from llm_sched.contracts.frontend_binding_report import FrontendBindingReport
 from llm_sched.contracts.model_structure_report import ModelStructureReport
@@ -19,13 +20,27 @@ from llm_sched.contracts.support_matrix_report import (
 
 def build_support_matrix_report(
     *,
-    run_id: str,
-    scenario_name: str,
-    legality_report: FrontendLegalityReport,
-    binding_report: FrontendBindingReport,
-    model_structure_report: ModelStructureReport,
-    operator_representation_report: OperatorRepresentationReport,
+    run_id: str | None = None,
+    scenario_name: str | None = None,
+    legality_report: FrontendLegalityReport | None = None,
+    binding_report: FrontendBindingReport | None = None,
+    model_structure_report: ModelStructureReport | None = None,
+    operator_representation_report: OperatorRepresentationReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> SupportMatrixReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        scenario_name = ctx.scenario_name
+        legality_report = ctx.frontend_legality_report
+        binding_report = ctx.frontend_binding_report
+    if any(value is None for value in (run_id, scenario_name, legality_report, binding_report, model_structure_report, operator_representation_report)):
+        raise ValueError("build_support_matrix_report requires either ctx plus reports or explicit inputs")
+    assert legality_report is not None
+    assert binding_report is not None
+    assert model_structure_report is not None
+    assert operator_representation_report is not None
+    assert run_id is not None
+    assert scenario_name is not None
     legality_by_graph_node = defaultdict(list)
     for issue in legality_report.issues:
         legality_by_graph_node[issue.node_id].append(issue)
@@ -48,10 +63,14 @@ def build_support_matrix_report(
     for mapping in operator_representation_report.node_mappings:
         legality_issues = legality_by_graph_node.get(mapping.graph_node_id, [])
         binding_issues = binding_by_subject.get(mapping.normalized_node_id, [])
-        provenance = _lookup_node_provenance(
-            mapping.graph_node_id,
-            node_index_by_graph_node=node_index_by_graph_node,
-            structure_kind_by_id=structure_kind_by_id,
+        provenance = (
+            ctx.resolve_graph_node_provenance(mapping.graph_node_id).model_dump()
+            if ctx is not None
+            else _lookup_node_provenance(
+                mapping.graph_node_id,
+                node_index_by_graph_node=node_index_by_graph_node,
+                structure_kind_by_id=structure_kind_by_id,
+            )
         )
         status, reasons, details = _classify_node_support(
             mapping,
@@ -234,3 +253,36 @@ def _lookup_node_provenance(
         "structure_id": structure_id,
         "structure_kind": structure_kind_by_id.get(structure_id, "unmapped_structure"),
     }
+
+
+def _extract_structure_support_rows(report: SupportMatrixReport) -> list[dict[str, object]]:
+    return [
+        {
+            "structure_id": entry.structure_id,
+            "structure_kind": entry.structure_kind,
+            "layer_id": -1 if entry.layer_id is None else entry.layer_id,
+            "worst_support_status": entry.support_status,
+            "native_count": entry.native_count,
+            "constrained_count": entry.constrained_count,
+            "fallback_count": entry.fallback_count,
+            "unsupported_count": entry.unsupported_count,
+            "blocking_gap_count": entry.unsupported_count,
+            "top_reason_code": entry.reason_codes[0] if entry.reason_codes else "",
+        }
+        for entry in report.structure_support_summary
+    ]
+
+
+def _extract_critical_gaps_rows(report: SupportMatrixReport) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for row in report.critical_gaps:
+        rows.append(
+            {
+                "normalized_node_id": row.subject_id,
+                "subject_kind": row.subject_kind,
+                "support_status": row.support_status,
+                "reason_code": row.reason_code,
+                "message": row.message,
+            }
+        )
+    return rows

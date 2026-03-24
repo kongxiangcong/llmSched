@@ -1,0 +1,1309 @@
+{
+  "run_id": "__BASELINE_RUN_ID__",
+  "graph_id": "main_graph",
+  "scenario_name": "prefill_seq128",
+  "node_demands": [],
+  "layer_demands": [
+    {
+      "layer_id": 0,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer0.attention_block",
+        "structure.layer0.auxiliary_block",
+        "structure.layer0.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 1,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer1.attention_block",
+        "structure.layer1.auxiliary_block",
+        "structure.layer1.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 2,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer2.attention_block",
+        "structure.layer2.auxiliary_block",
+        "structure.layer2.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 3,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer3.attention_block",
+        "structure.layer3.auxiliary_block",
+        "structure.layer3.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 4,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer4.attention_block",
+        "structure.layer4.auxiliary_block",
+        "structure.layer4.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 5,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer5.attention_block",
+        "structure.layer5.auxiliary_block",
+        "structure.layer5.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 6,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer6.attention_block",
+        "structure.layer6.auxiliary_block",
+        "structure.layer6.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 7,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer7.attention_block",
+        "structure.layer7.auxiliary_block",
+        "structure.layer7.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 8,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer8.attention_block",
+        "structure.layer8.auxiliary_block",
+        "structure.layer8.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 9,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer9.attention_block",
+        "structure.layer9.auxiliary_block",
+        "structure.layer9.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 10,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer10.attention_block",
+        "structure.layer10.auxiliary_block",
+        "structure.layer10.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 11,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer11.attention_block",
+        "structure.layer11.auxiliary_block",
+        "structure.layer11.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 12,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer12.attention_block",
+        "structure.layer12.auxiliary_block",
+        "structure.layer12.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 13,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer13.attention_block",
+        "structure.layer13.auxiliary_block",
+        "structure.layer13.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 14,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer14.attention_block",
+        "structure.layer14.auxiliary_block",
+        "structure.layer14.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 15,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer15.attention_block",
+        "structure.layer15.auxiliary_block",
+        "structure.layer15.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 16,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer16.attention_block",
+        "structure.layer16.auxiliary_block",
+        "structure.layer16.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 17,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer17.attention_block",
+        "structure.layer17.auxiliary_block",
+        "structure.layer17.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 18,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer18.attention_block",
+        "structure.layer18.auxiliary_block",
+        "structure.layer18.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 19,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer19.attention_block",
+        "structure.layer19.auxiliary_block",
+        "structure.layer19.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 20,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer20.attention_block",
+        "structure.layer20.auxiliary_block",
+        "structure.layer20.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 21,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer21.attention_block",
+        "structure.layer21.auxiliary_block",
+        "structure.layer21.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 22,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer22.attention_block",
+        "structure.layer22.auxiliary_block",
+        "structure.layer22.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 23,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer23.attention_block",
+        "structure.layer23.auxiliary_block",
+        "structure.layer23.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 24,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer24.attention_block",
+        "structure.layer24.auxiliary_block",
+        "structure.layer24.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 25,
+      "compute_ops": 42624.0,
+      "read_bytes": 1707280.0,
+      "write_bytes": 140300.0,
+      "working_set_bytes": 896656.0,
+      "dependency_depth": 1,
+      "node_count": 33,
+      "structure_ids": [
+        "structure.layer25.attention_block",
+        "structure.layer25.auxiliary_block",
+        "structure.layer25.mlp_block"
+      ]
+    },
+    {
+      "layer_id": 26,
+      "compute_ops": 1152.0,
+      "read_bytes": 57344.0,
+      "write_bytes": 8960.0,
+      "working_set_bytes": 36608.0,
+      "dependency_depth": 1,
+      "node_count": 3,
+      "structure_ids": [
+        "structure.layer26.auxiliary_block"
+      ]
+    }
+  ],
+  "structure_demands": [
+    {
+      "structure_id": "structure.attention_block",
+      "layer_id": null,
+      "structure_kind": "attention_block",
+      "compute_ops": 256.0,
+      "read_bytes": 4096.0,
+      "write_bytes": 1280.0,
+      "working_set_bytes": 7616.0,
+      "dependency_depth": 1,
+      "node_count": 10
+    },
+    {
+      "structure_id": "structure.auxiliary_block",
+      "layer_id": null,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 128.0,
+      "read_bytes": 114720.0,
+      "write_bytes": 12288.0,
+      "working_set_bytes": 62632.0,
+      "dependency_depth": 1,
+      "node_count": 11
+    },
+    {
+      "structure_id": "structure.embedding",
+      "layer_id": null,
+      "structure_kind": "embedding",
+      "compute_ops": 150994944.0,
+      "read_bytes": 9740.0,
+      "write_bytes": 2304.0,
+      "working_set_bytes": 4870.0,
+      "dependency_depth": 1,
+      "node_count": 1
+    },
+    {
+      "structure_id": "structure.layer0.attention_block",
+      "layer_id": 0,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer0.auxiliary_block",
+      "layer_id": 0,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer0.mlp_block",
+      "layer_id": 0,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer1.attention_block",
+      "layer_id": 1,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer1.auxiliary_block",
+      "layer_id": 1,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer1.mlp_block",
+      "layer_id": 1,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer10.attention_block",
+      "layer_id": 10,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer10.auxiliary_block",
+      "layer_id": 10,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer10.mlp_block",
+      "layer_id": 10,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer11.attention_block",
+      "layer_id": 11,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer11.auxiliary_block",
+      "layer_id": 11,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer11.mlp_block",
+      "layer_id": 11,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer12.attention_block",
+      "layer_id": 12,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer12.auxiliary_block",
+      "layer_id": 12,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer12.mlp_block",
+      "layer_id": 12,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer13.attention_block",
+      "layer_id": 13,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer13.auxiliary_block",
+      "layer_id": 13,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer13.mlp_block",
+      "layer_id": 13,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer14.attention_block",
+      "layer_id": 14,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer14.auxiliary_block",
+      "layer_id": 14,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer14.mlp_block",
+      "layer_id": 14,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer15.attention_block",
+      "layer_id": 15,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer15.auxiliary_block",
+      "layer_id": 15,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer15.mlp_block",
+      "layer_id": 15,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer16.attention_block",
+      "layer_id": 16,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer16.auxiliary_block",
+      "layer_id": 16,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer16.mlp_block",
+      "layer_id": 16,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer17.attention_block",
+      "layer_id": 17,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer17.auxiliary_block",
+      "layer_id": 17,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer17.mlp_block",
+      "layer_id": 17,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer18.attention_block",
+      "layer_id": 18,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer18.auxiliary_block",
+      "layer_id": 18,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer18.mlp_block",
+      "layer_id": 18,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer19.attention_block",
+      "layer_id": 19,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer19.auxiliary_block",
+      "layer_id": 19,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer19.mlp_block",
+      "layer_id": 19,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer2.attention_block",
+      "layer_id": 2,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer2.auxiliary_block",
+      "layer_id": 2,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer2.mlp_block",
+      "layer_id": 2,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer20.attention_block",
+      "layer_id": 20,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer20.auxiliary_block",
+      "layer_id": 20,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer20.mlp_block",
+      "layer_id": 20,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer21.attention_block",
+      "layer_id": 21,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer21.auxiliary_block",
+      "layer_id": 21,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer21.mlp_block",
+      "layer_id": 21,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer22.attention_block",
+      "layer_id": 22,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer22.auxiliary_block",
+      "layer_id": 22,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer22.mlp_block",
+      "layer_id": 22,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer23.attention_block",
+      "layer_id": 23,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer23.auxiliary_block",
+      "layer_id": 23,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer23.mlp_block",
+      "layer_id": 23,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer24.attention_block",
+      "layer_id": 24,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer24.auxiliary_block",
+      "layer_id": 24,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer24.mlp_block",
+      "layer_id": 24,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer25.attention_block",
+      "layer_id": 25,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer25.auxiliary_block",
+      "layer_id": 25,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer25.mlp_block",
+      "layer_id": 25,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer26.auxiliary_block",
+      "layer_id": 26,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 1152.0,
+      "read_bytes": 57344.0,
+      "write_bytes": 8960.0,
+      "working_set_bytes": 36608.0,
+      "dependency_depth": 1,
+      "node_count": 3
+    },
+    {
+      "structure_id": "structure.layer3.attention_block",
+      "layer_id": 3,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer3.auxiliary_block",
+      "layer_id": 3,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer3.mlp_block",
+      "layer_id": 3,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer4.attention_block",
+      "layer_id": 4,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer4.auxiliary_block",
+      "layer_id": 4,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer4.mlp_block",
+      "layer_id": 4,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer5.attention_block",
+      "layer_id": 5,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer5.auxiliary_block",
+      "layer_id": 5,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer5.mlp_block",
+      "layer_id": 5,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer6.attention_block",
+      "layer_id": 6,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer6.auxiliary_block",
+      "layer_id": 6,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer6.mlp_block",
+      "layer_id": 6,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer7.attention_block",
+      "layer_id": 7,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer7.auxiliary_block",
+      "layer_id": 7,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer7.mlp_block",
+      "layer_id": 7,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer8.attention_block",
+      "layer_id": 8,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer8.auxiliary_block",
+      "layer_id": 8,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer8.mlp_block",
+      "layer_id": 8,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer9.attention_block",
+      "layer_id": 9,
+      "structure_kind": "attention_block",
+      "compute_ops": 2304.0,
+      "read_bytes": 632832.0,
+      "write_bytes": 13056.0,
+      "working_set_bytes": 324352.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    },
+    {
+      "structure_id": "structure.layer9.auxiliary_block",
+      "layer_id": 9,
+      "structure_kind": "auxiliary_block",
+      "compute_ops": 12672.0,
+      "read_bytes": 697520.0,
+      "write_bytes": 86284.0,
+      "working_set_bytes": 383840.0,
+      "dependency_depth": 1,
+      "node_count": 25
+    },
+    {
+      "structure_id": "structure.layer9.mlp_block",
+      "layer_id": 9,
+      "structure_kind": "mlp_block",
+      "compute_ops": 27648.0,
+      "read_bytes": 376928.0,
+      "write_bytes": 40960.0,
+      "working_set_bytes": 188464.0,
+      "dependency_depth": 1,
+      "node_count": 4
+    }
+  ],
+  "totals": {
+    "compute_ops": 152104704.0,
+    "read_bytes": 44575180.0,
+    "write_bytes": 3672632.0,
+    "working_set_bytes": 23424782.0,
+    "node_count": 883,
+    "layer_count": 27,
+    "structure_count": 82
+  },
+  "assumptions": [
+    {
+      "assumption_id": "approx.compute_ops.from_shape_volume",
+      "category": "compute_model",
+      "message": "compute_ops are approximated from the first structure output shape volume for non-helper mappings."
+    },
+    {
+      "assumption_id": "approx.memory_from_allocations",
+      "category": "memory_model",
+      "message": "working-set and IO demands are aggregated from memory-plan allocations per normalized node."
+    }
+  ]
+}

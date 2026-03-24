@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.operator_representation_report import (
     OperatorFallbackEntry,
     OperatorMacroGroup,
@@ -19,18 +20,32 @@ from llm_sched.ir.nig import NIGIR
 
 def build_operator_representation_report(
     *,
-    run_id: str,
-    scenario_name: str,
-    canonical_graph_ir: GraphIR,
-    bound_nig_ir: NIGIR,
-    workload_decomposition_report: WorkloadDecompositionReport,
+    run_id: str | None = None,
+    scenario_name: str | None = None,
+    canonical_graph_ir: GraphIR | None = None,
+    bound_nig_ir: NIGIR | None = None,
+    workload_decomposition_report: WorkloadDecompositionReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> OperatorRepresentationReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        scenario_name = ctx.scenario_name
+        canonical_graph_ir = ctx.canonical_graph_ir
+        bound_nig_ir = ctx.bound_nig_ir
+        workload_decomposition_report = ctx.workload_decomposition_report
+    if any(value is None for value in (run_id, scenario_name, canonical_graph_ir, bound_nig_ir, workload_decomposition_report)):
+        raise ValueError("build_operator_representation_report requires either ctx or explicit inputs")
+    assert canonical_graph_ir is not None
+    assert bound_nig_ir is not None
+    assert workload_decomposition_report is not None
+    assert run_id is not None
+    assert scenario_name is not None
     if canonical_graph_ir.graph_id != bound_nig_ir.graph_id:
         raise ValueError("graph_id mismatch between canonical graph IR and bound NIG IR")
     if canonical_graph_ir.graph_id != workload_decomposition_report.graph_id:
         raise ValueError("graph_id mismatch between canonical graph IR and workload decomposition report")
 
-    graph_nodes = {node.node_id: node for node in canonical_graph_ir.nodes}
+    graph_nodes = ctx.graph_node_by_id if ctx is not None else {node.node_id: node for node in canonical_graph_ir.nodes}
     graph_node_to_mapping: dict[str, OperatorNodeMapping] = {}
     fallback_entries: list[OperatorFallbackEntry] = []
     traceability_index: list[OperatorTraceabilityEntry] = []
@@ -163,3 +178,38 @@ def _canonical_macro_name(macro_op: str) -> str:
     if macro_op == "ROPE_TABLE":
         return "ROPE"
     return macro_op
+
+
+def _extract_operator_mapping_rows(
+    report: OperatorRepresentationReport,
+    *,
+    ctx: DiagnosisContext,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "normalized_node_id": mapping.normalized_node_id,
+            "graph_node_id": mapping.graph_node_id,
+            "canonical_op": mapping.canonical_op,
+            "macro_op": mapping.macro_op,
+            "phase": mapping.phase,
+            "fallback_kind": mapping.fallback_kind,
+            "structure_id": ctx.resolve_normalized_node_provenance(mapping.normalized_node_id).structure_id,
+            "layer_id": ctx.resolve_normalized_node_provenance(mapping.normalized_node_id).layer_id,
+        }
+        for mapping in report.node_mappings
+    ]
+
+
+def _extract_macro_op_summary_rows(report: OperatorRepresentationReport) -> list[dict[str, object]]:
+    fallback_ids = {entry.normalized_node_id for entry in report.fallback_entries}
+    return [
+        {
+            "macro_op": group.macro_op,
+            "phase": group.phase,
+            "node_count": len(group.normalized_node_ids),
+            "fallback_count": sum(1 for node_id in group.normalized_node_ids if node_id in fallback_ids),
+            "helper_count": sum(1 for entry in report.fallback_entries if entry.phase == group.phase and entry.macro_op == group.macro_op and entry.fallback_kind == "helper"),
+            "native_count": sum(1 for node_id in group.normalized_node_ids if node_id not in fallback_ids),
+        }
+        for group in report.macro_groups
+    ]

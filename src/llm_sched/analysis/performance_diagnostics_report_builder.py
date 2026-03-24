@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.decode_report import DecodeEvaluationReport
 from llm_sched.contracts.model_structure_report import ModelStructureReport
 from llm_sched.contracts.operator_representation_report import OperatorRepresentationReport
@@ -26,15 +27,29 @@ from llm_sched.contracts.support_matrix_report import SupportMatrixReport
 
 def build_performance_diagnostics_report(
     *,
-    run_id: str,
-    perf_summary_report: PerfSummaryReport,
-    model_structure_report: ModelStructureReport,
-    operator_representation_report: OperatorRepresentationReport,
-    schedule_diagnostics_report: ScheduleDiagnosticsReport,
-    support_matrix_report: SupportMatrixReport,
-    prefill_report: PrefillEvaluationReport | None,
-    decode_report: DecodeEvaluationReport | None,
+    run_id: str | None = None,
+    perf_summary_report: PerfSummaryReport | None = None,
+    model_structure_report: ModelStructureReport | None = None,
+    operator_representation_report: OperatorRepresentationReport | None = None,
+    schedule_diagnostics_report: ScheduleDiagnosticsReport | None = None,
+    support_matrix_report: SupportMatrixReport | None = None,
+    prefill_report: PrefillEvaluationReport | None = None,
+    decode_report: DecodeEvaluationReport | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> PerformanceDiagnosticsReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        perf_summary_report = ctx.perf_summary_report
+        prefill_report = ctx.prefill_evaluation_report
+        decode_report = ctx.decode_evaluation_report
+    if any(value is None for value in (run_id, perf_summary_report, model_structure_report, operator_representation_report, schedule_diagnostics_report, support_matrix_report)):
+        raise ValueError("build_performance_diagnostics_report requires either ctx plus reports or explicit inputs")
+    assert perf_summary_report is not None
+    assert model_structure_report is not None
+    assert operator_representation_report is not None
+    assert schedule_diagnostics_report is not None
+    assert support_matrix_report is not None
+    assert run_id is not None
     if (prefill_report is None) == (decode_report is None):
         raise ValueError("performance diagnostics builder requires exactly one of prefill_report or decode_report")
 
@@ -50,6 +65,7 @@ def build_performance_diagnostics_report(
         operator_representation_report=operator_representation_report,
         support_matrix_report=support_matrix_report,
         dominant_bound=dominant_bound,
+        ctx=ctx,
     )
     critical_path_cycles = float(perf_summary_report.totals.get("critical_path_cycles", 0.0))
     phase_breakdown = _build_phase_breakdown(
@@ -156,6 +172,7 @@ def _build_node_hotspots(
     operator_representation_report: OperatorRepresentationReport,
     support_matrix_report: SupportMatrixReport,
     dominant_bound: str,
+    ctx: DiagnosisContext | None = None,
 ) -> list[NodeHotspotEntry]:
     node_index_by_graph_node = {entry.node_id: entry for entry in model_structure_report.node_index}
     structure_kind_by_id = {
@@ -171,30 +188,34 @@ def _build_node_hotspots(
     return [
         NodeHotspotEntry(
             node_id=row.node_id,
-            graph_node_id=_graph_node_id_for_hotspot(
+            graph_node_id=(ctx.resolve_graph_node_id_for_normalized_node(row.node_id) or _graph_node_id_for_hotspot(
+                row.node_id,
+                support_by_subject_id=support_by_subject_id,
+                operator_by_subject_id=operator_by_subject_id,
+            )) if ctx is not None else _graph_node_id_for_hotspot(
                 row.node_id,
                 support_by_subject_id=support_by_subject_id,
                 operator_by_subject_id=operator_by_subject_id,
             ),
-            layer_id=_layer_id_for_hotspot(
+            layer_id=(ctx.resolve_normalized_node_provenance(row.node_id).layer_id if ctx is not None else _layer_id_for_hotspot(
                 row.node_id,
                 support_by_subject_id=support_by_subject_id,
                 operator_by_subject_id=operator_by_subject_id,
                 node_index_by_graph_node=node_index_by_graph_node,
-            ),
-            structure_id=_structure_id_for_hotspot(
+            )),
+            structure_id=(ctx.resolve_normalized_node_provenance(row.node_id).structure_id if ctx is not None else _structure_id_for_hotspot(
                 row.node_id,
                 support_by_subject_id=support_by_subject_id,
                 operator_by_subject_id=operator_by_subject_id,
                 node_index_by_graph_node=node_index_by_graph_node,
-            ),
-            structure_kind=_structure_kind_for_hotspot(
+            )),
+            structure_kind=(ctx.resolve_normalized_node_provenance(row.node_id).structure_kind if ctx is not None else _structure_kind_for_hotspot(
                 row.node_id,
                 support_by_subject_id=support_by_subject_id,
                 operator_by_subject_id=operator_by_subject_id,
                 node_index_by_graph_node=node_index_by_graph_node,
                 structure_kind_by_id=structure_kind_by_id,
-            ),
+            )),
             phase=_phase_for_hotspot(
                 row.node_id,
                 support_by_subject_id=support_by_subject_id,
@@ -497,3 +518,98 @@ def _normalize_bottleneck_kind(bottleneck: str) -> str:
         "fallback_bound": "fallback_bound",
     }
     return mapping.get(bottleneck, bottleneck.replace("-", "_"))
+
+
+def _extract_perf_by_structure_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    aggregated: dict[str, dict[str, object]] = {}
+    for row in report.node_hotspots:
+        bucket = aggregated.setdefault(
+            row.structure_id,
+            {
+                "structure_id": row.structure_id,
+                "structure_kind": row.structure_kind,
+                "layer_id": row.layer_id,
+                "estimated_cycles": 0.0,
+                "fitted_work_cycles": 0.0,
+                "cycle_share": 0.0,
+                "total_bytes": 0.0,
+                "dominant_bound": row.bound_kind,
+                "worst_support_status": row.support_status,
+            },
+        )
+        bucket["estimated_cycles"] += row.estimated_cycles
+        bucket["fitted_work_cycles"] += row.fitted_work_cycles
+        bucket["cycle_share"] += row.cycle_share
+        bucket["total_bytes"] += row.total_bytes
+    return list(aggregated.values())
+
+
+def _extract_phase_breakdown_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    return [
+        {
+            "phase": row.phase,
+            "estimated_cycles": row.estimated_cycles,
+            "fitted_work_cycles": row.fitted_work_cycles,
+            "critical_path_share": row.critical_path_share,
+            "total_bytes": row.total_bytes,
+        }
+        for row in report.phase_breakdown
+    ]
+
+
+def _extract_node_hotspot_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    return [
+        {
+            "rank": index + 1,
+            "normalized_node_id": row.node_id,
+            "layer_id": row.layer_id,
+            "structure_kind": row.structure_kind,
+            "phase": row.phase,
+            "macro_op": row.macro_op,
+            "support_status": row.support_status,
+            "bound_kind": row.bound_kind,
+            "estimated_cycles": row.estimated_cycles,
+            "cycle_share": row.cycle_share,
+            "total_bytes": row.total_bytes,
+        }
+        for index, row in enumerate(report.node_hotspots)
+    ]
+
+
+def _extract_bottleneck_summary_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    total_nodes = sum(report.bottleneck_classification.bottleneck_counts.values())
+    cycle_share_by_kind: dict[str, float] = {}
+    for row in report.node_hotspots:
+        cycle_share_by_kind[row.bound_kind] = cycle_share_by_kind.get(row.bound_kind, 0.0) + row.cycle_share
+    return [
+        {
+            "bottleneck_kind": kind,
+            "node_count": count,
+            "cycle_share": cycle_share_by_kind.get(kind, 0.0),
+            "share_of_total": (count / total_nodes) if total_nodes else 0.0,
+        }
+        for kind, count in sorted(report.bottleneck_classification.bottleneck_counts.items())
+    ]
+
+
+def _extract_structure_bottleneck_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    return [
+        {
+            "structure_id": row["structure_id"],
+            "structure_kind": row["structure_kind"],
+            "layer_id": row["layer_id"],
+            "dominant_bound_kind": row["dominant_bound"],
+            "bound_cycle_share": row["cycle_share"],
+            "support_gap_count": 0 if row["worst_support_status"] == "native" else 1,
+            "gap_score": row["cycle_share"],
+        }
+        for row in _extract_perf_by_structure_rows(report)
+    ]
+
+
+def _extract_pressure_summary_rows(report: PerformanceDiagnosticsReport) -> list[dict[str, object]]:
+    return [
+        {"metric": "peak_bandwidth_pressure", "value": report.bandwidth_diagnostics.peak_bandwidth_pressure, "threshold": 1.0, "status": "warning" if report.bandwidth_diagnostics.peak_bandwidth_pressure >= 1.0 else "ok"},
+        {"metric": "vmem_utilization", "value": report.vmem_diagnostics.hottest_region_utilization, "threshold": 0.95, "status": "warning" if report.vmem_diagnostics.hottest_region_utilization >= 0.95 else "ok"},
+        {"metric": "support_gap_issue_count", "value": len(report.support_gap_diagnostics.issue_subject_ids), "threshold": 0, "status": "warning" if report.support_gap_diagnostics.issue_subject_ids else "ok"},
+    ]

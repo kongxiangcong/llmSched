@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from llm_sched.analysis.diagnosis_context import DiagnosisContext
 from llm_sched.contracts.memory_plan import MemoryPlanArtifact
 from llm_sched.contracts.model_structure_report import ModelStructureReport
 from llm_sched.contracts.operator_representation_report import OperatorRepresentationReport
@@ -19,12 +20,24 @@ from llm_sched.contracts.resource_demand_report import (
 
 def build_resource_demand_report(
     *,
-    run_id: str,
-    scenario_name: str,
-    model_structure_report: ModelStructureReport,
-    operator_representation_report: OperatorRepresentationReport,
-    memory_plan: MemoryPlanArtifact,
+    run_id: str | None = None,
+    scenario_name: str | None = None,
+    model_structure_report: ModelStructureReport | None = None,
+    operator_representation_report: OperatorRepresentationReport | None = None,
+    memory_plan: MemoryPlanArtifact | None = None,
+    ctx: DiagnosisContext | None = None,
 ) -> ResourceDemandReport:
+    if ctx is not None:
+        run_id = ctx.manifest.run_id
+        scenario_name = ctx.scenario_name
+        memory_plan = ctx.memory_plan
+    if any(value is None for value in (run_id, scenario_name, model_structure_report, operator_representation_report, memory_plan)):
+        raise ValueError("build_resource_demand_report requires either ctx plus reports or explicit inputs")
+    assert model_structure_report is not None
+    assert operator_representation_report is not None
+    assert memory_plan is not None
+    assert run_id is not None
+    assert scenario_name is not None
     graph_id = model_structure_report.graph_id
     if operator_representation_report.graph_id != graph_id or memory_plan.graph_id != graph_id:
         raise ValueError("graph_id mismatch across DIAG-01/02 inputs and memory plan")
@@ -32,8 +45,11 @@ def build_resource_demand_report(
     node_index = {entry.node_id: entry for entry in model_structure_report.node_index}
     structure_index = {entry.structure_id: entry for entry in model_structure_report.structures}
     allocations_by_node: dict[str, list[object]] = defaultdict(list)
-    for allocation in memory_plan.allocations:
-        allocations_by_node[allocation.node_id].append(allocation)
+    if ctx is not None and ctx.allocations_by_node:
+        allocations_by_node = defaultdict(list, {node_id: list(entries) for node_id, entries in ctx.allocations_by_node.items()})
+    else:
+        for allocation in memory_plan.allocations:
+            allocations_by_node[allocation.node_id].append(allocation)
 
     node_demands: list[ResourceDemandEntry] = []
     for mapping in operator_representation_report.node_mappings:
@@ -153,4 +169,97 @@ def _build_structure_demands(
             node_count=len(entries),
         )
         for structure_id, entries in sorted(grouped.items())
+    ]
+
+
+def _extract_structure_demand_rows(report: ResourceDemandReport) -> list[dict[str, object]]:
+    return [
+        {
+            "structure_id": entry.structure_id,
+            "structure_kind": entry.structure_kind,
+            "layer_id": -1 if entry.layer_id is None else entry.layer_id,
+            "compute_ops": entry.compute_ops,
+            "read_bytes": entry.read_bytes,
+            "write_bytes": entry.write_bytes,
+            "activation_bytes_estimated": 0.0,
+            "working_set_bytes": entry.working_set_bytes,
+            "arithmetic_intensity": 0.0 if (entry.read_bytes + entry.write_bytes) == 0 else entry.compute_ops / (entry.read_bytes + entry.write_bytes),
+            "node_count": entry.node_count,
+        }
+        for entry in report.structure_demands
+    ]
+
+
+def _extract_layer_demand_rows(report: ResourceDemandReport) -> list[dict[str, object]]:
+    return [
+        {
+            "layer_id": entry.layer_id,
+            "compute_ops": entry.compute_ops,
+            "read_bytes": entry.read_bytes,
+            "write_bytes": entry.write_bytes,
+            "activation_bytes_estimated": 0.0,
+            "kv_bytes_estimated": 0.0,
+            "working_set_bytes": entry.working_set_bytes,
+            "arithmetic_intensity": 0.0 if (entry.read_bytes + entry.write_bytes) == 0 else entry.compute_ops / (entry.read_bytes + entry.write_bytes),
+            "node_count": entry.node_count,
+            "dominant_macro_op": "",
+        }
+        for entry in report.layer_demands
+    ]
+
+
+def _extract_subject_demand_rows(report: ResourceDemandReport) -> list[dict[str, object]]:
+    return [
+        {
+            "normalized_node_id": entry.subject_id,
+            "structure_id": entry.structure_id,
+            "layer_id": entry.layer_id,
+            "macro_op": entry.macro_op,
+            "phase": entry.phase,
+            "fallback_kind": None,
+            "compute_ops": entry.compute_ops,
+            "read_bytes": entry.read_bytes,
+            "write_bytes": entry.write_bytes,
+            "working_set_bytes": entry.working_set_bytes,
+            "arithmetic_intensity": 0.0 if (entry.read_bytes + entry.write_bytes) == 0 else entry.compute_ops / (entry.read_bytes + entry.write_bytes),
+        }
+        for entry in report.node_demands
+    ]
+
+
+def _extract_phase_demand_summary_rows(report: ResourceDemandReport) -> list[dict[str, object]]:
+    total_compute = report.totals.compute_ops or 0.0
+    total_bytes = (report.totals.read_bytes + report.totals.write_bytes) or 0.0
+    return [
+        {
+            "phase": row.phase,
+            "total_compute_ops": row.compute_ops,
+            "total_read_bytes": row.read_bytes,
+            "total_write_bytes": row.write_bytes,
+            "total_working_set_bytes": row.working_set_bytes,
+            "node_count": 1,
+            "share_of_total_compute": (row.compute_ops / total_compute) if total_compute else 0.0,
+            "share_of_total_bytes": ((row.read_bytes + row.write_bytes) / total_bytes) if total_bytes else 0.0,
+        }
+        for row in report.node_demands
+    ]
+
+
+def _extract_demand_hotspot_top20_rows(report: ResourceDemandReport) -> list[dict[str, object]]:
+    ranked = sorted(
+        report.node_demands,
+        key=lambda row: (-(row.read_bytes + row.write_bytes), -row.compute_ops, row.subject_id),
+    )[:20]
+    return [
+        {
+            "rank": index + 1,
+            "normalized_node_id": row.subject_id,
+            "layer_id": row.layer_id,
+            "structure_kind": "unknown" if row.structure_id is None else row.structure_id.split('.')[-1],
+            "macro_op": row.macro_op,
+            "compute_ops": row.compute_ops,
+            "total_bytes": row.read_bytes + row.write_bytes,
+            "arithmetic_intensity": 0.0 if (row.read_bytes + row.write_bytes) == 0 else row.compute_ops / (row.read_bytes + row.write_bytes),
+        }
+        for index, row in enumerate(ranked)
     ]

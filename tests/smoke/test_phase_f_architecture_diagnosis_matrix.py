@@ -75,6 +75,9 @@ def test_phase_f_architecture_diagnosis_matrix(
     architecture_assessment_report = json.loads(
         (run_root / "reports" / "diagnosis" / "architecture_assessment_report.json").read_text(encoding="utf-8")
     )
+    chain_summary = json.loads(
+        (run_root / "reports" / "diagnosis" / "diagnosis_chain_summary.json").read_text(encoding="utf-8")
+    )
     diagnosis_bundle = json.loads((run_root / "reports" / "diagnosis_bundle.json").read_text(encoding="utf-8"))
     diagnosis_workbench = json.loads(
         (run_root / "diagnosis_workbench" / "workbench_manifest.json").read_text(encoding="utf-8")
@@ -89,6 +92,10 @@ def test_phase_f_architecture_diagnosis_matrix(
         run_root / "reports" / "diagnosis" / "performance_diagnostics_report.json",
         run_root / "reports" / "diagnosis" / "roofline_report.json",
         run_root / "reports" / "diagnosis" / "architecture_assessment_report.json",
+        run_root / "reports" / "diagnosis" / "diagnosis_chain_summary.json",
+        run_root / "reports" / "diagnosis" / "trace" / "model_structure_report.json",
+        run_root / "reports" / "diagnosis" / "dataset" / "realization_gap.csv",
+        run_root / "reports" / "diagnosis" / "dataset" / "timeline_loss_summary.csv",
         run_root / "reports" / "diagnosis_bundle.json",
         run_root / "diagnosis_workbench" / "index.html",
         run_root / "diagnosis_workbench" / "workbench_manifest.json",
@@ -106,10 +113,15 @@ def test_phase_f_architecture_diagnosis_matrix(
         row.get("layer_id") is not None and row.get("structure_id")
         for row in performance_diagnostics_report["node_hotspots"]
     )
+    assert architecture_assessment_report["key_metrics"]
+    assert architecture_assessment_report["top_realization_gaps"]
     if architecture_assessment_report["overall_assessment"]["verdict"] == "unsupported":
         summary_lower = architecture_assessment_report["overall_assessment"]["summary"].lower()
         assert "viable" not in summary_lower
         assert "runnable" not in summary_lower
+    assert chain_summary["stage_chain"]
+    assert any(stage["stage"] == "realization_gap" for stage in chain_summary["stage_chain"])
+    assert any(stage["stage"] == "timeline" for stage in chain_summary["stage_chain"])
     assert diagnosis_workbench["default_panel"] == "summary"
     assert "roofline" in diagnosis_workbench["available_panels"]
     assert diagnosis_workbench["deep_links"]["performance"] == "#/performance"

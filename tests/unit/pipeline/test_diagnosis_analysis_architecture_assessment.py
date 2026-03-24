@@ -30,6 +30,8 @@ def test_run_diagnosis_analysis_writes_architecture_assessment_report_when_input
         assert "viable" not in summary_lower
         assert "runnable" not in summary_lower
     assert report.recommendations
+    assert report.key_metrics
+    assert report.top_realization_gaps
     assert report.recommendations[0].category in {"model", "schedule", "hardware", "compiler"}
 
     manifest = RunManifest.model_validate_json((run_root / "manifest.json").read_text(encoding="utf-8"))

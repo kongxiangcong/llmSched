@@ -1,0 +1,177 @@
+{
+  "run_id": "__BASELINE_RUN_ID__",
+  "graph_id": "main_graph",
+  "scenario_name": "prefill_seq128",
+  "schedule_kind": "single-core",
+  "report_kind": "prefill",
+  "overall_assessment": {
+    "verdict": "unsupported",
+    "summary": "The current target cannot execute the model as intended because blocking support gaps remain on the hottest path.",
+    "dominant_bound": "bandwidth",
+    "dominant_bottleneck": "bandwidth_bound",
+    "blocking_reasons": [
+      "quantized Linear activation dtype 'float16' does not match target activation dtype 'bf16'",
+      "group_size '32' is not supported by the active target",
+      "node 'EmbeddingLookup' is modeled explicitly but still requires a non-native fallback surface 'EMBEDDING_LOOKUP'"
+    ],
+    "top_unsupported_structures": [],
+    "top_fallback_structures": [],
+    "assessment_basis": "support_blocking_gap",
+    "primary_recommendation": "Remove unsupported structures from the hottest path before schedule generation."
+  },
+  "top_bottlenecks": [
+    {
+      "subject_id": "nig.node.model_layers_0_mlp_Mul",
+      "subject_kind": "node",
+      "bottleneck": "vmem_bound",
+      "severity": "high",
+      "estimated_cycles": 34631.0,
+      "share": 0.021426679931891977,
+      "message": "nig.node.model_layers_0_mlp_Mul is a top hotspot under vmem_bound pressure."
+    },
+    {
+      "subject_id": "nig.node.model_layers_10_mlp_Mul",
+      "subject_kind": "node",
+      "bottleneck": "vmem_bound",
+      "severity": "medium",
+      "estimated_cycles": 34631.0,
+      "share": 0.021426679931891977,
+      "message": "nig.node.model_layers_10_mlp_Mul is a top hotspot under vmem_bound pressure."
+    },
+    {
+      "subject_id": "nig.node.model_layers_11_mlp_Mul",
+      "subject_kind": "node",
+      "bottleneck": "vmem_bound",
+      "severity": "medium",
+      "estimated_cycles": 34631.0,
+      "share": 0.021426679931891977,
+      "message": "nig.node.model_layers_11_mlp_Mul is a top hotspot under vmem_bound pressure."
+    }
+  ],
+  "top_support_gaps": [
+    {
+      "subject_id": "nig.node.lm_head_MatMul_Quant",
+      "subject_kind": "node",
+      "support_status": "unsupported",
+      "reason_code": "target_quant_activation_dtype_gap",
+      "severity": "high",
+      "message": "quantized Linear activation dtype 'float16' does not match target activation dtype 'bf16'"
+    },
+    {
+      "subject_id": "nig.node.lm_head_MatMul_Quant",
+      "subject_kind": "node",
+      "support_status": "unsupported",
+      "reason_code": "target_quant_group_size_gap",
+      "severity": "high",
+      "message": "group_size '32' is not supported by the active target"
+    },
+    {
+      "subject_id": "nig.node.model_embed_tokens_Mul",
+      "subject_kind": "node",
+      "support_status": "unsupported",
+      "reason_code": "no_hardware_mapping",
+      "severity": "high",
+      "message": "node 'EmbeddingLookup' is modeled explicitly but still requires a non-native fallback surface 'EMBEDDING_LOOKUP'"
+    }
+  ],
+  "top_timeline_losses": [],
+  "top_realization_gaps": [
+    {
+      "structure_id": "structure.attention_block",
+      "structure_kind": "attention_block",
+      "layer_id": null,
+      "gap_kind": "support_gap",
+      "gap_score": 0.7999999999999999,
+      "gap_confidence": "high",
+      "message": "structure.attention_block shows support_gap with score 0.80."
+    },
+    {
+      "structure_id": "structure.auxiliary_block",
+      "structure_kind": "auxiliary_block",
+      "layer_id": null,
+      "gap_kind": "support_gap",
+      "gap_score": 0.7999999999999999,
+      "gap_confidence": "high",
+      "message": "structure.auxiliary_block shows support_gap with score 0.80."
+    },
+    {
+      "structure_id": "structure.embedding",
+      "structure_kind": "embedding",
+      "layer_id": null,
+      "gap_kind": "support_gap",
+      "gap_score": 0.7999999999999999,
+      "gap_confidence": "high",
+      "message": "structure.embedding shows support_gap with score 0.80."
+    }
+  ],
+  "key_metrics": {
+    "demand": {
+      "total_compute_ops": 152104704.0,
+      "total_read_bytes": 44575180.0,
+      "total_write_bytes": 3672632.0
+    },
+    "support": {
+      "native_structure_pct": 0.0,
+      "fallback_structure_pct": 0.32926829268292684,
+      "unsupported_structure_pct": 0.6707317073170732,
+      "blocking_gap_count": 1458
+    },
+    "execution": {
+      "critical_path_cycles": 1244742.0,
+      "estimated_total_cycles": 1616256.0,
+      "makespan_slots": 1244742,
+      "avg_core_utilization": 1.0
+    },
+    "bottleneck": {
+      "dominant_bound": "bandwidth",
+      "dominant_bottleneck": "bandwidth_bound",
+      "peak_bandwidth_pressure": 1278.7751196172248
+    },
+    "timeline": {
+      "top_loss_kind": "no_loss",
+      "recoverable_slots_total": 0.0
+    },
+    "gap": {
+      "top_gap_kind": "support_gap",
+      "mean_gap_score": 0.625142276422764,
+      "mean_gap_confidence": "high"
+    }
+  },
+  "recommendations": [
+    {
+      "recommendation_id": "rec.model.remove-blocking-support-gap",
+      "priority": 1,
+      "category": "model",
+      "title": "Remove blocking unsupported structures",
+      "action": "Remove unsupported structures from the hottest path before schedule generation.",
+      "rationale": "quantized Linear activation dtype 'float16' does not match target activation dtype 'bf16'"
+    },
+    {
+      "recommendation_id": "rec.compiler.close-unsupported-lowering-gap",
+      "priority": 2,
+      "category": "compiler",
+      "title": "Close unsupported lowering gaps",
+      "action": "Add or enable compiler lowerings for the blocking unsupported structures.",
+      "rationale": "quantized Linear activation dtype 'float16' does not match target activation dtype 'bf16'"
+    },
+    {
+      "recommendation_id": "rec.hardware.target-dominant-bound",
+      "priority": 3,
+      "category": "hardware",
+      "title": "Target dominant roofline bound",
+      "action": "Focus next hardware change on the bandwidth ceiling.",
+      "rationale": "Roofline summary is dominated by bandwidth limits."
+    }
+  ],
+  "confidence_summary": {
+    "confidence_level": "medium",
+    "evidence_count": 5,
+    "assumption_ids": [
+      "approx.compute_ops.from_shape_volume",
+      "approx.memory_from_allocations"
+    ],
+    "warning_messages": [
+      "Assessment inherits approximate demand/ceiling assumptions from upstream diagnosis reports."
+    ]
+  }
+}

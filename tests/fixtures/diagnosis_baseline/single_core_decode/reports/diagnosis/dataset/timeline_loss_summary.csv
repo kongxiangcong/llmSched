@@ -1,0 +1,2 @@
+loss_kind,total_slots,event_count,share_of_makespan,recoverable_slots_total,recoverable_share_of_makespan,representative_entities
+no_loss,0.000000,0,0.000000,0.000000,0.000000,

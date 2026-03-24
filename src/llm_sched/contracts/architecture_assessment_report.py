@@ -14,6 +14,7 @@ DiagnosisReportKind = Literal["prefill", "decode"]
 AssessmentVerdict = Literal["good_fit", "constrained_fit", "poor_fit", "unsupported"]
 FindingSeverity = Literal["low", "medium", "high"]
 ConfidenceLevel = Literal["low", "medium", "high"]
+ScalarMetricValue = str | int | float
 
 
 class OverallAssessment(BaseModel):
@@ -72,6 +73,18 @@ class TimelineLossFinding(BaseModel):
     message: str
 
 
+class RealizationGapFinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    structure_id: str
+    structure_kind: str
+    layer_id: int | None = Field(default=None, ge=0)
+    gap_kind: str
+    gap_score: float = Field(ge=0.0)
+    gap_confidence: ConfidenceLevel
+    message: str
+
+
 class RecommendationEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -104,5 +117,7 @@ class ArchitectureAssessmentReport(BaseModel):
     top_bottlenecks: list[BottleneckFinding] = Field(default_factory=list)
     top_support_gaps: list[SupportGapFinding] = Field(default_factory=list)
     top_timeline_losses: list[TimelineLossFinding] = Field(default_factory=list)
+    top_realization_gaps: list[RealizationGapFinding] = Field(default_factory=list)
+    key_metrics: dict[str, dict[str, ScalarMetricValue]] = Field(default_factory=dict)
     recommendations: list[RecommendationEntry] = Field(default_factory=list)
     confidence_summary: ConfidenceSummary

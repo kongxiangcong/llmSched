@@ -54,6 +54,21 @@ def test_architecture_assessment_report_captures_assessment_bottlenecks_gaps_los
                     "message": "Projection compute waits on upstream DMA completion.",
                 }
             ],
+            "top_realization_gaps": [
+                {
+                    "structure_id": "structure.layer0.attention_block",
+                    "structure_kind": "attention_block",
+                    "layer_id": 0,
+                    "gap_kind": "support_gap",
+                    "gap_score": 0.8,
+                    "gap_confidence": "high",
+                    "message": "attention block shows support_gap with score 0.80.",
+                }
+            ],
+            "key_metrics": {
+                "demand": {"total_compute_ops": 1024.0},
+                "gap": {"top_gap_kind": "support_gap"}
+            },
             "recommendations": [
                 {
                     "recommendation_id": "rec.reduce-helper-surface",
@@ -84,6 +99,8 @@ def test_architecture_assessment_report_captures_assessment_bottlenecks_gaps_los
     assert report.top_bottlenecks[0].bottleneck == "compute-bound"
     assert report.top_support_gaps[0].support_status == "fallback"
     assert report.top_timeline_losses[0].loss_kind == "dependency_wait"
+    assert report.top_realization_gaps[0].gap_kind == "support_gap"
+    assert report.key_metrics["gap"]["top_gap_kind"] == "support_gap"
     assert report.recommendations[0].priority == 1
     assert report.confidence_summary.confidence_level == "medium"
 
