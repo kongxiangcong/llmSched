@@ -14,9 +14,9 @@ Given an ONNX model, produce a correct, verifiable v0.10 descriptor set that the
 
 - ✓ ONNX model import and GraphIR generation — existing frontend
 - ✓ Graph canonicalization and NIG lowering — existing frontend
-- ✓ Memory planning (single/dual-core) — existing planning layer
+- ✓ Memory planning (dual-core) — existing planning layer
 - ✓ Tile planning — existing planning layer
-- ✓ Single-core and dual-core scheduling — existing planning layer
+- ✓ Dual-core scheduling — existing planning layer
 - ✓ Old descriptor generation (v0.9 and earlier) — existing, to be removed
 - ✓ Performance estimation (old model) — existing, to be removed
 - ✓ Prefill/decode evaluation reports — existing, to be removed
@@ -59,6 +59,7 @@ Given an ONNX model, produce a correct, verifiable v0.10 descriptor set that the
 | Performance estimation (cycle-level) | Out of scope for v2; only structural descriptor metrics |
 | Roofline analysis | Removed with evaluation layer |
 | Multi-run catalog/compare | Removed with visualization layer |
+| Single-core execution | Dual-core only per hardware constraint; single-core scenarios are not supported |
 
 ## Context
 
@@ -81,6 +82,7 @@ Machine-readable schema files exist in `docs/descriptor/` (`family_lut.yaml`, `f
 - **Input format**: ONNX remains the sole input format.
 - **Descriptor version**: 0x6 (v0.10) only. No backward compatibility.
 - **Cleanup scope**: Old code deleted from `src/`, not just disabled. Git history may be rewritten or old modules removed in new commits.
+- **Target hardware**: Dual-core NPU only. Each core has independent VMEM. Single-core scenarios are not supported.
 - **Test strategy**: Old test suite will be largely invalidated. New tests must cover parser/packer round-trip for all 11 families.
 - **Model scope**: Gemma3-like transformer workloads (attention, GEMM, RMSNorm, GEGLU, element-wise ops, RoPE, KV load/store).
 
@@ -93,6 +95,7 @@ Machine-readable schema files exist in `docs/descriptor/` (`family_lut.yaml`, `f
 | v0.10 only, no v0.9 backward compat | New controller only speaks v0.10 | — Pending |
 | No layout-op task modeling | reshape/transpose/etc. are transparent to NPU execution | — Pending |
 | 4-layer verification gate | Structural + reserved-bit + semantic + round-trip per v0.10 spec | — Pending |
+| Dual-core only, per-core VMEM | Hardware target has two cores with independent VMEM; single-core not supported | — Pending |
 
 ## Evolution
 
@@ -112,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 after initialization*
+*Last updated: 2026-04-21 after dual-core constraint added*

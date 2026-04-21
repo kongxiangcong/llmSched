@@ -38,14 +38,14 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
 **Plans**: TBD
 
 ### Phase 3: Task-Centric Scheduling
-**Goal**: Task DAGs can be scheduled with memory planning and execution ordering
+**Goal**: Task DAGs can be scheduled with memory planning and execution ordering for dual-core NPU
 **Depends on**: Phase 2
-**Requirements**: SCHED-01, SCHED-02
+**Requirements**: SCHED-01, SCHED-02, SCHED-03
 **Success Criteria** (what must be TRUE):
-  1. Memory planning operates on the task-centric DAG (not node-centric NIG)
-  2. Scheduling produces a task-level execution order with all dependencies resolved
-  3. The scheduler handles both single-core and dual-core execution contexts
-  4. Scheduled output includes per-task memory allocation and barrier semantics
+  1. Memory planning operates on the task-centric DAG with per-core independent VMEM allocation
+  2. Scheduling produces a task-level execution order with all dependencies resolved for dual-core only
+  3. Each core has independent VMEM; no shared VMEM space between cores
+  4. Scheduled output includes per-task memory allocation, core assignment, and barrier semantics
 **Plans**: TBD
 
 ### Phase 4: Descriptor Packing

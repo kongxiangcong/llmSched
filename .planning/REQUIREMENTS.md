@@ -20,8 +20,9 @@
 
 ### Scheduling
 
-- [ ] **SCHED-01**: Rewrite memory planning to operate on task-centric DAG (not node-centric NIG)
-- [ ] **SCHED-02**: Rewrite scheduling to produce task-level execution order with dependency resolution
+- [ ] **SCHED-01**: Rewrite memory planning to operate on task-centric DAG for dual-core with per-core independent VMEM
+- [ ] **SCHED-02**: Rewrite scheduling to produce task-level execution order with dependency resolution for dual-core only
+- [ ] **SCHED-03**: Model per-core VMEM allocation; each core has independent VMEM, no shared VMEM space
 
 ### Descriptor
 
@@ -77,6 +78,7 @@
 | FRONT-03 | Phase 2 | Pending |
 | SCHED-01 | Phase 3 | Pending |
 | SCHED-02 | Phase 3 | Pending |
+| SCHED-03 | Phase 3 | Pending |
 | DESC-01 | Phase 4 | Pending |
 | DESC-02 | Phase 4 | Pending |
 | DESC-03 | Phase 4 | Pending |
@@ -89,10 +91,10 @@
 | PERF-04 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 19 total
-- Mapped to phases: 19
+- v1 requirements: 20 total
+- Mapped to phases: 20
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-21*
-*Last updated: 2026-04-21 after roadmap creation*
+*Last updated: 2026-04-21 after dual-core constraint added*
