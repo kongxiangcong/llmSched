@@ -1,25 +1,15 @@
 ---
 phase: 01-cleanup-foundation
-plan: 03
+plan: 03b
 type: execute
-wave: 2
+wave: 3
 depends_on:
-  - 01-01
-  - 01-02
+  - 01-03a
 files_modified:
-  - src/llm_sched/cli.py
-  - src/llm_sched/config.py
-  - src/llm_sched/arch.py
-  - src/llm_sched/models.py
-  - src/llm_sched/ir/
-  - src/llm_sched/frontend/
   - src/llm_sched/scheduler/
   - src/llm_sched/descriptor/
+  - src/llm_sched/frontend/
   - src/llm_sched/__init__.py
-  - src/llm_sched/cli/
-  - src/llm_sched/config/
-  - src/llm_sched/arch/
-  - src/llm_sched/contracts/
   - src/llm_sched/pipeline/
   - src/llm_sched/planning/
 autonomous: true
@@ -28,25 +18,18 @@ requirements:
   - CLEAN-04
 must_haves:
   truths:
-    - "Package root has cli.py, config.py, arch.py, models.py"
-    - "ir/ is retained with graph.py, nig.py, schedule.py, common.py, validators.py, io.py"
-    - "frontend/ is retained with its current modules"
-    - "scheduler/ contains memory.py, tile.py, dual_core.py from planning/"
+    - "scheduler/ contains memory.py, tile.py, dual_core.py from planning/ and frontend.py from pipeline/"
     - "descriptor/ exists as an empty package (Phase 4 populates it)"
-    - "Old subpackages cli/, config/, arch/, contracts/, pipeline/, planning/ are removed"
+    - "frontend/ imports use new flat paths (llm_sched.config, llm_sched.arch, llm_sched.models, llm_sched.ir.schedule)"
+    - "No old import paths (llm_sched.planning.*, llm_sched.pipeline.*, llm_sched.contracts.*) remain in src/llm_sched/"
+    - "Old subpackages pipeline/ and planning/ are removed"
   artifacts:
-    - path: "src/llm_sched/cli.py"
-      provides: "CLI entrypoint (stub for Plan 04)"
-    - path: "src/llm_sched/config.py"
-      provides: "Config module with TargetProfile and ScenarioProfile"
-    - path: "src/llm_sched/arch.py"
-      provides: "Simplified hardware model"
-    - path: "src/llm_sched/models.py"
-      provides: "Flattened Pydantic schemas"
     - path: "src/llm_sched/scheduler/__init__.py"
       provides: "Scheduler package exports"
     - path: "src/llm_sched/descriptor/__init__.py"
       provides: "Descriptor package placeholder"
+    - path: "src/llm_sched/frontend/__init__.py"
+      provides: "Clean frontend exports"
   key_links:
     - from: "scheduler/dual_core.py"
       to: "arch.py"
@@ -54,13 +37,16 @@ must_haves:
     - from: "scheduler/memory.py"
       to: "models.py"
       via: "import llm_sched.models"
+    - from: "frontend/legality.py"
+      to: "arch.py"
+      via: "import llm_sched.arch"
 ---
 
 <objective>
-Restructure `src/llm_sched/` into flat domain packages per D-19. Move retained modules to new locations, update imports, and remove old subpackages.
+Create scheduler/ and descriptor/ packages, move modules from planning/ and pipeline/, update all imports across frontend/ and scheduler/, and remove old subpackages.
 
-Purpose: Establish the v2 package layout that downstream phases will build against.
-Output: Clean domain-focused package structure with all retained code accessible from new paths.
+Purpose: Complete the v2 package restructure by creating domain packages and ensuring no broken imports remain.
+Output: Clean scheduler/, descriptor/, frontend/ with all imports pointing to new flat paths.
 </objective>
 
 <execution_context>
@@ -72,14 +58,9 @@ Output: Clean domain-focused package structure with all retained code accessible
 
 ## Decisions Implemented
 - D-19: Restructure into flat domain packages:
-  - `cli.py` (entrypoint, replaces `cli/main.py`)
-  - `config.py` (minimal config, Phase 2 expands)
-  - `arch.py` (simplified hardware model)
-  - `models.py` (flattened Pydantic schemas)
-  - `ir/` (`graph.py`, `nig.py`, `schedule.py`, `common.py`, `validators.py`, `io.py`)
-  - `frontend/` (`importer.py`, `canonicalize.py`, `nig_lowering.py`, etc.)
-  - `scheduler/` (merged from `planning/` + `pipeline/`; `memory.py`, `tile.py`, `dual_core.py`)
-  - `descriptor/` (created in Phase 4; `packer.py`, `parser.py`, `verifier.py`)
+  - `scheduler/` (merged from `planning/` + `pipeline/`; `memory.py`, `tile.py`, `dual_core.py`, `duration.py`, `reservations.py`, `frontend.py`)
+  - `descriptor/` (created in Phase 4; placeholder now)
+  - `frontend/` (retained with updated imports)
 
 ## Target Structure
 ```
@@ -113,15 +94,12 @@ src/llm_sched/
     dual_core.py
     duration.py
     reservations.py
+    frontend.py
   descriptor/
     __init__.py
 ```
 
 ## Old Structure to Remove
-- cli/ (main.py, __init__.py)
-- config/ (loader.py already deleted, scenario_profile.py, target_profile.py, __init__.py)
-- arch/ (capabilities.py, constraints.py, query_api.py, __init__.py)
-- contracts/ (models.py, __init__.py)
 - pipeline/ (frontend_analysis.py, memory_planning.py, tile_planning.py, dual_core_scheduling.py, __init__.py)
 - planning/ (dual_core_scheduler.py, memory_planner.py, tile_planner.py, schedule_duration.py, schedule_reservations.py, __init__.py)
 </context>
@@ -129,170 +107,7 @@ src/llm_sched/
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Create flat domain files at package root</name>
-  <files>
-    src/llm_sched/cli.py
-    src/llm_sched/config.py
-    src/llm_sched/arch.py
-    src/llm_sched/models.py
-  </files>
-  <read_first>
-    - src/llm_sched/cli/main.py (to extract minimal CLI skeleton)
-    - src/llm_sched/config/scenario_profile.py
-    - src/llm_sched/config/target_profile.py
-    - src/llm_sched/arch/capabilities.py
-    - src/llm_sched/arch/constraints.py
-    - src/llm_sched/arch/query_api.py
-    - src/llm_sched/contracts/models.py (created in Plan 02)
-  </read_first>
-  <action>
-    Create four new flat files at the package root by moving content from old subpackages. Use `git mv` where possible to preserve history.
-
-    1. **src/llm_sched/config.py** — Move content from config/scenario_profile.py and config/target_profile.py:
-       - `git mv src/llm_sched/config/scenario_profile.py src/llm_sched/config.py` is NOT correct because we need both files merged.
-       - Instead: read both files, write their combined content to `src/llm_sched/config.py`, then delete the old files.
-       - The file should contain all classes from target_profile.py (SharedDMAConfig, VMEMConfig, QuantizationConfig, SyncConfig, VPUConfig, MXUConfig, WDQConfig, KVCacheConfig, CoreLinkConfig, DescriptorEncodingConfig, TargetProfile) and scenario_profile.py (LayerScope, ReportingConfig, ScenarioProfile).
-       - Add a module docstring: `"""Configuration schemas for target and scenario profiles."""`
-
-    2. **src/llm_sched/arch.py** — Move content from arch/capabilities.py, arch/constraints.py, arch/query_api.py:
-       - Concatenate the three files into one, preserving all class and function definitions.
-       - Update internal imports: `from llm_sched.config.target_profile import ...` becomes `from llm_sched.config import ...`.
-       - Add module docstring: `"""Simplified hardware capability and constraint model."""`
-
-    3. **src/llm_sched/models.py** — Move content from contracts/models.py:
-       - `git mv src/llm_sched/contracts/models.py src/llm_sched/models.py`
-       - Update internal imports: `from llm_sched.config.target_profile import ...` becomes `from llm_sched.config import ...`.
-       - Add module docstring: `"""Flattened Pydantic schemas for internal state tracking."""`
-
-    4. **src/llm_sched/cli.py** — Create a minimal stub (full implementation in Plan 04):
-       ```python
-       """CLI entrypoint for llm_sched."""
-
-       import typer
-
-       app = typer.Typer(add_completion=False, help="llmSched v2 — v0.10 descriptor compiler.")
-
-       def run() -> None:
-           """Run the CLI application."""
-           app()
-       ```
-
-    After creating the four files, delete the old subpackage directories:
-    - `git rm -r src/llm_sched/config/`
-    - `git rm -r src/llm_sched/arch/`
-    - `git rm -r src/llm_sched/contracts/`
-  </action>
-  <verify>
-    <automated>
-      test -f src/llm_sched/config.py && echo "OK config.py exists" || (echo "FAIL" && exit 1)
-      test -f src/llm_sched/arch.py && echo "OK arch.py exists" || (echo "FAIL" && exit 1)
-      test -f src/llm_sched/models.py && echo "OK models.py exists" || (echo "FAIL" && exit 1)
-      test -f src/llm_sched/cli.py && echo "OK cli.py exists" || (echo "FAIL" && exit 1)
-      test -d src/llm_sched/config && echo "FAIL config dir still exists" && exit 1 || echo "OK config dir removed"
-      test -d src/llm_sched/arch && echo "FAIL arch dir still exists" && exit 1 || echo "OK arch dir removed"
-      test -d src/llm_sched/contracts && echo "FAIL contracts dir still exists" && exit 1 || echo "OK contracts dir removed"
-      python3 -c "from llm_sched.config import TargetProfile, ScenarioProfile; print('OK config imports')"
-      python3 -c "from llm_sched.arch import ArchitectureCapabilities, ArchitectureQueryAPI; print('OK arch imports')"
-      python3 -c "from llm_sched.models import MemoryPlanArtifact, TilingPlanArtifact; print('OK models imports')"
-    </automated>
-  </verify>
-  <acceptance_criteria>
-    - config.py, arch.py, models.py, cli.py exist at src/llm_sched/
-    - config/, arch/, contracts/ directories do not exist
-    - `python3 -c "from llm_sched.config import TargetProfile, ScenarioProfile"` succeeds
-    - `python3 -c "from llm_sched.arch import ArchitectureCapabilities, ArchitectureQueryAPI"` succeeds
-    - `python3 -c "from llm_sched.models import MemoryPlanArtifact, TilingPlanArtifact"` succeeds
-  </acceptance_criteria>
-  <done>Flat domain files created at package root; old subpackages config/, arch/, contracts/ removed.</done>
-</task>
-
-<task type="auto">
-  <name>Task 2: Rename and restructure ir/ modules</name>
-  <files>
-    src/llm_sched/ir/graph.py
-    src/llm_sched/ir/nig.py
-    src/llm_sched/ir/schedule.py
-    src/llm_sched/ir/common.py
-    src/llm_sched/ir/validators.py
-    src/llm_sched/ir/io.py
-    src/llm_sched/ir/__init__.py
-    src/llm_sched/ir/graph_ir.py
-    src/llm_sched/ir/schedule_ir.py
-  </files>
-  <read_first>
-    - src/llm_sched/ir/graph_ir.py
-    - src/llm_sched/ir/schedule_ir.py
-    - src/llm_sched/ir/nig.py
-    - src/llm_sched/ir/common.py
-    - src/llm_sched/ir/validators.py
-    - src/llm_sched/ir/io.py
-    - src/llm_sched/ir/__init__.py
-  </read_first>
-  <action>
-    Rename ir/ files to match D-19 naming. Use `git mv` to preserve history.
-
-    1. `git mv src/llm_sched/ir/graph_ir.py src/llm_sched/ir/graph.py`
-    2. `git mv src/llm_sched/ir/schedule_ir.py src/llm_sched/ir/schedule.py`
-    3. nig.py, common.py, validators.py, io.py keep their names.
-
-    Update `src/llm_sched/ir/validators.py` to import from new paths:
-    - `from llm_sched.ir.graph import GraphIR`
-    - `from llm_sched.ir.nig import NIGIR`
-    - `from llm_sched.ir.schedule import ScheduleIR`
-
-    Update `src/llm_sched/ir/__init__.py` to export from new paths:
-    ```python
-    """IR contracts for llm_sched."""
-
-    from llm_sched.ir.common import AuditRef
-    from llm_sched.ir.graph import GraphIR, GraphNode
-    from llm_sched.ir.io import dump_ir_document, load_ir_document
-    from llm_sched.ir.nig import NIGBinding, NIGIR, NIGNode, QuantBinding
-    from llm_sched.ir.schedule import ScheduleBlock, ScheduleIR
-    from llm_sched.ir.validators import (
-        validate_graph_ir,
-        validate_nig_ir,
-        validate_schedule_ir,
-    )
-
-    __all__ = [
-        "AuditRef",
-        "GraphIR",
-        "GraphNode",
-        "NIGBinding",
-        "NIGIR",
-        "NIGNode",
-        "QuantBinding",
-        "ScheduleBlock",
-        "ScheduleIR",
-        "dump_ir_document",
-        "load_ir_document",
-        "validate_graph_ir",
-        "validate_nig_ir",
-        "validate_schedule_ir",
-    ]
-    ```
-  </action>
-  <verify>
-    <automated>
-      test -f src/llm_sched/ir/graph.py && echo "OK graph.py exists" || (echo "FAIL" && exit 1)
-      test -f src/llm_sched/ir/schedule.py && echo "OK schedule.py exists" || (echo "FAIL" && exit 1)
-      test -f src/llm_sched/ir/graph_ir.py && echo "FAIL graph_ir.py still exists" && exit 1 || echo "OK graph_ir.py removed"
-      test -f src/llm_sched/ir/schedule_ir.py && echo "FAIL schedule_ir.py still exists" && exit 1 || echo "OK schedule_ir.py removed"
-      python3 -c "from llm_sched.ir import GraphIR, NIGIR, ScheduleIR; print('OK ir imports')"
-    </automated>
-  </verify>
-  <acceptance_criteria>
-    - ir/graph.py exists and ir/graph_ir.py does not
-    - ir/schedule.py exists and ir/schedule_ir.py does not
-    - ir/__init__.py exports GraphIR, GraphNode, NIGIR, NIGNode, NIGBinding, QuantBinding, ScheduleIR, ScheduleBlock, AuditRef, dump_ir_document, load_ir_document, validate_graph_ir, validate_nig_ir, validate_schedule_ir
-    - `python3 -c "from llm_sched.ir import GraphIR, NIGIR, ScheduleIR"` succeeds
-  </acceptance_criteria>
-  <done>IR files renamed to graph.py and schedule.py; imports updated.</done>
-</task>
-
-<task type="auto">
-  <name>Task 3: Create scheduler/ package from planning/ and pipeline/</name>
+  <name>Task 1: Create scheduler/ package from planning/ and pipeline/</name>
   <files>
     src/llm_sched/scheduler/__init__.py
     src/llm_sched/scheduler/memory.py
@@ -397,7 +212,7 @@ src/llm_sched/
 </task>
 
 <task type="auto">
-  <name>Task 4: Create descriptor/ placeholder package and update frontend/ imports</name>
+  <name>Task 2: Create descriptor/ placeholder package and update frontend/ imports</name>
   <files>
     src/llm_sched/descriptor/__init__.py
     src/llm_sched/frontend/__init__.py
@@ -487,25 +302,86 @@ src/llm_sched/
 </task>
 
 <task type="auto">
-  <name>Task 5: Commit restructure</name>
+  <name>Task 3: Globally grep and replace old import paths across src/llm_sched/</name>
+  <files>
+    src/llm_sched/
+  </files>
+  <read_first>
+    - src/llm_sched/scheduler/memory.py
+    - src/llm_sched/scheduler/tile.py
+    - src/llm_sched/scheduler/dual_core.py
+    - src/llm_sched/scheduler/duration.py
+    - src/llm_sched/scheduler/reservations.py
+    - src/llm_sched/scheduler/frontend.py
+    - src/llm_sched/frontend/onnx_importer.py
+    - src/llm_sched/frontend/nig_lowering.py
+    - src/llm_sched/frontend/legality.py
+    - src/llm_sched/frontend/canonicalize.py
+    - src/llm_sched/frontend/binding.py
+    - src/llm_sched/frontend/model_metadata.py
+    - src/llm_sched/frontend/shape_binding.py
+  </read_first>
+  <action>
+    Search across all Python files in src/llm_sched/ for old import paths and update them to new paths. The old paths that must be replaced are:
+
+    | Old path | New path |
+    |----------|----------|
+    | `from llm_sched.planning.` | `from llm_sched.scheduler.` |
+    | `from llm_sched.pipeline.` | `from llm_sched.scheduler.` |
+    | `from llm_sched.contracts.` | `from llm_sched.models` |
+    | `from llm_sched.config.target_profile` | `from llm_sched.config` |
+    | `from llm_sched.config.scenario_profile` | `from llm_sched.config` |
+    | `from llm_sched.arch.capabilities` | `from llm_sched.arch` |
+    | `from llm_sched.arch.constraints` | `from llm_sched.arch` |
+    | `from llm_sched.arch.query_api` | `from llm_sched.arch` |
+    | `from llm_sched.ir.graph_ir` | `from llm_sched.ir.graph` |
+    | `from llm_sched.ir.schedule_ir` | `from llm_sched.ir.schedule` |
+
+    Use `grep -rn` to find occurrences, then use `sed -i` or direct file edits to update each occurrence. Be careful not to over-replace (e.g., do not replace references inside strings or comments unless they are import statements).
+
+    After all replacements, run the verify command to confirm zero remaining old-path references.
+  </action>
+  <verify>
+    <automated>
+      grep -rn "from llm_sched.planning\." src/llm_sched/ && echo "FAIL old planning imports remain" && exit 1 || echo "OK no old planning imports"
+      grep -rn "from llm_sched.pipeline\." src/llm_sched/ && echo "FAIL old pipeline imports remain" && exit 1 || echo "OK no old pipeline imports"
+      grep -rn "from llm_sched.contracts\." src/llm_sched/ && echo "FAIL old contracts imports remain" && exit 1 || echo "OK no old contracts imports"
+      grep -rn "from llm_sched.config\.target_profile" src/llm_sched/ && echo "FAIL old config target_profile imports remain" && exit 1 || echo "OK no old config target_profile imports"
+      grep -rn "from llm_sched.config\.scenario_profile" src/llm_sched/ && echo "FAIL old config scenario_profile imports remain" && exit 1 || echo "OK no old config scenario_profile imports"
+      grep -rn "from llm_sched.arch\.capabilities" src/llm_sched/ && echo "FAIL old arch capabilities imports remain" && exit 1 || echo "OK no old arch capabilities imports"
+      grep -rn "from llm_sched.arch\.constraints" src/llm_sched/ && echo "FAIL old arch constraints imports remain" && exit 1 || echo "OK no old arch constraints imports"
+      grep -rn "from llm_sched.arch\.query_api" src/llm_sched/ && echo "FAIL old arch query_api imports remain" && exit 1 || echo "OK no old arch query_api imports"
+      grep -rn "from llm_sched.ir\.graph_ir" src/llm_sched/ && echo "FAIL old ir graph_ir imports remain" && exit 1 || echo "OK no old ir graph_ir imports"
+      grep -rn "from llm_sched.ir\.schedule_ir" src/llm_sched/ && echo "FAIL old ir schedule_ir imports remain" && exit 1 || echo "OK no old ir schedule_ir imports"
+    </automated>
+  </verify>
+  <acceptance_criteria>
+    - Zero occurrences of `from llm_sched.planning.`, `from llm_sched.pipeline.`, `from llm_sched.contracts.` across all Python files in src/llm_sched/
+    - Zero occurrences of old config, arch, and ir subpackage imports
+  </acceptance_criteria>
+  <done>All old import paths globally replaced across src/llm_sched/.</done>
+</task>
+
+<task type="auto">
+  <name>Task 4: Commit restructure completion</name>
   <files>.git/</files>
   <read_first>
-    - git status output from Tasks 1-4
+    - git status output from Tasks 1-3
   </read_first>
   <action>
     Stage all changes and commit:
 
-    `git add -A && git commit -m "restructure: flatten to domain packages per D-19"`
+    `git add -A && git commit -m "restructure: create scheduler and descriptor packages, update all imports per D-19"`
 
     If pre-commit hooks fail, investigate and fix.
   </action>
   <verify>
     <automated>
-      git log -1 --oneline | grep -q "restructure: flatten to domain packages per D-19"
+      git log -1 --oneline | grep -q "restructure: create scheduler and descriptor packages, update all imports per D-19"
     </automated>
   </verify>
   <acceptance_criteria>
-    - `git log -1 --oneline` contains "restructure: flatten to domain packages per D-19"
+    - `git log -1 --oneline` contains "restructure: create scheduler and descriptor packages, update all imports per D-19"
     - `git status` is clean
   </acceptance_criteria>
   <done>Package restructure committed.</done>
@@ -524,32 +400,28 @@ src/llm_sched/
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-03-01 | Denial of Service | Import breakage | mitigate | Verify all imports with python3 -c "from X import Y" after each move. |
-| T-03-02 | Tampering | File content during move | accept | git mv preserves content; only imports are edited. |
+| T-03b-01 | Denial of Service | Import breakage | mitigate | Verify all imports with python3 -c "from X import Y" after each move. Global grep ensures no stale imports remain. |
+| T-03b-02 | Tampering | File content during move | accept | git mv preserves content; only imports are edited. |
 </threat_model>
 
 <verification>
-1. Package root has: cli.py, config.py, arch.py, models.py
-2. ir/ has: graph.py, nig.py, schedule.py, common.py, validators.py, io.py
+1. scheduler/ has: memory.py, tile.py, dual_core.py, duration.py, reservations.py, frontend.py, __init__.py
+2. descriptor/ has: __init__.py
 3. frontend/ has current modules with updated imports
-4. scheduler/ has: memory.py, tile.py, dual_core.py, duration.py, reservations.py, frontend.py
-5. descriptor/ has: __init__.py
-6. Old directories (cli/, config/, arch/, contracts/, pipeline/, planning/) are absent
-7. All python import smoke tests pass
+4. Old directories (pipeline/, planning/) are absent
+5. Zero old import paths remain in src/llm_sched/
+6. All python import smoke tests pass
 </verification>
 
 <success_criteria>
-- src/llm_sched/cli.py exists
-- src/llm_sched/config.py exists and exports TargetProfile, ScenarioProfile
-- src/llm_sched/arch.py exists and exports ArchitectureCapabilities
-- src/llm_sched/models.py exists and exports MemoryPlanArtifact, TilingPlanArtifact
-- src/llm_sched/ir/ contains graph.py, nig.py, schedule.py, common.py, validators.py, io.py
 - src/llm_sched/scheduler/ contains memory.py, tile.py, dual_core.py, duration.py, reservations.py, frontend.py
 - src/llm_sched/descriptor/ exists with __init__.py
-- Old subpackages cli/, config/, arch/, contracts/, pipeline/, planning/ are removed
+- src/llm_sched/frontend/ imports use new flat paths
+- Old subpackages pipeline/ and planning/ are removed
+- No old import paths (planning, pipeline, contracts, old config/arch/ir subpackages) remain in src/llm_sched/
 - All import smoke tests pass
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/01-cleanup-foundation/01-03-SUMMARY.md`
+After completion, create `.planning/phases/01-cleanup-foundation/01-03b-SUMMARY.md`
 </output>
