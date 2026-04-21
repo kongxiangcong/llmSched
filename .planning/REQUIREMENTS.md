@@ -81,12 +81,12 @@
 | DESC-02 | Phase 4 | Pending |
 | DESC-03 | Phase 4 | Pending |
 | DESC-04 | Phase 4 | Pending |
-| DESC-05 | Phase 4 | Pending |
-| DESC-06 | Phase 4 | Pending |
-| PERF-01 | Phase 5 | Pending |
-| PERF-02 | Phase 5 | Pending |
-| PERF-03 | Phase 5 | Pending |
-| PERF-04 | Phase 5 | Pending |
+| DESC-05 | Phase 5 | Pending |
+| DESC-06 | Phase 5 | Pending |
+| PERF-01 | Phase 6 | Pending |
+| PERF-02 | Phase 6 | Pending |
+| PERF-03 | Phase 6 | Pending |
+| PERF-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
@@ -95,4 +95,4 @@
 
 ---
 *Requirements defined: 2026-04-21*
-*Last updated: 2026-04-21 after initial definition*
+*Last updated: 2026-04-21 after roadmap creation*
