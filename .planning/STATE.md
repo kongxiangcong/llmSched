@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 ## Current Position
 
-Phase: 1 of 6 (Cleanup & Foundation)
+Phase: 2 of 6 (Task DAG Frontend)
 Plan: 0 of TBD
 Status: Ready to plan
-Last activity: 2026-04-21 — Dual-core constraint added
+Last activity: 2026-04-22 — Phase 2 context gathered
 
 Progress: [░░░░░░░░░░] 0%
 
