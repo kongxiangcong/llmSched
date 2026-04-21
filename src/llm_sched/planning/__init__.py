@@ -1,17 +1,21 @@
-"""Planning entrypoints for Phase C."""
+"""Planning entrypoints for scheduling and memory/tile planning."""
 
-from llm_sched.planning.descriptor_builder import build_descriptor_artifacts
-from llm_sched.planning.descriptor_packer import pack_descriptor_bundle
 from llm_sched.planning.dual_core_scheduler import plan_dual_core_schedule
 from llm_sched.planning.memory_planner import plan_memory_artifact
-from llm_sched.planning.single_core_scheduler import plan_single_core_schedule
+from llm_sched.planning.schedule_duration import estimate_stage_duration_slots
+from llm_sched.planning.schedule_reservations import (
+    build_reservation_timeline,
+    find_earliest_issue_slot,
+    reserve_resource_windows,
+)
 from llm_sched.planning.tile_planner import plan_tiling_artifact
 
 __all__ = [
-    "build_descriptor_artifacts",
-    "pack_descriptor_bundle",
+    "build_reservation_timeline",
+    "estimate_stage_duration_slots",
+    "find_earliest_issue_slot",
     "plan_dual_core_schedule",
     "plan_memory_artifact",
     "plan_tiling_artifact",
-    "plan_single_core_schedule",
+    "reserve_resource_windows",
 ]

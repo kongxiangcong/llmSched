@@ -39,7 +39,10 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
   2. Graph nodes are identified by macro_op type (attention, GEMM, RMSNorm, GEGLU, element-wise, RoPE, KV load/store)
   3. Reshape, transpose, squeeze, unsqueeze, and gather ops are filtered out and not modeled as tasks
   4. The task DAG correctly represents data dependencies between task units
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
+  - Wave 1: 02-01 (TaskDAG IR schema)
+  - Wave 2: 02-02 (Task DAG builder + layout op filtering + tests)
+  - Wave 3: 02-03 (DAG validation + integration + tests)
 
 ### Phase 3: Task-Centric Scheduling
 **Goal**: Task DAGs can be scheduled with memory planning and execution ordering for dual-core NPU
@@ -47,7 +50,7 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
 **Requirements**: SCHED-01, SCHED-02, SCHED-03
 **Success Criteria** (what must be TRUE):
   1. Memory planning operates on the task-centric DAG with per-core independent VMEM allocation
-  2. Scheduling produces a task-level execution order with all dependencies resolved for dual-core only
+  2. Scheduling produces a task-level execution order with dependency resolution for dual-core only
   3. Each core has independent VMEM; no shared VMEM space between cores
   4. Scheduled output includes per-task memory allocation, core assignment, and barrier semantics
 **Plans**: TBD
@@ -94,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cleanup & Foundation | 0/6 | Not started | - |
-| 2. Task DAG Frontend | 0/TBD | Not started | - |
+| 2. Task DAG Frontend | 0/3 | Not started | - |
 | 3. Task-Centric Scheduling | 0/TBD | Not started | - |
 | 4. Descriptor Packing | 0/TBD | Not started | - |
 | 5. Descriptor Verification | 0/TBD | Not started | - |

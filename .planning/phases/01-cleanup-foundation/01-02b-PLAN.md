@@ -329,9 +329,10 @@ DELETE all other contracts/*.py files.
 </task>
 
 <task type="auto">
-  <name>Task 4: Verify no retained modules import deleted paths</name>
+  <name>Task 4: Verify no retained modules import deleted paths, then commit</name>
   <files>
     src/llm_sched/
+    .git/
   </files>
   <read_first>
     - src/llm_sched/ir/__init__.py
@@ -353,6 +354,12 @@ DELETE all other contracts/*.py files.
     8. `grep -r "llm_sched.contracts.tiling_plan" src/llm_sched/ || echo "OK no tiling_plan imports"`
 
     Any match indicates a retained module still imports a deleted path and must be fixed before commit.
+
+    After verification passes, stage all changes and commit:
+
+    `git add -A && git commit -m "cleanup: remove v0.9-era ir, contracts, config modules; flatten contracts to models.py"`
+
+    If pre-commit hooks fail, investigate and fix.
   </action>
   <verify>
     <automated>
@@ -364,37 +371,15 @@ DELETE all other contracts/*.py files.
       grep -r "llm_sched.contracts.run_summary" src/llm_sched/ && echo "FAIL run_summary import found" && exit 1 || echo "OK no run_summary imports"
       grep -r "llm_sched.contracts.memory_plan" src/llm_sched/ && echo "FAIL memory_plan import found" && exit 1 || echo "OK no memory_plan imports"
       grep -r "llm_sched.contracts.tiling_plan" src/llm_sched/ && echo "FAIL tiling_plan import found" && exit 1 || echo "OK no tiling_plan imports"
-    </automated>
-  </verify>
-  <acceptance_criteria>
-    - No retained Python file in src/llm_sched/ imports from descriptor_ir, analysis_ir, config.loader, or any old contracts submodules (manifest, artifact_layout, run_summary, memory_plan, tiling_plan)
-  </acceptance_criteria>
-  <done>No retained modules reference deleted paths.</done>
-</task>
-
-<task type="auto">
-  <name>Task 5: Commit IR, contracts, and config cleanup</name>
-  <files>.git/</files>
-  <read_first>
-    - git status output from Tasks 1-4
-  </read_first>
-  <action>
-    Stage all changes from Tasks 1-4 and commit:
-
-    `git add -A && git commit -m "cleanup: remove v0.9-era ir, contracts, config modules; flatten contracts to models.py"`
-
-    If pre-commit hooks fail, investigate and fix.
-  </action>
-  <verify>
-    <automated>
       git log -1 --oneline | grep -q "cleanup: remove v0.9-era ir, contracts, config modules; flatten contracts to models.py"
     </automated>
   </verify>
   <acceptance_criteria>
+    - No retained Python file in src/llm_sched/ imports from descriptor_ir, analysis_ir, config.loader, or any old contracts submodules (manifest, artifact_layout, run_summary, memory_plan, tiling_plan)
     - `git log -1 --oneline` contains "cleanup: remove v0.9-era ir, contracts, config modules; flatten contracts to models.py"
     - `git status` is clean
   </acceptance_criteria>
-  <done>IR, contracts, and config cleanup committed.</done>
+  <done>No retained modules reference deleted paths; IR, contracts, and config cleanup committed.</done>
 </task>
 
 </tasks>

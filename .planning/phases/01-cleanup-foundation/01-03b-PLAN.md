@@ -2,7 +2,7 @@
 phase: 01-cleanup-foundation
 plan: 03b
 type: execute
-wave: 3
+wave: 4
 depends_on:
   - 01-03a
 files_modified:
