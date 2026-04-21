@@ -1,0 +1,319 @@
+descriptor_version: '0x6'
+format_name: v1.0
+PRIMARY_HEADER:
+  total_bits: 64
+  words: 1
+  description: v1.0 primary header (merged generic_header + TASK per O-04/O-05); word
+    0 provides version, dispatch, and derived-length fields
+  task_type_id_enum:
+    rmsnorm: 1
+    wdq_gemm: 2
+    sdpa: 3
+    sdpa_decode: 4
+    gemm: 5
+    elem_add: 6
+    geglu: 7
+    rope: 8
+    kvload: 9
+    kvstore: 10
+    rmsnorm_gemm: 11
+  fields:
+  - name: descriptor_version
+    bits: 63:60
+    width: 4
+    note: v0.10 format identifier (draft for validation)
+  - name: task_type_id
+    bits: '59:54'
+    width: 6
+    note: family dispatch index; determines FAMILY record length
+  - name: dep_mask
+    bits: '53:46'
+    width: 8
+    note: per-descriptor dependency mask for multi-core synchronization; bit[i]=1
+      wait for Core i
+  - name: signal_mask
+    bits: '45:38'
+    width: 8
+    note: per-descriptor signal mask; bit[i]=1 signal Core i on completion
+  - name: crc16
+    bits: '37:22'
+    width: 16
+    note: CRC-16/CCITT-FALSE over all words; zeroed during computation
+  - name: buffer_count
+    bits: '21:19'
+    width: 3
+    note: 0..4
+  - name: loop_rank
+    bits: '18:17'
+    width: 2
+    note: 1..3; 0=reserved/invalid
+  - name: template_slot_count
+    bits: '16:14'
+    width: 3
+    note: 0..7; 0=no TEMPLATE record
+  - name: reserved
+    bits: '13:0'
+    width: 14
+    policy: must_be_zero
+    note: reserved for future header expansion; must be zero in v1.0
+FAMILY:
+  variable_length: true
+  word_0_1:
+    total_bits: 128
+    words: 2
+    description: FAMILY words 0–1 (always present); high-frequency shape/tile/extra/scalar
+      fields
+    fields:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      note: first shape dimension; semantic varies by family
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      note: second shape dimension; semantic varies by family
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      note: third shape dimension (reduction dim or 0); semantic varies by family
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      note: tile size for dim0; 0 if not tiled
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      note: tile size for dim1; 0 if not tiled
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      note: tile size for dim2; 0 if not tiled
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      note: extra dimension 0 (head_dim, hidden_dim, etc.)
+    - name: extra_tile0
+      bits: '39:32'
+      width: 8
+      note: tile size for extra_dim0; 0 if not tiled
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      note: extra dimension 1 (num_kv_heads, intermediate_dim, kv_len_after, etc.)
+    - name: scalar0
+      bits: '15:0'
+      width: 16
+      note: scalar value (softmax_scale, epsilon, group_size for WDQ_GEMM, etc.)
+  word_2:
+    total_bits: 64
+    words: 1
+    description: FAMILY word 2 (present for 3-word families only); enumeration, surface,
+      and config fields with per-family semantics
+    fields:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      note: engine profile enum per global enum freeze
+    - name: mask_cfg
+      bits: '59:56'
+      width: 4
+      note: attention mask configuration (SDPA, SDPA_DECODE)
+    - name: cache_layout_class
+      bits: '55:52'
+      width: 4
+      note: KV cache layout class (KVLOAD, KVSTORE); repurposed as act_dtype for GEMM
+    - name: cache_axis_order
+      bits: '51:48'
+      width: 4
+      note: KV cache axis order (KVLOAD, KVSTORE); repurposed as weight_dtype for
+        GEMM
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      note: neutral dispatch-first mode slot; semantic resolved by task_type_id dispatch
+        — see §3.3
+    - name: primary_surface_slot
+      bits: '43:41'
+      width: 3
+      note: shared surface slot; resolved by task_type_id dispatch — primary output
+        for most families, primary input for KVSTORE
+    - name: secondary_surface_slot
+      bits: '40:38'
+      width: 3
+      note: shared surface slot; resolved by task_type_id dispatch — secondary output
+        for most families, secondary input for KVSTORE
+    - name: reserved
+      bits: '37:0'
+      width: 38
+      policy: must_be_zero
+      note: reserved for future FAMILY fields; must be zero in v1.0
+  word_count_by_task_type_id:
+    1: 2
+    2: 3
+    3: 3
+    4: 3
+    5: 3
+    6: 2
+    7: 2
+    8: 3
+    9: 3
+    10: 3
+    11: 3
+  description: v1.0 variable-length FAMILY record per O-01; 2 words for RMSNORM/ELEM_ADD/GEGLU,
+    3 words for all others; high-frequency fields in word 0–1, enum/surface fields
+    in word 2
+BUFFER:
+  total_bits: 256
+  words: 4
+  active_bits: 218
+  description: v1.0 compact BUFFER record (4 words) per O-02; contiguous span/base_binding
+    packing, no gaps
+  fields:
+  - name: role
+    bits: 255:252
+    width: 4
+    note: operand role enum (input=0x1, weight=0x2, output=0x3, scale=0x4, etc.)
+  - name: address_space
+    bits: 251:248
+    width: 4
+    note: address space enum (VMEM_ABSOLUTE=0x1, DDR=0x2)
+  - name: access_mode
+    bits: 247:245
+    width: 3
+    note: access mode (READ=0x1, WRITE=0x2, READ_WRITE=0x3)
+  - name: layout_class
+    bits: 244:241
+    width: 4
+    note: memory layout class (DENSE_ROW_MAJOR=0x1, DENSE_COL_MAJOR=0x2, STRIDED=0x3,
+      TILED=0x4)
+  - name: dim_count
+    bits: 240:238
+    width: 3
+    note: number of active stride dimensions (max 3)
+  - name: span
+    bits: 237:222
+    width: 16
+    note: total size in bytes (max ~65535)
+  - name: base_binding_lo
+    bits: 221:190
+    width: 32
+    note: low 32 bits of base address; clean word-half for 32-bit hardware access
+  - name: base_binding_hi
+    bits: 189:158
+    width: 32
+    note: 'high 32 bits of base address; DDR addresses use both lo/hi; VMEM: must
+      be zero'
+  - name: dim_0_extent
+    bits: 157:142
+    width: 16
+    note: dimension 0 extent
+  - name: dim_0_stride_lo
+    bits: 141:126
+    width: 16
+    note: low 16 bits of dimension 0 stride in bytes
+  - name: dim_0_stride_hi
+    bits: 125:118
+    width: 8
+    note: high 8 bits of dim 0 stride; effective stride = stride_hi<<16 | stride_lo
+  - name: dim_1_extent
+    bits: 117:102
+    width: 16
+    note: dimension 1 extent
+  - name: dim_1_stride_lo
+    bits: 101:86
+    width: 16
+    note: low 16 bits of dimension 1 stride in bytes
+  - name: dim_1_stride_hi
+    bits: 85:78
+    width: 8
+    note: high 8 bits of dim 1 stride; effective stride = stride_hi<<16 | stride_lo
+  - name: dim_2_extent
+    bits: 77:62
+    width: 16
+    note: dimension 2 extent
+  - name: dim_2_stride_lo
+    bits: '61:46'
+    width: 16
+    note: low 16 bits of dimension 2 stride in bytes
+  - name: dim_2_stride_hi
+    bits: '45:38'
+    width: 8
+    note: high 8 bits of dim 2 stride; effective stride = stride_hi<<16 | stride_lo
+  - name: reserved
+    bits: '37:0'
+    width: 38
+    policy: must_be_zero
+    note: reserved for future BUFFER fields; must be zero in v1.0
+LOOP:
+  variable_length: true
+  slot_bits: 32
+  word_count_by_loop_rank:
+    1: 1
+    2: 1
+    3: 2
+  description: v1.0 compact LOOP record per O-03; 32-bit slots matching TEMPLATE density;
+    variable 1–2 words depending on loop_rank
+  slot_fields:
+  - name: dim_extent
+    bits: '31:12'
+    width: 20
+    note: loop dimension full extent (max ~1M)
+  - name: tile_extent
+    bits: '11:4'
+    width: 8
+    note: loop dimension tile size; 0 if dimension inactive
+  - name: axis_encoding
+    bits: '3:0'
+    width: 4
+    note: loop dimension axis enum (m=0x01, n=0x02, etc.)
+TEMPLATE:
+  variable_length: true
+  slot_bits: 32
+  word_count_by_slot_count:
+    1: 1
+    2: 1
+    3: 2
+    4: 2
+    5: 3
+    6: 3
+    7: 4
+  description: v1.0 TEMPLATE record; identical slot format to v0.9; variable-size
+    based on template_slot_count from primary_header
+  slot_fields:
+  - name: kind
+    bits: '31:30'
+    width: 2
+    note: action_kind enum (nop=0x0, load=0x1, compute=0x2, store=0x3)
+  - name: engine
+    bits: '29:26'
+    width: 4
+    note: engine_class enum (DMA=0x1, MXU=0x2, VPU=0x3, scalar/WDQ=0x4)
+  - name: src_surface
+    bits: '25:23'
+    width: 3
+    note: source surface index (0-based from A2 surface defs)
+  - name: dst_surface
+    bits: '22:20'
+    width: 3
+    note: destination surface index (0-based from A2 surface defs)
+  - name: apply_scope
+    bits: '19:17'
+    width: 3
+    note: slot_apply_scope enum from global enum freeze
+  - name: dma_channel_hint
+    bits: '16:14'
+    width: 3
+    note: DMA channel hint (0=auto, 1-6=specific channel)
+  - name: dma_burst_type
+    bits: '13:12'
+    width: 2
+    note: DMA burst type (0=default, 1=linear, 2=tiled)
+  - name: fence_after
+    bits: '11'
+    width: 1
+    note: set fence/barrier after slot completes (0=no fence, 1=fence)
+  - name: reserved_slot
+    bits: '10:0'
+    width: 11
+    policy: must_be_zero
+    note: must_be_zero; spare for future TEMPLATE slot fields

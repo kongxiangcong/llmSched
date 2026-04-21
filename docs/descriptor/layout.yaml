@@ -1,0 +1,87 @@
+descriptor_version: '0x6'
+format_name: v1.0
+structure:
+  model: flat_sequential
+  description: Descriptor is a flat sequence of 64-bit words. No primary/continuation
+    distinction. Primary header occupies word 0; subsequent words belong to RECORDs
+    whose order is fixed and whose lengths are derivable from primary_header fields
+    (O-05).
+  body_order:
+  - PRIMARY_HEADER
+  - FAMILY
+  - BUFFER
+  - LOOP
+  - TEMPLATE
+record_length_derivation:
+- record: FAMILY
+  length_rule: 2 or 3 words
+  derivation_key: 'task_type_id lookup: 2 words for RMSNORM/ELEM_ADD/GEGLU; 3 words
+    for all others'
+  per_task_type_id:
+    1: 2
+    2: 3
+    3: 3
+    4: 3
+    5: 3
+    6: 2
+    7: 2
+    8: 3
+    9: 3
+    10: 3
+    11: 3
+- record: BUFFER
+  length_rule: 4 words × buffer_count
+  derivation_key: buffer_count from primary_header
+- record: LOOP
+  length_rule: ceil(loop_rank × 32 / 64) words
+  derivation_key: loop_rank from primary_header; rank 1–2 → 1 word, rank 3 → 2 words
+  per_loop_rank:
+    1: 1
+    2: 1
+    3: 2
+- record: TEMPLATE
+  length_rule: ceil(template_slot_count × 32 / 64) words; absent if slot_count=0
+  derivation_key: template_slot_count from primary_header
+  per_slot_count:
+    1: 1
+    2: 1
+    3: 2
+    4: 2
+    5: 3
+    6: 3
+    7: 4
+total_words_formula: total_words = 1 (primary_header) + family_words(task_type_id)
+  + 4 × buffer_count + loop_words(loop_rank) + template_words(template_slot_count)
+parser_steps:
+- 1. Read primary_header (word 0) → extract descriptor_version, task_type_id, buffer_count,
+  loop_rank, template_slot_count.
+- 2. Derive FAMILY word count from task_type_id lookup (§5).
+- 3. Read FAMILY record (family_words words).
+- '4. Read BUFFER records: buffer_count × 4 words each.'
+- '5. Read LOOP record: ceil(loop_rank × 32 / 64) words.'
+- '6. If template_slot_count > 0: read TEMPLATE record: ceil(template_slot_count ×
+  32 / 64) words.'
+- 7. Validate CRC-16/CCITT-FALSE over all words.
+crc16_spec:
+  algorithm: CRC-16/CCITT-FALSE
+  polynomial: '0x1021'
+  initial_value: '0xFFFF'
+  xor_out: '0x0000'
+  reflect_in: false
+  reflect_out: false
+  check_value: '0x29B1'
+  covered_scope: all words in descriptor; crc field zeroed during computation then
+    replaced
+  byte_order: words serialized MSB-first (big-endian) for CRC computation
+task_type_id_enum:
+  rmsnorm: 1
+  wdq_gemm: 2
+  sdpa: 3
+  sdpa_decode: 4
+  gemm: 5
+  elem_add: 6
+  geglu: 7
+  rope: 8
+  kvload: 9
+  kvstore: 10
+  rmsnorm_gemm: 11

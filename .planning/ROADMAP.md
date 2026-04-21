@@ -8,7 +8,7 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
 
 - [ ] **Phase 1: Cleanup & Foundation** - Remove old code and docs, retain only execution-semantic pipeline
 - [ ] **Phase 2: Task DAG Frontend** - Extract task-unit dependency DAG from ONNX models
-- [ ] **Phase 3: Task-Centric Scheduling** - Schedule task DAGs with memory planning and execution ordering
+- [ ] **Phase 3: Task-Centric Scheduling** - Schedule task DAGs with memory planning and execution ordering for dual-core NPU
 - [ ] **Phase 4: Descriptor Packing** - Pack and parse v0.10 descriptors for all 11 families
 - [ ] **Phase 5: Descriptor Verification** - Harden correctness with round-trip and 4-layer verification gate
 - [ ] **Phase 6: Performance Metrics** - Emit structural metrics and per-layer timelines
@@ -24,7 +24,11 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
   2. `docs/development/` and `docs/architecture-diagnosis/` are archived or deleted
   3. README clearly states the project is undergoing complete refactoring and current outputs are not correct
   4. The only remaining pipeline in `src/` is ONNX → task DAG → scheduling → descriptor packing
-**Plans**: TBD
+**Plans**: 6 plans in 4 waves
+  - Wave 1: 01-01 (wholesale deletions), 01-02 (selective deletions + contracts flattening)
+  - Wave 2: 01-03 (package restructure)
+  - Wave 3: 01-04 (CLI + config cleanup), 01-05 (README + pyproject.toml)
+  - Wave 4: 01-06 (test cleanup + verification)
 
 ### Phase 2: Task DAG Frontend
 **Goal**: ONNX models can be transformed into task-unit dependency DAGs
@@ -89,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Cleanup & Foundation | 0/TBD | Not started | - |
+| 1. Cleanup & Foundation | 0/6 | Not started | - |
 | 2. Task DAG Frontend | 0/TBD | Not started | - |
 | 3. Task-Centric Scheduling | 0/TBD | Not started | - |
 | 4. Descriptor Packing | 0/TBD | Not started | - |

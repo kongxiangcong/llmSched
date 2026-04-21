@@ -26,6 +26,7 @@ Phase 1 of 6: Cleanup & Foundation — removing old v0.9-era code and docs.
 - ONNX remains the sole input format.
 - No modeling of reshape, transpose, squeeze, unsqueeze, gather ops.
 - Execution semantics only — no diagnosis, visualization, evaluation reports.
+- Dual-core NPU only. Each core has independent VMEM. No single-core scenarios.
 
 ## Architecture (Target)
 

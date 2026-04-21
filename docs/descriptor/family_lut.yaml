@@ -1,0 +1,681 @@
+descriptor_version: '0x6'
+format_name: v1.0
+families:
+  gemm:
+    task_type_id: 5
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: n
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      semantic: k
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_m
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: tile_n
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      semantic: tile_k
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: cache_layout_class
+      bits: '55:52'
+      width: 4
+      semantic: act_dtype (repurposed from dtype0)
+    - name: cache_axis_order
+      bits: '51:48'
+      width: 4
+      semantic: weight_dtype (repurposed from dtype1)
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      semantic: accum_dtype (dispatched alias; repurposed from dtype2)
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    must_be_zero_positions:
+    - bits: '55:40'
+      width: 16
+      note: extra_dim0 [55:40]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '40:38'
+      width: 3
+      note: secondary_output_surface [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  sdpa:
+    task_type_id: 3
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: num_heads
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: query_len
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      semantic: kv_len
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_query
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: dim1_tile_extent
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      semantic: tile_kv
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: head_dim
+    - name: extra_tile0
+      bits: '39:32'
+      width: 8
+      semantic: tile_head_dim
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      semantic: num_kv_heads
+    - name: scalar0
+      bits: '15:0'
+      width: 16
+      semantic: softmax_scale
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: mask_cfg
+      bits: '59:56'
+      width: 4
+      semantic: mask_cfg
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    must_be_zero_positions:
+    - bits: '55:52'
+      width: 4
+      note: cache_layout_class [55:52]
+    - bits: '51:48'
+      width: 4
+      note: cache_axis_order [51:48]
+    - bits: '47:44'
+      width: 4
+      note: family_mode [47:44]
+    - bits: '40:38'
+      width: 3
+      note: secondary_surface_slot [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  sdpa_decode:
+    task_type_id: 4
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: num_heads
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: query_len
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      semantic: kv_len
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_query
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: dim1_tile_extent
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      semantic: tile_kv
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: head_dim
+    - name: extra_tile0
+      bits: '39:32'
+      width: 8
+      semantic: tile_head_dim
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      semantic: num_kv_heads
+    - name: scalar0
+      bits: '15:0'
+      width: 16
+      semantic: softmax_scale
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: mask_cfg
+      bits: '59:56'
+      width: 4
+      semantic: mask_cfg
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      semantic: kv_operand_binding_mode (dispatched alias; repurposed from v0.9 kv_operand_binding_mode)
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    must_be_zero_positions:
+    - bits: '55:52'
+      width: 4
+      note: cache_layout_class [55:52]
+    - bits: '51:48'
+      width: 4
+      note: cache_axis_order [51:48]
+    - bits: '40:38'
+      width: 3
+      note: secondary_output_surface [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  kvload:
+    task_type_id: 9
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: kv_len
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: num_kv_heads
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_kv
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: dim1_tile_extent
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: head_dim
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: cache_layout_class
+      bits: '55:52'
+      width: 4
+      semantic: cache_layout_class
+    - name: cache_axis_order
+      bits: '51:48'
+      width: 4
+      semantic: cache_axis_order
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      semantic: source_binding_mode (dispatched alias; unchanged)
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    - name: secondary_output_surface
+      bits: '40:38'
+      width: 3
+      semantic: secondary_output_surface
+    must_be_zero_positions:
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  kvstore:
+    task_type_id: 10
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: kv_len_before
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: num_kv_heads
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_kv
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: head_dim
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      semantic: kv_len_after
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: cache_layout_class
+      bits: '55:52'
+      width: 4
+      semantic: cache_layout_class
+    - name: cache_axis_order
+      bits: '51:48'
+      width: 4
+      semantic: cache_axis_order
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      semantic: append_mode (dispatched alias; repurposed from v0.9)
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_input_surface (repurposed)
+    - name: secondary_output_surface
+      bits: '40:38'
+      width: 3
+      semantic: secondary_input_surface (repurposed)
+    must_be_zero_positions:
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: 71:64
+      width: 8
+      note: dim1_tile_extent [71:64]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  rmsnorm:
+    task_type_id: 1
+    family_words: 2
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: hidden_dim
+    - name: scalar0
+      bits: '15:0'
+      width: 16
+      semantic: epsilon
+    active_fields_word_2: []
+    must_be_zero_positions:
+    - bits: 111:96
+      width: 16
+      note: dim1_full_extent [111:96]
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: 79:72
+      width: 8
+      note: dim0_tile_extent [79:72]
+    - bits: 71:64
+      width: 8
+      note: dim1_tile_extent [71:64]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+  wdq_gemm:
+    task_type_id: 2
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: n
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      semantic: k
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_m
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: tile_n
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      semantic: dim2_tile_extent
+    - name: scalar0
+      bits: '15:0'
+      width: 16
+      semantic: group_size (repurposed from v0.9; max 128)
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    must_be_zero_positions:
+    - bits: '55:40'
+      width: 16
+      note: extra_dim0 [55:40]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '55:52'
+      width: 4
+      note: cache_layout_class [55:52]
+    - bits: '51:48'
+      width: 4
+      note: cache_axis_order [51:48]
+    - bits: '47:44'
+      width: 4
+      note: family_mode [47:44]
+    - bits: '40:38'
+      width: 3
+      note: secondary_surface_slot [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  elem_add:
+    task_type_id: 6
+    family_words: 2
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: hidden_dim
+    active_fields_word_2: []
+    must_be_zero_positions:
+    - bits: 111:96
+      width: 16
+      note: dim1_full_extent [111:96]
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: 79:72
+      width: 8
+      note: dim0_tile_extent [79:72]
+    - bits: 71:64
+      width: 8
+      note: dim1_tile_extent [71:64]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+  geglu:
+    task_type_id: 7
+    family_words: 2
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: hidden_dim
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      semantic: intermediate_dim
+    active_fields_word_2: []
+    must_be_zero_positions:
+    - bits: 111:96
+      width: 16
+      note: dim1_full_extent [111:96]
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: 79:72
+      width: 8
+      note: dim0_tile_extent [79:72]
+    - bits: 71:64
+      width: 8
+      note: dim1_tile_extent [71:64]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+  rope:
+    task_type_id: 8
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: seq_len
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: dim1_full_extent
+    - name: extra_dim0
+      bits: '55:40'
+      width: 16
+      semantic: head_dim
+    - name: extra_dim1
+      bits: '31:16'
+      width: 16
+      semantic: num_heads
+    active_fields_word_2:
+    - name: family_mode
+      bits: '47:44'
+      width: 4
+      semantic: position_mode (dispatched alias; repurposed from v0.9)
+    must_be_zero_positions:
+    - bits: 95:80
+      width: 16
+      note: dim2_full_extent [95:80]
+    - bits: 79:72
+      width: 8
+      note: dim0_tile_extent [79:72]
+    - bits: 71:64
+      width: 8
+      note: dim1_tile_extent [71:64]
+    - bits: '63:56'
+      width: 8
+      note: dim2_tile_extent [63:56]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+    - bits: 63:60
+      width: 4
+      note: engine_profile [63:60]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '55:52'
+      width: 4
+      note: cache_layout_class [55:52]
+    - bits: '51:48'
+      width: 4
+      note: cache_axis_order [51:48]
+    - bits: '43:41'
+      width: 3
+      note: primary_output_surface [43:41]
+    - bits: '40:38'
+      width: 3
+      note: secondary_output_surface [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
+  rmsnorm_gemm:
+    task_type_id: 11
+    family_words: 3
+    active_fields_word_0_1:
+    - name: dim0_full_extent
+      bits: 127:112
+      width: 16
+      semantic: m
+    - name: dim1_full_extent
+      bits: 111:96
+      width: 16
+      semantic: n
+    - name: dim2_full_extent
+      bits: 95:80
+      width: 16
+      semantic: hidden_k
+    - name: dim0_tile_extent
+      bits: 79:72
+      width: 8
+      semantic: tile_m
+    - name: dim1_tile_extent
+      bits: 71:64
+      width: 8
+      semantic: tile_n
+    - name: dim2_tile_extent
+      bits: '63:56'
+      width: 8
+      semantic: tile_k
+    active_fields_word_2:
+    - name: engine_profile
+      bits: 63:60
+      width: 4
+      semantic: engine_profile
+    - name: primary_output_surface
+      bits: '43:41'
+      width: 3
+      semantic: primary_output_surface
+    must_be_zero_positions:
+    - bits: '55:40'
+      width: 16
+      note: extra_dim0 [55:40]
+    - bits: '39:32'
+      width: 8
+      note: extra_tile0 [39:32]
+    - bits: '31:16'
+      width: 16
+      note: extra_dim1 [31:16]
+    - bits: '15:0'
+      width: 16
+      note: scalar0 [15:0]
+    - bits: '59:56'
+      width: 4
+      note: mask_cfg [59:56]
+    - bits: '55:52'
+      width: 4
+      note: cache_layout_class [55:52]
+    - bits: '51:48'
+      width: 4
+      note: cache_axis_order [51:48]
+    - bits: '47:44'
+      width: 4
+      note: family_mode [47:44]
+    - bits: '40:38'
+      width: 3
+      note: secondary_surface_slot [40:38]
+    - bits: '37:0'
+      width: 38
+      note: reserved [37:0]
