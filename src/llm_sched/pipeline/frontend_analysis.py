@@ -9,20 +9,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from llm_sched.analysis import estimate_nig_analysis
-from llm_sched.config.loader import Diagnostic, load_scenario_profile, load_target_profile
-from llm_sched.contracts.artifact_layout import build_run_layout
-from llm_sched.contracts.frontend_analysis_report import (
-    FrontendLegalityReport,
-    PseudoFallbackSummaryReport,
-)
-from llm_sched.contracts.frontend_binding_report import (
-    FrontendBindingIssue,
-    FrontendBindingReport,
-    MacroBindingSummary,
-)
-from llm_sched.contracts.manifest import RunManifest
-from llm_sched.contracts.run_summary import RunSummary
+from llm_sched.contracts.models import Diagnostic
+from llm_sched.contracts.models import build_run_layout
+from llm_sched.contracts.models import RunManifest
+from llm_sched.contracts.models import RunSummary
 from llm_sched.frontend import (
     bind_nig_ir,
     build_frontend_import_report,
@@ -45,12 +35,10 @@ class FrontendAnalysisResult(BaseModel):
     canonical_graph_ir_path: Path | None = None
     nig_ir_path: Path | None = None
     bound_nig_ir_path: Path | None = None
-    analysis_ir_path: Path | None = None
     import_report_path: Path | None = None
     decomposition_report_path: Path | None = None
     binding_report_path: Path | None = None
     legality_report_path: Path | None = None
-    pseudo_fallback_summary_path: Path | None = None
     diagnostics: list[Diagnostic] = []
 
 
@@ -81,31 +69,25 @@ def run_frontend_analysis(run_root: str | Path) -> FrontendAnalysisResult:
         nig_ir = lower_graph_ir_to_nig(canonical_graph_ir, scenario=scenario_profile)
         decomposition_report = build_workload_decomposition_report(canonical_graph_ir, nig_ir=nig_ir)
         bound_nig_ir = bind_nig_ir(nig_ir, shape_bindings=shape_bindings)
-        analysis_ir = estimate_nig_analysis(nig_ir, target_profile)
 
         graph_ir_path = layout.dumps_dir / "graph_ir.json"
         canonical_graph_ir_path = layout.dumps_dir / "canonical_graph_ir.json"
         nig_ir_path = layout.dumps_dir / "nig_ir.json"
         bound_nig_ir_path = layout.dumps_dir / "bound_nig_ir.json"
-        analysis_ir_path = layout.dumps_dir / "analysis_ir.json"
         import_report_path = layout.reports_dir / "frontend_import_report.json"
         decomposition_report_path = layout.reports_dir / "workload_decomposition_report.json"
         binding_report_path = layout.reports_dir / "frontend_binding_report.json"
         legality_report_path = layout.reports_dir / "frontend_legality.json"
-        pseudo_fallback_summary_path = layout.reports_dir / "pseudo_fallback_summary.json"
 
         dump_ir_document(graph_ir, graph_ir_path)
         dump_ir_document(canonical_graph_ir, canonical_graph_ir_path)
         dump_ir_document(nig_ir, nig_ir_path)
         dump_ir_document(bound_nig_ir, bound_nig_ir_path)
-        dump_ir_document(analysis_ir, analysis_ir_path)
         _write_json_report(import_report, import_report_path)
         _write_json_report(decomposition_report, decomposition_report_path)
         _write_json_report(_build_binding_report(manifest.run_id, bound_nig_ir), binding_report_path)
         _write_json_report(_build_legality_report(manifest.run_id, legality_issues), legality_report_path)
         _write_json_report(
-            _build_pseudo_fallback_summary_report(manifest.run_id, nig_ir, analysis_ir),
-            pseudo_fallback_summary_path,
         )
 
         artifact_index.update(
@@ -114,15 +96,12 @@ def run_frontend_analysis(run_root: str | Path) -> FrontendAnalysisResult:
                 "canonical_graph_ir": _relative_to_run(layout.run_root, canonical_graph_ir_path),
                 "nig_ir": _relative_to_run(layout.run_root, nig_ir_path),
                 "bound_nig_ir": _relative_to_run(layout.run_root, bound_nig_ir_path),
-                "analysis_ir": _relative_to_run(layout.run_root, analysis_ir_path),
                 "frontend_import_report": _relative_to_run(layout.run_root, import_report_path),
                 "workload_decomposition_report": _relative_to_run(
                     layout.run_root, decomposition_report_path
                 ),
                 "frontend_binding_report": _relative_to_run(layout.run_root, binding_report_path),
                 "frontend_legality_report": _relative_to_run(layout.run_root, legality_report_path),
-                "pseudo_fallback_summary_report": _relative_to_run(
-                    layout.run_root, pseudo_fallback_summary_path
                 ),
             }
         )
@@ -143,12 +122,10 @@ def run_frontend_analysis(run_root: str | Path) -> FrontendAnalysisResult:
             canonical_graph_ir_path=canonical_graph_ir_path,
             nig_ir_path=nig_ir_path,
             bound_nig_ir_path=bound_nig_ir_path,
-            analysis_ir_path=analysis_ir_path,
             import_report_path=import_report_path,
             decomposition_report_path=decomposition_report_path,
             binding_report_path=binding_report_path,
             legality_report_path=legality_report_path,
-            pseudo_fallback_summary_path=pseudo_fallback_summary_path,
             diagnostics=[],
         )
     except Exception as exc:
@@ -240,48 +217,6 @@ def _build_binding_report(
         binding_coverage_ratio=_safe_ratio(fully_bound_node_count, node_count),
         issue_counts=dict(sorted(issue_counts.items())),
         missing_field_counts=dict(sorted(missing_field_counts.items())),
-        macro_summaries=macro_summaries,
-        issues=issues,
-    )
-
-
-def _build_pseudo_fallback_summary_report(
-    run_id: str,
-    nig_ir: object,
-    analysis_ir: object,
-) -> PseudoFallbackSummaryReport:
-    from llm_sched.ir.analysis_ir import AnalysisIR
-    from llm_sched.ir.nig import NIGIR
-
-    if not isinstance(nig_ir, NIGIR) or not isinstance(analysis_ir, AnalysisIR):
-        raise TypeError("summary report requires NIGIR and AnalysisIR inputs")
-
-    macro_by_subject = {node.node_id: node.macro_op for node in nig_ir.nodes}
-    record_counts = Counter(macro_by_subject.get(record.subject_id, "UNKNOWN") for record in analysis_ir.records)
-    tag_counts = Counter(tag for record in analysis_ir.records for tag in record.tags)
-    totals = defaultdict(float)
-    total_bytes_by_macro = defaultdict(float)
-    estimated_cycles_by_macro = defaultdict(float)
-
-    for record in analysis_ir.records:
-        macro_op = macro_by_subject.get(record.subject_id, "UNKNOWN")
-        totals["records"] += 1.0
-        totals["read_bytes"] += record.metrics.get("read_bytes", 0.0)
-        totals["write_bytes"] += record.metrics.get("write_bytes", 0.0)
-        totals["estimated_cycles"] += record.metrics.get("estimated_cycles", 0.0)
-        total_bytes_by_macro[macro_op] += record.metrics.get("total_bytes", 0.0)
-        estimated_cycles_by_macro[macro_op] += record.metrics.get("estimated_cycles", 0.0)
-
-    return PseudoFallbackSummaryReport(
-        run_id=run_id,
-        record_counts=dict(sorted(record_counts.items())),
-        tag_counts=dict(sorted(tag_counts.items())),
-        totals=dict(sorted(totals.items())),
-        total_bytes_by_macro=dict(sorted(total_bytes_by_macro.items())),
-        estimated_cycles_by_macro=dict(sorted(estimated_cycles_by_macro.items())),
-    )
-
-
 def _collect_binding_issues(
     node: object,
 ) -> tuple[list[FrontendBindingIssue], Counter[str]]:

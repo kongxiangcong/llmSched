@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from llm_sched.arch.capabilities import ArchitectureCapabilities
-from llm_sched.config.scenario_profile import ScenarioProfile
-from llm_sched.config.target_profile import TargetProfile
-from llm_sched.contracts.memory_plan import MemoryPlanArtifact, PlannedAllocation, StorageBindingDescriptor
-from llm_sched.contracts.tiling_plan import (
+from llm_sched.arch import ArchitectureCapabilities
+from llm_sched.config import ScenarioProfile
+from llm_sched.config import TargetProfile
+from llm_sched.contracts.models import MemoryPlanArtifact, PlannedAllocation, StorageBindingDescriptor
+from llm_sched.contracts.models import (
     TileCandidate,
     TileCandidateResourceSummary,
     TilingPlanArtifact,

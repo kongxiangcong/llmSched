@@ -1,9 +1,72 @@
-"""Contracts for static VMEM / KV memory planning artifacts."""
+"""Flattened Pydantic models for internal state tracking.
 
+Merged from: manifest, artifact_layout, run_summary, memory_plan, tiling_plan.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+
+# -- From manifest.py --
+
+class RunManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    contract_version: str
+    status: Literal["initialized", "failed", "completed"] = "initialized"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    model_path: str
+    target_profile_path: str
+    scenario_profile_path: str
+    artifact_index: dict[str, str]
+
+
+# -- From artifact_layout.py --
+
+class ArtifactLayout(BaseModel):
+    run_root: Path
+    artifacts_dir: Path
+    reports_dir: Path
+    logs_dir: Path
+    dumps_dir: Path
+
+
+def build_run_layout(run_root: Path) -> ArtifactLayout:
+    return ArtifactLayout(
+        run_root=run_root,
+        artifacts_dir=run_root / "artifacts",
+        reports_dir=run_root / "reports",
+        logs_dir=run_root / "logs",
+        dumps_dir=run_root / "dumps",
+    )
+
+
+# -- From run_summary.py (includes Diagnostic formerly in config.loader) --
+
+class Diagnostic(BaseModel):
+    path: str
+    field: str
+    severity: Literal["error", "warning"]
+    message: str
+
+
+class RunSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    status: Literal["initialized", "failed", "completed"]
+    exit_code: int
+    manifest_path: str | None = None
+    diagnostics: list[Diagnostic] = []
+
+
+# -- From memory_plan.py --
 
 TensorRole = Literal["input", "output", "weight", "quant_param", "temp", "kv_cache", "metadata"]
 AddressSpace = Literal["VMEM", "DDR"]
@@ -176,3 +239,57 @@ class MemoryPlanArtifact(BaseModel):
                     f"'{diagnostic.storage_binding_id}'"
                 )
         return self
+
+
+# -- From tiling_plan.py --
+
+class TileCandidateIssue(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    message: str
+
+
+class TileCandidateResourceSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    read_bytes: int = Field(ge=0)
+    write_bytes: int = Field(ge=0)
+    total_vmem_bytes: int = Field(ge=0)
+    dma_bytes: int = Field(ge=0)
+    region_pressure_bytes: dict[str, int] = Field(default_factory=dict)
+    storage_binding_ids: list[str] = Field(default_factory=list)
+    storage_read_bytes_by_source_kind: dict[StorageBindingSourceKind, int] = Field(default_factory=dict)
+    storage_read_bytes_by_backing_store: dict[BackingStoreKind, int] = Field(default_factory=dict)
+    storage_write_bytes_by_backing_store: dict[BackingStoreKind, int] = Field(default_factory=dict)
+
+
+class TileCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str
+    node_id: str
+    macro_op: str
+    strategy: str
+    m_tile: int = Field(gt=0)
+    n_tile: int = Field(gt=0)
+    k_tile: int = Field(gt=0)
+    read_bytes: int = Field(ge=0)
+    write_bytes: int = Field(ge=0)
+    total_vmem_bytes: int = Field(ge=0)
+    rank: int = Field(gt=0)
+    ranking_reason: str
+    quant_alignment_ok: bool
+    quant_alignment_message: str
+    source_memory_plan_region_pressure: dict[str, int] = Field(default_factory=dict)
+    resource_summary: TileCandidateResourceSummary | None = None
+    issues: list[TileCandidateIssue] = Field(default_factory=list)
+
+
+class TilingPlanArtifact(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    graph_id: str
+    scenario_name: str
+    core_mode: Literal["single-core", "dual-core"]
+    candidates: list[TileCandidate] = Field(default_factory=list)

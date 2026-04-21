@@ -5,7 +5,7 @@ from pathlib import Path
 
 import typer
 
-from llm_sched.config.loader import (
+from llm_sched.contracts.models import (
     MalformedProfileError,
     ProfileValidationFailure,
     load_scenario_profile,

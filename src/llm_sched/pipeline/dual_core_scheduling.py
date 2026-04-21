@@ -8,12 +8,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from llm_sched.config.loader import Diagnostic, load_scenario_profile, load_target_profile
-from llm_sched.contracts.artifact_layout import build_run_layout
-from llm_sched.contracts.manifest import RunManifest
-from llm_sched.contracts.memory_plan import MemoryPlanArtifact
-from llm_sched.contracts.run_summary import RunSummary
-from llm_sched.contracts.tiling_plan import TilingPlanArtifact
+from llm_sched.contracts.models import Diagnostic
+from llm_sched.contracts.models import build_run_layout
+from llm_sched.contracts.models import RunManifest
+from llm_sched.contracts.models import MemoryPlanArtifact
+from llm_sched.contracts.models import RunSummary
+from llm_sched.contracts.models import TilingPlanArtifact
 from llm_sched.ir.io import dump_ir_document, load_ir_document
 from llm_sched.ir.nig import NIGIR
 from llm_sched.ir.schedule_ir import ScheduleIR

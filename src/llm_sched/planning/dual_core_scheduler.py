@@ -6,11 +6,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from heapq import heappop, heappush
 
-from llm_sched.arch.capabilities import ArchitectureCapabilities
-from llm_sched.config.scenario_profile import ScenarioProfile
-from llm_sched.config.target_profile import TargetProfile
-from llm_sched.contracts.memory_plan import MemoryPlanArtifact, PlannedAllocation
-from llm_sched.contracts.tiling_plan import TileCandidate, TilingPlanArtifact
+from llm_sched.arch import ArchitectureCapabilities
+from llm_sched.config import ScenarioProfile
+from llm_sched.config import TargetProfile
+from llm_sched.contracts.models import MemoryPlanArtifact, PlannedAllocation
+from llm_sched.contracts.models import TileCandidate, TilingPlanArtifact
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.nig import NIGIR, NIGNode
 from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
@@ -22,15 +22,6 @@ from llm_sched.planning.schedule_reservations import (
     build_reservation_timeline,
     find_earliest_issue_slot,
     reserve_resource_windows,
-)
-from llm_sched.planning.single_core_scheduler import (
-    _buffer_binding,
-    _group_allocations_by_node,
-    _group_candidates_by_node,
-    _group_producer_by_tensor,
-    _lower_node_stages,
-    _select_candidate,
-    _stage_dependencies,
 )
 
 
@@ -610,3 +601,260 @@ def _estimate_transfer_bytes(node: NIGNode, allocations: list[PlannedAllocation]
     for dim in node.binding.resolved_shape if node.binding is not None else node.shape:
         element_count *= max(1, dim)
     return max(element_count * 2, 1)
+def _group_allocations_by_node(
+    allocations: list[PlannedAllocation],
+) -> dict[str, list[PlannedAllocation]]:
+    grouped: dict[str, list[PlannedAllocation]] = defaultdict(list)
+    for allocation in allocations:
+        grouped[allocation.node_id].append(allocation)
+    return dict(grouped)
+
+
+def _group_candidates_by_node(
+    candidates: list[TileCandidate],
+) -> dict[str, list[TileCandidate]]:
+    grouped: dict[str, list[TileCandidate]] = defaultdict(list)
+    for candidate in candidates:
+        grouped[candidate.node_id].append(candidate)
+    return dict(grouped)
+
+
+def _select_candidate(
+    node: NIGNode,
+    candidates: list[TileCandidate],
+    scenario: ScenarioProfile,
+) -> TileCandidate | None:
+    if not candidates:
+        return None
+    return sorted(candidates, key=lambda candidate: (candidate.rank, candidate.candidate_id))[0]
+
+
+def _buffer_binding(allocations: list[PlannedAllocation]) -> dict[str, str]:
+    binding: dict[str, str] = {}
+    for allocation in allocations:
+        role = allocation.tensor_role
+        if role == "quant_param":
+            key = "quant"
+        elif role == "kv_cache":
+            key = "kv"
+        elif role == "weight":
+            key = "weight"
+        elif role == "temp":
+            key = allocation.tensor_name
+        else:
+            key = role
+        binding.setdefault(key, allocation.region_name or allocation.address_space)
+    return binding
+
+
+def _lower_node_stages(node: NIGNode) -> list[tuple[str, list[str]]]:
+    if node.macro_op in _GEMM_COMPUTE_RESOURCES:
+        return [
+            ("dma_in", ["DMA"]),
+            ("compute", list(_GEMM_COMPUTE_RESOURCES[node.macro_op])),
+            ("store", ["DMA"]),
+        ]
+    if node.macro_op == "SDPA":
+        return [
+            ("dma_in", ["DMA"]),
+            ("prepare", ["VPU"]),
+            ("compute", ["MXU", "VPU"]),
+            ("store", ["DMA"]),
+        ]
+    if node.macro_op == "SDPA_DECODE":
+        return [
+            ("dma_in", ["DMA"]),
+            ("prepare", ["VPU"]),
+            ("compute", ["DMA", "VPU"]),
+            ("store", ["DMA"]),
+        ]
+    return list(_STAGE_POLICIES.get(node.macro_op, []))
+
+
+def _group_producer_by_tensor(nodes: list[NIGNode]) -> dict[str, str]:
+    producer_by_tensor: dict[str, str] = {}
+    for node in nodes:
+        for output_name in node.outputs:
+            producer_by_tensor[output_name] = node.node_id
+    return producer_by_tensor
+
+
+def _build_pending_blocks(
+    nodes: list[NIGNode],
+    *,
+    candidates_by_node: dict[str, list[TileCandidate]],
+    allocations_by_node: dict[str, list[PlannedAllocation]],
+    producer_by_tensor: dict[str, str],
+    capabilities: ArchitectureCapabilities,
+    scenario: ScenarioProfile,
+) -> list[_PendingBlock]:
+    stage_names_by_node: dict[str, list[str]] = {}
+    candidate_by_node: dict[str, TileCandidate | None] = {}
+    for node in nodes:
+        if node.binding is None:
+            continue
+        candidate = _select_candidate(node, candidates_by_node.get(node.node_id, []), scenario)
+        node_stages = _lower_node_stages(node)
+        if candidate is None and node.macro_op in _TILED_MACROS:
+            continue
+        if not node_stages:
+            continue
+        stage_names_by_node[node.node_id] = [stage for stage, _ in node_stages]
+        candidate_by_node[node.node_id] = candidate
+
+    pending_blocks: list[_PendingBlock] = []
+    for node_index, node in enumerate(nodes):
+        stage_names = stage_names_by_node.get(node.node_id)
+        if stage_names is None:
+            continue
+        candidate = candidate_by_node[node.node_id]
+        node_stages = _lower_node_stages(node)
+        buffer_binding = _buffer_binding(allocations_by_node.get(node.node_id, []))
+        input_dependency_block_ids = _input_dependency_block_ids(
+            node,
+            producer_by_tensor=producer_by_tensor,
+            stage_names_by_node=stage_names_by_node,
+        )
+        previous_stage_block_id: str | None = None
+        for stage_index, (stage, resource_set) in enumerate(node_stages):
+            block_id = f"sched.{node.node_id}.{stage}"
+            duration_slots = estimate_stage_duration_slots(
+                node=node,
+                stage=stage,
+                candidate=candidate,
+                allocations=allocations_by_node.get(node.node_id, []),
+                capabilities=capabilities,
+            )
+            pending_blocks.append(
+                _PendingBlock(
+                    block_id=block_id,
+                    node_id=node.node_id,
+                    macro_op=node.macro_op,
+                    stage=stage,
+                    tiling_candidate_id=candidate.candidate_id if candidate is not None else None,
+                    resource_set=resource_set,
+                    buffer_binding=buffer_binding,
+                    depends_on=_stage_dependencies(
+                        stage,
+                        previous_stage_block_id=previous_stage_block_id,
+                        input_dependency_block_ids=input_dependency_block_ids,
+                    ),
+                    duration_slots=duration_slots,
+                    resource_reservations=_resource_reservations(
+                        macro_op=node.macro_op,
+                        stage=stage,
+                        resource_set=resource_set,
+                        duration_slots=duration_slots,
+                        node=node,
+                        candidate=candidate,
+                        capabilities=capabilities,
+                    ),
+                    priority=(node_index, stage_index),
+                    audit_ref=AuditRef(
+                        graph_node_ids=list(node.audit_ref.graph_node_ids),
+                        nig_node_ids=[node.node_id],
+                        source_ids=list(node.audit_ref.source_ids),
+                    ),
+                )
+            )
+            previous_stage_block_id = block_id
+    return pending_blocks
+
+
+def _input_dependency_block_ids(
+    node: NIGNode,
+    *,
+    producer_by_tensor: dict[str, str],
+    stage_names_by_node: dict[str, list[str]],
+) -> list[str]:
+    dependency_ids: list[str] = []
+    for input_name in node.inputs:
+        producer_node_id = producer_by_tensor.get(input_name)
+        if producer_node_id is None:
+            continue
+        producer_stages = stage_names_by_node.get(producer_node_id)
+        if not producer_stages:
+            continue
+        terminal_block_id = f"sched.{producer_node_id}.{producer_stages[-1]}"
+        if terminal_block_id not in dependency_ids:
+            dependency_ids.append(terminal_block_id)
+    return dependency_ids
+
+
+def _stage_dependencies(
+    stage: str,
+    *,
+    previous_stage_block_id: str | None,
+    input_dependency_block_ids: list[str],
+) -> list[str]:
+    depends_on: list[str] = []
+    if previous_stage_block_id is not None:
+        depends_on.append(previous_stage_block_id)
+    if stage in {"prepare", "compute"} or (previous_stage_block_id is None and stage == "store"):
+        for dependency_id in input_dependency_block_ids:
+            if dependency_id not in depends_on:
+                depends_on.append(dependency_id)
+    return depends_on
+
+
+def _earliest_issue_slot(
+    *,
+    depends_on: list[str],
+    resource_reservations: list[tuple[str, int, int]],
+    reservations_by_resource: dict[str, list[tuple[int, int]]],
+    block_end_slots: dict[str, int],
+) -> int:
+    dependency_ready_slot = max((block_end_slots[block_id] for block_id in depends_on), default=0)
+    return find_earliest_issue_slot(
+        ready_slot=dependency_ready_slot,
+        reservations_by_resource=reservations_by_resource,
+        requested_reservations=resource_reservations,
+    )
+
+
+def _reserve_resources(
+    *,
+    issue_slot: int,
+    resource_reservations: list[tuple[str, int, int]],
+    reservations_by_resource: dict[str, list[tuple[int, int]]],
+) -> None:
+    reserve_resource_windows(
+        reservations_by_resource=reservations_by_resource,
+        issue_slot=issue_slot,
+        requested_reservations=resource_reservations,
+    )
+
+
+def _resource_keys(resource_set: list[str]) -> list[str]:
+    return [
+        "shared:DMA" if resource == "DMA" else resource
+        for resource in resource_set
+    ]
+
+
+def _resource_reservations(
+    *,
+    macro_op: str,
+    stage: str,
+    resource_set: list[str],
+    duration_slots: int,
+    node: NIGNode | None = None,
+    candidate: TileCandidate | None = None,
+    capabilities: ArchitectureCapabilities | None = None,
+) -> list[tuple[str, int, int]]:
+    return [
+        (
+            "shared:DMA" if resource_name == "DMA" else resource_name,
+            start_offset,
+            reservation_duration,
+        )
+        for resource_name, start_offset, reservation_duration in estimate_stage_resource_reservations(
+            macro_op=macro_op,
+            stage=stage,
+            resource_set=resource_set,
+            duration_slots=duration_slots,
+            node=node,
+            candidate=candidate,
+            capabilities=capabilities,
+        )
+    ]

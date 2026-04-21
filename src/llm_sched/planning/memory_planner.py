@@ -7,10 +7,10 @@ import re
 from collections import defaultdict
 from typing import Literal, cast
 
-from llm_sched.arch.capabilities import ArchitectureCapabilities
-from llm_sched.config.scenario_profile import ScenarioProfile
-from llm_sched.config.target_profile import TargetProfile
-from llm_sched.contracts.memory_plan import (
+from llm_sched.arch import ArchitectureCapabilities
+from llm_sched.config import ScenarioProfile
+from llm_sched.config import TargetProfile
+from llm_sched.contracts.models import (
     AddressBindingDiagnostic,
     BackingStoreKind,
     KVAddressFormula,
