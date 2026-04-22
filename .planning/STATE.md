@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** Given an ONNX model, produce a correct, verifiable v0.10 descriptor set that the NPU controller can parse and execute
-**Current focus:** Phase 1 — Cleanup & Foundation
+**Current focus:** Phase 1 — Cleanup & Foundation (executing)
 
 ## Current Position
 
-Phase: 2 of 6 (Task DAG Frontend)
-Plan: 3 of 3 planned
-Status: Ready to execute
-Last activity: 2026-04-22 — Phase 2 planning complete
+Phase: 1 of 6 (Cleanup & Foundation)
+Plan: 03a of 8
+Status: Executing
+Last activity: 2026-04-22 — executing remaining Phase 1 plans
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 38%
 
 ## Performance Metrics
 
