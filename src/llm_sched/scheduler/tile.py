@@ -7,8 +7,8 @@ from collections import defaultdict
 from llm_sched.arch import ArchitectureCapabilities
 from llm_sched.config import ScenarioProfile
 from llm_sched.config import TargetProfile
-from llm_sched.contracts.models import MemoryPlanArtifact, PlannedAllocation, StorageBindingDescriptor
-from llm_sched.contracts.models import (
+from llm_sched.models import MemoryPlanArtifact, PlannedAllocation, StorageBindingDescriptor
+from llm_sched.models import (
     TileCandidate,
     TileCandidateResourceSummary,
     TilingPlanArtifact,

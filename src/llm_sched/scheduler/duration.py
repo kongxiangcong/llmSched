@@ -5,8 +5,8 @@ from __future__ import annotations
 from math import ceil
 
 from llm_sched.arch import ArchitectureCapabilities
-from llm_sched.contracts.models import PlannedAllocation
-from llm_sched.contracts.models import TileCandidate
+from llm_sched.models import PlannedAllocation
+from llm_sched.models import TileCandidate
 from llm_sched.ir.nig import NIGNode
 
 

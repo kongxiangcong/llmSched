@@ -10,7 +10,7 @@ from typing import Literal, cast
 from llm_sched.arch import ArchitectureCapabilities
 from llm_sched.config import ScenarioProfile
 from llm_sched.config import TargetProfile
-from llm_sched.contracts.models import (
+from llm_sched.models import (
     AddressBindingDiagnostic,
     BackingStoreKind,
     KVAddressFormula,

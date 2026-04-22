@@ -9,16 +9,16 @@ from heapq import heappop, heappush
 from llm_sched.arch import ArchitectureCapabilities
 from llm_sched.config import ScenarioProfile
 from llm_sched.config import TargetProfile
-from llm_sched.contracts.models import MemoryPlanArtifact, PlannedAllocation
-from llm_sched.contracts.models import TileCandidate, TilingPlanArtifact
+from llm_sched.models import MemoryPlanArtifact, PlannedAllocation
+from llm_sched.models import TileCandidate, TilingPlanArtifact
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.nig import NIGIR, NIGNode
-from llm_sched.ir.schedule_ir import ScheduleBlock, ScheduleIR
-from llm_sched.planning.schedule_duration import (
+from llm_sched.ir.schedule import ScheduleBlock, ScheduleIR
+from llm_sched.scheduler.duration import (
     estimate_stage_duration_slots,
     estimate_stage_resource_reservations,
 )
-from llm_sched.planning.schedule_reservations import (
+from llm_sched.scheduler.reservations import (
     build_reservation_timeline,
     find_earliest_issue_slot,
     reserve_resource_windows,

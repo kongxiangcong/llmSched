@@ -9,10 +9,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from llm_sched.contracts.models import Diagnostic
-from llm_sched.contracts.models import build_run_layout
-from llm_sched.contracts.models import RunManifest
-from llm_sched.contracts.models import RunSummary
+from llm_sched.models import Diagnostic
+from llm_sched.models import build_run_layout
+from llm_sched.models import RunManifest
+from llm_sched.models import RunSummary
 from llm_sched.frontend import (
     bind_nig_ir,
     build_frontend_import_report,
@@ -87,9 +87,6 @@ def run_frontend_analysis(run_root: str | Path) -> FrontendAnalysisResult:
         _write_json_report(decomposition_report, decomposition_report_path)
         _write_json_report(_build_binding_report(manifest.run_id, bound_nig_ir), binding_report_path)
         _write_json_report(_build_legality_report(manifest.run_id, legality_issues), legality_report_path)
-        _write_json_report(
-        )
-
         artifact_index.update(
             {
                 "graph_ir": _relative_to_run(layout.run_root, graph_ir_path),
@@ -102,7 +99,6 @@ def run_frontend_analysis(run_root: str | Path) -> FrontendAnalysisResult:
                 ),
                 "frontend_binding_report": _relative_to_run(layout.run_root, binding_report_path),
                 "frontend_legality_report": _relative_to_run(layout.run_root, legality_report_path),
-                ),
             }
         )
         _write_manifest(manifest, manifest_path, status="completed", artifact_index=artifact_index)
@@ -217,6 +213,9 @@ def _build_binding_report(
         binding_coverage_ratio=_safe_ratio(fully_bound_node_count, node_count),
         issue_counts=dict(sorted(issue_counts.items())),
         missing_field_counts=dict(sorted(missing_field_counts.items())),
+    )
+
+
 def _collect_binding_issues(
     node: object,
 ) -> tuple[list[FrontendBindingIssue], Counter[str]]:
