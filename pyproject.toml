@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "v0.10 descriptor compiler for ONNX LLM models."
 requires-python = ">=3.11"
 dependencies = [
+  "numpy>=1.26",
   "onnx>=1.20,<2",
   "pydantic>=2.12,<3",
   "typer>=0.24,<0.25",
