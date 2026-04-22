@@ -193,12 +193,14 @@ def build_task_dag(nig_ir: NIGIR, graph_input_names: set[str] | None = None) -> 
                 break
 
     # Step G: Assemble TaskDAG
-    return TaskDAG(
+    task_dag = TaskDAG(
         ir_version=nig_ir.ir_version,
         graph_id=nig_ir.graph_id,
         nodes=all_task_nodes,
         output_tasks=sorted(set(output_tasks)),
     )
+    validate_task_dag(task_dag)
+    return task_dag
 
 
 def _resolve_tensor_name(tensor_name: str, tensor_rewrite: dict[str, str]) -> str:
@@ -210,6 +212,84 @@ def _resolve_tensor_name(tensor_name: str, tensor_rewrite: dict[str, str]) -> st
 
 def _sanitize_tensor_name(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_]+", "_", name).strip("_")
+
+
+def validate_task_dag(task_dag: TaskDAG) -> None:
+    """Validate DAG properties. Raises TaskDAGBuildError on failure."""
+    diagnostics: list[str] = []
+    task_by_id = {node.task_id: node for node in task_dag.nodes}
+
+    # Check 1: All TaskInput.source_task_id references exist
+    missing_producers: list[str] = []
+    for node in task_dag.nodes:
+        for task_input in node.inputs:
+            if task_input.source_task_id not in task_by_id:
+                missing_producers.append(
+                    f"task '{node.task_id}' input '{task_input.tensor_name}' "
+                    f"references missing producer '{task_input.source_task_id}'"
+                )
+    if missing_producers:
+        diagnostics.extend(missing_producers)
+
+    # Check 2: Graph is acyclic (Kahn's algorithm)
+    edges = task_dag.edges  # maps consumer -> list of producers it depends on
+    # Build reverse_edges: producer -> list of consumers that depend on it
+    reverse_edges: dict[str, list[str]] = {node.task_id: [] for node in task_dag.nodes}
+    for node in task_dag.nodes:
+        for dep_id in edges.get(node.task_id, []):
+            reverse_edges.setdefault(dep_id, []).append(node.task_id)
+
+    # in_degree[node] = number of producers it depends on
+    in_degree = {node.task_id: len(edges.get(node.task_id, [])) for node in task_dag.nodes}
+
+    queue = [task_id for task_id, degree in in_degree.items() if degree == 0]
+    topo_order: list[str] = []
+    while queue:
+        current = queue.pop(0)
+        topo_order.append(current)
+        for consumer in reverse_edges.get(current, []):
+            in_degree[consumer] -= 1
+            if in_degree[consumer] == 0:
+                queue.append(consumer)
+
+    if len(topo_order) != len(task_dag.nodes):
+        # Find cycle nodes (those with remaining in-degree > 0)
+        remaining = {task_id for task_id, degree in in_degree.items() if degree > 0}
+        cycle_nodes = sorted(remaining) if remaining else ["unknown"]
+        diagnostics.append(
+            f"task DAG contains cycle involving tasks: {', '.join(cycle_nodes)}"
+        )
+
+    # Check 3: No orphaned tasks
+    # A task is orphaned if it is not reachable from any Input/Constant task
+    # AND it does not produce a graph output
+    reachable: set[str] = set()
+    # Start from Input and Constant tasks
+    seeds = [node.task_id for node in task_dag.nodes if node.macro_op in {"Input", "Constant"}]
+    queue = list(seeds)
+    while queue:
+        current = queue.pop(0)
+        if current in reachable:
+            continue
+        reachable.add(current)
+        for consumer in reverse_edges.get(current, []):
+            if consumer not in reachable:
+                queue.append(consumer)
+
+    orphaned = []
+    for node in task_dag.nodes:
+        if node.task_id not in reachable and node.task_id not in task_dag.output_tasks:
+            orphaned.append(node.task_id)
+    if orphaned:
+        diagnostics.append(
+            f"orphaned tasks (not reachable from inputs and not graph outputs): {', '.join(sorted(orphaned))}"
+        )
+
+    if diagnostics:
+        raise TaskDAGBuildError(
+            f"TaskDAG validation failed with {len(diagnostics)} issue(s)",
+            diagnostics=diagnostics,
+        )
 
 
 def _find_non_elided_producer(
