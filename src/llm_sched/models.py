@@ -1,7 +1,4 @@
-"""Flattened Pydantic models for internal state tracking.
-
-Merged from: manifest, artifact_layout, run_summary, memory_plan, tiling_plan.
-"""
+"""Flattened Pydantic schemas for internal state tracking."""
 
 from __future__ import annotations
 
