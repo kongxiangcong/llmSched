@@ -31,11 +31,14 @@ Given an ONNX model, produce a correct, verifiable v0.10 descriptor set that the
 - ✓ **CLEAN-03**: Update README to state the project is undergoing complete refactoring and current outputs are not correct — validated in Phase 1
 - ✓ **CLEAN-04**: Retain only execution-semantic pipeline (ONNX → task DAG → scheduling → descriptor packing) — validated in Phase 1
 
+### Validated
+
+- ✓ **FRONT-01**: Refactor frontend to extract model structure and map it to a task-unit dependency DAG — validated in Phase 2
+- ✓ **FRONT-02**: Implement macro_op-based task identification from ONNX graph nodes — validated in Phase 2
+- ✓ **FRONT-03**: Filter out reshape, transpose, squeeze, unsqueeze, and gather ops — do not model them as tasks — validated in Phase 2
+
 ### Active
 
-- [ ] **FRONT-01**: Refactor frontend to extract model structure and map it to a task-unit dependency DAG
-- [ ] **FRONT-02**: Implement macro_op-based task identification from ONNX graph nodes
-- [ ] **FRONT-03**: Filter out reshape, transpose, squeeze, unsqueeze, and gather ops — do not model them as tasks
 - [ ] **SCHED-01**: Rewrite memory planning to operate on task-centric DAG (not node-centric NIG)
 - [ ] **SCHED-02**: Rewrite scheduling to produce task-level execution order with dependency resolution
 - [ ] **DESC-01**: Implement v0.10 descriptor structure: primary_header + FAMILY + BUFFER × n + LOOP + TEMPLATE
@@ -118,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 after dual-core constraint added*
+*Last updated: 2026-04-22 after Phase 2 completion (FRONT-01..03 validated)*
