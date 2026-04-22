@@ -7,7 +7,7 @@ Transform the existing llmSched codebase from a v0.9-era pipeline (with diagnosi
 ## Phases
 
 - [x] **Phase 1: Cleanup & Foundation** - Remove old code and docs, retain only execution-semantic pipeline (2026-04-22)
-- [ ] **Phase 2: Task DAG Frontend** - Extract task-unit dependency DAG from ONNX models
+- [x] **Phase 2: Task DAG Frontend** - Extract task-unit dependency DAG from ONNX models (2026-04-22)
 - [ ] **Phase 3: Task-Centric Scheduling** - Schedule task DAGs with memory planning and execution ordering for dual-core NPU
 - [ ] **Phase 4: Descriptor Packing** - Pack and parse v0.10 descriptors for all 11 families
 - [ ] **Phase 5: Descriptor Verification** - Harden correctness with round-trip and 4-layer verification gate
@@ -97,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cleanup & Foundation | 8/8 | Complete | 2026-04-22 |
-| 2. Task DAG Frontend | 0/3 | Not started | - |
+| 2. Task DAG Frontend | 3/3 | Complete | 2026-04-22 |
 | 3. Task-Centric Scheduling | 0/TBD | Not started | - |
 | 4. Descriptor Packing | 0/TBD | Not started | - |
 | 5. Descriptor Verification | 0/TBD | Not started | - |
