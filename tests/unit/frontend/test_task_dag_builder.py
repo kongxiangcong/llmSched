@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_sched.frontend.task_dag_builder import TaskDAGBuildError, build_task_dag
+from llm_sched.frontend.task_dag_builder import TaskDAGBuildError, build_task_dag, validate_task_dag
 from llm_sched.ir.common import AuditRef
 from llm_sched.ir.nig import NIGIR, NIGNode, QuantBinding
 from llm_sched.ir.task_dag import TaskDAG, TaskInput, TaskNode, TaskOutput
@@ -294,3 +294,157 @@ def test_build_task_dag_preserves_attrs() -> None:
     gemm_task = next((n for n in dag.nodes if n.macro_op == "GEMM"), None)
     assert gemm_task is not None
     assert gemm_task.attrs == {"alpha": 1.0, "beta": 0.0}
+
+
+def test_build_task_dag_validates_acyclic_graph_passes() -> None:
+    nig_ir = NIGIR(
+        ir_version="0.10",
+        graph_id="test_graph",
+        nodes=[
+            NIGNode(
+                node_id="nig.input",
+                macro_op="Input",
+                inputs=[],
+                outputs=["tokens"],
+                shape=[1, 128],
+                layout="HSD",
+                memory_class="activation",
+                legal_opcodes=["Input"],
+                quant=_make_quant(),
+            ),
+            NIGNode(
+                node_id="nig.gemm",
+                macro_op="GEMM",
+                inputs=["tokens", "weight"],
+                outputs=["hidden"],
+                shape=[1, 128],
+                layout="HSD",
+                memory_class="activation",
+                legal_opcodes=["GEMM"],
+                quant=_make_quant(),
+            ),
+        ],
+    )
+    dag = build_task_dag(nig_ir, graph_input_names={"tokens"})
+    assert isinstance(dag, TaskDAG)
+
+
+def test_build_task_dag_raises_on_cycle() -> None:
+    # Manually construct a cycle: A consumes B's output, B consumes A's output
+    nig_ir = NIGIR(
+        ir_version="0.10",
+        graph_id="test_graph",
+        nodes=[
+            NIGNode(
+                node_id="nig.a",
+                macro_op="GEMM",
+                inputs=["b_out", "weight_a"],
+                outputs=["a_out"],
+                shape=[1, 128],
+                layout="HSD",
+                memory_class="activation",
+                legal_opcodes=["GEMM"],
+                quant=_make_quant(),
+            ),
+            NIGNode(
+                node_id="nig.b",
+                macro_op="GEMM",
+                inputs=["a_out", "weight_b"],
+                outputs=["b_out"],
+                shape=[1, 128],
+                layout="HSD",
+                memory_class="activation",
+                legal_opcodes=["GEMM"],
+                quant=_make_quant(),
+            ),
+        ],
+    )
+    with pytest.raises(TaskDAGBuildError) as exc_info:
+        build_task_dag(nig_ir, graph_input_names=set())
+    assert any("cycle" in d.lower() for d in exc_info.value.diagnostics)
+
+
+def test_build_task_dag_raises_on_orphaned_task() -> None:
+    # build_task_dag auto-creates Input/Constant tasks for all consumed tensors,
+    # so it cannot naturally produce orphans. Test the orphan check directly
+    # on a manually constructed TaskDAG with a closed subgraph disconnected
+    # from Input/Constant seeds.
+    task_dag = TaskDAG(
+        ir_version="0.10",
+        graph_id="test_graph",
+        nodes=[
+            TaskNode(
+                task_id="task.a",
+                macro_op="Input",
+                outputs=[TaskOutput(tensor_name="x")],
+            ),
+            TaskNode(
+                task_id="task.b",
+                macro_op="GEMM",
+                inputs=[TaskInput(source_task_id="task.a", tensor_name="x")],
+                outputs=[TaskOutput(tensor_name="y")],
+            ),
+            # Disconnected subgraph: orphan feeds orphan2, neither reachable from Input/Constant
+            TaskNode(
+                task_id="task.orphan",
+                macro_op="RMSNorm",
+                outputs=[TaskOutput(tensor_name="z")],
+            ),
+            TaskNode(
+                task_id="task.orphan2",
+                macro_op="GEMM",
+                inputs=[TaskInput(source_task_id="task.orphan", tensor_name="z")],
+                outputs=[TaskOutput(tensor_name="w")],
+            ),
+        ],
+        output_tasks=["task.b"],
+    )
+    with pytest.raises(TaskDAGBuildError) as exc_info:
+        validate_task_dag(task_dag)
+    assert any("orphaned" in d.lower() for d in exc_info.value.diagnostics)
+
+
+def test_validate_task_dag_passes_for_valid_dag() -> None:
+    task_dag = TaskDAG(
+        ir_version="0.10",
+        graph_id="test_graph",
+        nodes=[
+            TaskNode(
+                task_id="task.a",
+                macro_op="Input",
+                outputs=[TaskOutput(tensor_name="x")],
+            ),
+            TaskNode(
+                task_id="task.b",
+                macro_op="GEMM",
+                inputs=[TaskInput(source_task_id="task.a", tensor_name="x")],
+                outputs=[TaskOutput(tensor_name="y")],
+            ),
+        ],
+        output_tasks=["task.b"],
+    )
+    validate_task_dag(task_dag)  # should not raise
+
+
+def test_task_dag_build_error_has_diagnostics() -> None:
+    # Build a valid TaskDAG then mutate it to introduce a missing producer reference,
+    # bypassing the Pydantic construction-time validator.
+    task_dag = TaskDAG(
+        ir_version="0.10",
+        graph_id="test_graph",
+        nodes=[
+            TaskNode(
+                task_id="task.a",
+                macro_op="GEMM",
+                outputs=[TaskOutput(tensor_name="x")],
+            ),
+        ],
+    )
+    # Inject an invalid input reference directly
+    task_dag.nodes[0].inputs.append(TaskInput(source_task_id="task.missing", tensor_name="x"))
+    with pytest.raises(TaskDAGBuildError) as exc_info:
+        validate_task_dag(task_dag)
+    error = exc_info.value
+    assert isinstance(error.diagnostics, list)
+    assert len(error.diagnostics) > 0
+    assert str(error) == error.message
