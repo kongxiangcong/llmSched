@@ -1,7 +1,7 @@
 """Frontend legality diagnostics for Graph IR."""
 
-from llm_sched.arch.capabilities import ArchitectureCapabilities
-from llm_sched.config.target_profile import TargetProfile
+from llm_sched.arch import ArchitectureCapabilities
+from llm_sched.config import TargetProfile
 from pydantic import BaseModel, ConfigDict
 
 from llm_sched.frontend.binding import (
@@ -13,7 +13,7 @@ from llm_sched.frontend.shape_binding import (
     resolve_attention_binding_payload,
     resolve_canonical_layout,
 )
-from llm_sched.ir.graph_ir import GraphIR
+from llm_sched.ir.graph import GraphIR
 
 
 _CONTROL_FLOW_OPS = {"If", "Loop", "Scan"}
@@ -149,7 +149,7 @@ def _required_opcode_for_node(
     node: object,
     shape_bindings: FrontendShapeBinding | None = None,
 ) -> str | None:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return None
@@ -168,7 +168,7 @@ def _dynamic_shape_is_closeable(
     node: object,
     shape_bindings: FrontendShapeBinding | None,
 ) -> bool:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return False
@@ -182,7 +182,7 @@ def _collect_target_bound_issues(
     capabilities: ArchitectureCapabilities,
     shape_bindings: FrontendShapeBinding | None = None,
 ) -> list[FrontendLegalityIssue]:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return []
@@ -202,7 +202,7 @@ def _collect_quantization_issues(
     node: object,
     capabilities: ArchitectureCapabilities,
 ) -> list[FrontendLegalityIssue]:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return []
@@ -260,7 +260,7 @@ def _collect_quantization_issues(
 
 
 def _collect_graph_quant_binding_issues(node: object) -> list[FrontendLegalityIssue]:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return []
@@ -323,7 +323,7 @@ def _collect_kv_contract_issues(
     capabilities: ArchitectureCapabilities,
     shape_bindings: FrontendShapeBinding | None = None,
 ) -> list[FrontendLegalityIssue]:
-    from llm_sched.ir.graph_ir import GraphNode
+    from llm_sched.ir.graph import GraphNode
 
     if not isinstance(node, GraphNode):
         return []

@@ -290,3 +290,56 @@ class TilingPlanArtifact(BaseModel):
     scenario_name: str
     core_mode: Literal["single-core", "dual-core"]
     candidates: list[TileCandidate] = Field(default_factory=list)
+
+
+# -- From frontend_import_report.py (moved per D-19) --
+
+class FrontendImportWarning(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stage: Literal["import", "canonicalize"]
+    rule_id: str
+    message: str
+    count: int = 1
+    op_kind: str | None = None
+    sample_node_ids: list[str] = Field(default_factory=list)
+
+
+class FrontendImportReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    graph_id: str
+    raw_node_total: int
+    canonical_node_total: int
+    imported_input_count: int
+    imported_constant_count: int
+    unresolved_shape_node_count: int
+    unresolved_shape_dim_count: int
+    raw_node_counts: dict[str, int] = Field(default_factory=dict)
+    canonical_node_counts: dict[str, int] = Field(default_factory=dict)
+    canonical_pattern_counts: dict[str, int] = Field(default_factory=dict)
+    residual_op_counts: dict[str, int] = Field(default_factory=dict)
+    warning_counts: dict[str, int] = Field(default_factory=dict)
+    warnings: list[FrontendImportWarning] = Field(default_factory=list)
+
+
+# -- From workload_decomposition_report.py (moved per D-19) --
+
+class WorkloadTraceabilityRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    lowered_node_id: str
+    macro_op: str
+    graph_node_ids: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
+
+
+class WorkloadDecompositionReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    graph_id: str
+    macro_op_counts: dict[str, int] = Field(default_factory=dict)
+    pseudo_fallback_counts: dict[str, int] = Field(default_factory=dict)
+    unmapped_op_counts: dict[str, int] = Field(default_factory=dict)
+    unmapped_node_ids: list[str] = Field(default_factory=list)
+    traceability_records: list[WorkloadTraceabilityRecord] = Field(default_factory=list)

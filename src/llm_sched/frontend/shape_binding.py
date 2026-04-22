@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from llm_sched.config.scenario_profile import ScenarioProfile
+from llm_sched.config import ScenarioProfile
 from llm_sched.frontend.model_metadata import GemmaModelMetadata
 
 _ATTENTION_KINDS = frozenset({"ROPE", "KVStore", "KVLoad", "KVSTORE", "KVLOAD", "SDPA", "SDPA_DECODE"})

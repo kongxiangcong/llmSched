@@ -2,13 +2,13 @@
 
 from collections import Counter
 
-from llm_sched.contracts.workload_decomposition_report import (
+from llm_sched.config import ScenarioProfile
+from llm_sched.models import (
     WorkloadDecompositionReport,
     WorkloadTraceabilityRecord,
 )
-from llm_sched.config.scenario_profile import ScenarioProfile
 from llm_sched.ir.common import AuditRef
-from llm_sched.ir.graph_ir import GraphIR, GraphNode
+from llm_sched.ir.graph import GraphIR, GraphNode
 from llm_sched.ir.nig import NIGIR, NIGNode, QuantBinding
 
 

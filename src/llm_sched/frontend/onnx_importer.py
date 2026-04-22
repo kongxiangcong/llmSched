@@ -9,7 +9,7 @@ from typing import Any
 import onnx
 from onnx import AttributeProto, ModelProto, TensorProto, ValueInfoProto, helper
 
-from llm_sched.contracts.frontend_import_report import (
+from llm_sched.models import (
     FrontendImportReport,
     FrontendImportWarning,
 )
@@ -19,7 +19,7 @@ from llm_sched.frontend.canonicalize import (
 )
 from llm_sched.frontend.shape_binding import FrontendShapeBinding
 from llm_sched.ir.common import AuditRef
-from llm_sched.ir.graph_ir import GraphIR, GraphNode
+from llm_sched.ir.graph import GraphIR, GraphNode
 
 
 _DTYPE_NAMES = {

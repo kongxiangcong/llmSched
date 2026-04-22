@@ -3,7 +3,7 @@
 from collections import Counter
 
 from llm_sched.ir.common import AuditRef
-from llm_sched.ir.graph_ir import GraphIR, GraphNode
+from llm_sched.ir.graph import GraphIR, GraphNode
 
 
 CANONICAL_GRAPH_OP_KINDS = frozenset(
