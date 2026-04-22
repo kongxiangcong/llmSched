@@ -2,7 +2,6 @@
 
 from llm_sched.scheduler.dual_core import plan_dual_core_schedule
 from llm_sched.scheduler.duration import estimate_stage_duration_slots
-from llm_sched.scheduler.frontend import run_frontend_analysis
 from llm_sched.scheduler.memory import plan_memory_artifact
 from llm_sched.scheduler.reservations import (
     build_reservation_timeline,
@@ -19,5 +18,4 @@ __all__ = [
     "plan_memory_artifact",
     "plan_tiling_artifact",
     "reserve_resource_windows",
-    "run_frontend_analysis",
 ]
