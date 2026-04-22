@@ -24,12 +24,15 @@ Given an ONNX model, produce a correct, verifiable v0.10 descriptor set that the
 - ✓ Visualization builders and catalogs — existing, to be removed
 - ✓ Sweep analysis and compare — existing, to be removed
 
+### Validated
+
+- ✓ **CLEAN-01**: Remove all old descriptor generation, workbench, diagnosis, visualization, and report-generation implementations from `src/` — validated in Phase 1
+- ✓ **CLEAN-02**: Archive or delete `docs/development/` and `docs/architecture-diagnosis/` content — validated in Phase 1
+- ✓ **CLEAN-03**: Update README to state the project is undergoing complete refactoring and current outputs are not correct — validated in Phase 1
+- ✓ **CLEAN-04**: Retain only execution-semantic pipeline (ONNX → task DAG → scheduling → descriptor packing) — validated in Phase 1
+
 ### Active
 
-- [ ] **CLEAN-01**: Remove all old descriptor generation, workbench, diagnosis, visualization, and report-generation implementations from `src/`
-- [ ] **CLEAN-02**: Archive or delete `docs/development/` and `docs/architecture-diagnosis/` content
-- [ ] **CLEAN-03**: Update README to state the project is undergoing complete refactoring and current outputs are not correct
-- [ ] **CLEAN-04**: Retain only execution-semantic pipeline (ONNX → task DAG → scheduling → descriptor packing)
 - [ ] **FRONT-01**: Refactor frontend to extract model structure and map it to a task-unit dependency DAG
 - [ ] **FRONT-02**: Implement macro_op-based task identification from ONNX graph nodes
 - [ ] **FRONT-03**: Filter out reshape, transpose, squeeze, unsqueeze, and gather ops — do not model them as tasks
