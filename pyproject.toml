@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-sched"
 version = "0.1.0"
-description = "Architecture evaluation compiler for RISC-V plus NPU workloads."
+description = "v0.10 descriptor compiler for ONNX LLM models."
 requires-python = ">=3.11"
 dependencies = [
   "onnx>=1.20,<2",
@@ -19,11 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-llm-sched = "llm_sched.cli.main:run"
+llm-sched = "llm_sched.cli:run"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-  "local_smoke: representative smoke subset for local iteration",
-  "milestone_matrix: broader matrix smoke for milestone and nightly closure",
-]
